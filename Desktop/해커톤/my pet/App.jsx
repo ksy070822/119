@@ -2185,7 +2185,7 @@ function App() {
   };
   
   return (
-    <div className="App">
+    <div className="App app-root">
       {/* 플로팅 배경 효과 */}
       <FloatingBackground variant="default" />
 
@@ -2262,7 +2262,7 @@ function App() {
               try {
                 const packet = await generateHospitalPacket(petData, lastDiagnosis, symptomData);
                 setHospitalPacket(packet);
-                setCurrentView('packet-review');
+                setCurrentView('hospital-review');
               } catch (error) {
                 console.error('패킷 생성 오류:', error);
               }
@@ -2272,7 +2272,7 @@ function App() {
       )}
 
       {/* 진단서 검토 화면 */}
-      {currentView === 'packet-review' && petData && lastDiagnosis && selectedHospital && hospitalPacket && (
+      {currentView === 'hospital-review' && petData && lastDiagnosis && selectedHospital && hospitalPacket && (
         <HospitalPacketReview
           petData={petData}
           diagnosis={lastDiagnosis}
@@ -2283,7 +2283,7 @@ function App() {
           onSend={(packet) => {
             // 패킷 전송 로직 (실제로는 API 호출)
             console.log('패킷 전송:', packet);
-            setCurrentView('packet-sent');
+            setCurrentView('hospital-sent');
           }}
           onSave={(packet) => {
             // 진단서만 저장
@@ -2295,7 +2295,7 @@ function App() {
       )}
 
       {/* 전송 완료 화면 */}
-      {currentView === 'packet-sent' && petData && selectedHospital && (
+      {currentView === 'hospital-sent' && petData && selectedHospital && (
         <PacketSentSummary
           petData={petData}
           hospital={selectedHospital}
@@ -2445,7 +2445,7 @@ function App() {
                     try {
                       const packet = await generateHospitalPacket(petData, lastDiagnosis, symptomData);
                       setHospitalPacket(packet);
-                      setCurrentView('packet-review');
+                      setCurrentView('hospital-review');
                     } catch (error) {
                       console.error('패킷 생성 오류:', error);
                     }
