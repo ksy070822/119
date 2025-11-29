@@ -24,6 +24,8 @@ import { loadDailyLog, saveDailyLog, getTodayKey } from './src/lib/careLogs'
 import DiagnosisReport from './src/components/DiagnosisReport'
 import { initializeDummyData, DUMMY_PETS, DUMMY_MEDICAL_RECORDS } from './src/lib/dummyData'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
+import { OCRUpload } from './src/components/OCRUpload'
+import { ClinicAdmin } from './src/components/ClinicAdmin'
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -2536,6 +2538,7 @@ function App() {
             }
             setCurrentView('diagnosis-view');
           }}
+          onClinicMode={() => setCurrentView('clinic-admin')}
         />
       )}
 
@@ -2675,6 +2678,32 @@ function App() {
         </div>
       )}
 
+      {/* OCR 문서 스캔 화면 */}
+      {currentView === 'ocr' && (
+        <OCRUpload
+          petData={petData}
+          onBack={() => setCurrentView(null)}
+          onSaveRecord={(record) => {
+            console.log('의료 기록 저장됨:', record);
+            // 필요시 상태 업데이트
+          }}
+        />
+      )}
+
+      {/* 병원 어드민 화면 */}
+      {currentView === 'clinic-admin' && (
+        <ClinicAdmin
+          onBack={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}
+          onLogout={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}
+        />
+      )}
+
       {/* 탭 기반 메인 화면 - currentView가 없을 때만 표시 */}
       {!currentView && currentTab && (
         <div className="main-content" style={{ paddingBottom: '80px' }}>
@@ -2734,6 +2763,7 @@ function App() {
                 setLastDiagnosis(diagnosis);
                 setCurrentView('diagnosis-view');
               }}
+              onOCR={() => setCurrentView('ocr')}
             />
           )}
 
@@ -2754,6 +2784,7 @@ function App() {
                 }
                 setCurrentView('diagnosis-view');
               }}
+              onClinicMode={() => setCurrentView('clinic-admin')}
             />
           )}
 
