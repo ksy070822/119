@@ -185,7 +185,7 @@ const DUMMY_VACCINATIONS = [
 export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome }) {
   const [activeTab, setActiveTab] = useState('visits'); // visits, medication, checkup, vaccination
   const [diagnoses, setDiagnoses] = useState([]);
-  const [useDummyData, setUseDummyData] = useState(true); // 더미데이터 사용 플래그
+  const [useDummyData, setUseDummyData] = useState(false); // 더미데이터 사용 플래그 - 실제 서비스용 false
 
   useEffect(() => {
     const stored = localStorage.getItem(DIAGNOSIS_KEY);

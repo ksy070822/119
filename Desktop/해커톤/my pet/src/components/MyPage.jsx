@@ -4,6 +4,61 @@ const DIAGNOSIS_KEY = 'petMedical_diagnoses';
 const STORAGE_KEY = 'petMedical_pets';
 const BOOKINGS_KEY = 'petMedical_bookings';
 
+// 사용자별 키 생성
+const getUserPetsKey = (userId) => `petMedical_pets_${userId}`;
+const getUserDiagnosesKey = (userId) => `petMedical_diagnoses_${userId}`;
+const getUserBookingsKey = (userId) => `petMedical_bookings_${userId}`;
+
+// 사용자별 데이터 가져오기
+const getPetsForUser = (userId) => {
+  if (!userId) return [];
+  try {
+    const data = localStorage.getItem(getUserPetsKey(userId));
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const savePetsForUser = (userId, pets) => {
+  if (!userId) return;
+  try {
+    localStorage.setItem(getUserPetsKey(userId), JSON.stringify(pets));
+  } catch (error) {
+    console.error('Failed to save pets:', error);
+  }
+};
+
+const getDiagnosesForUser = (userId) => {
+  if (!userId) return [];
+  try {
+    const data = localStorage.getItem(getUserDiagnosesKey(userId));
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getBookingsForUser = (userId) => {
+  if (!userId) return [];
+  try {
+    const data = localStorage.getItem(getUserBookingsKey(userId));
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveBookingsForUser = (userId, bookings) => {
+  if (!userId) return;
+  try {
+    localStorage.setItem(getUserBookingsKey(userId), JSON.stringify(bookings));
+  } catch (error) {
+    console.error('Failed to save bookings:', error);
+  }
+};
+
+// 기존 호환용
 const getDiagnosesFromStorage = () => {
   try {
     const data = localStorage.getItem(DIAGNOSIS_KEY);
@@ -47,7 +102,7 @@ const saveBookingsToStorage = (bookings) => {
   }
 };
 
-export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome }) {
+export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome, userId }) {
   const [activeTab, setActiveTab] = useState('pets'); // 'pets', 'records', or 'bookings'
   const [pets, setPets] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
@@ -56,10 +111,17 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
   const [editFormData, setEditFormData] = useState(null);
 
   useEffect(() => {
-    setPets(getPetsFromStorage());
-    setDiagnoses(getDiagnosesFromStorage());
-    setBookings(getBookingsFromStorage());
-  }, []);
+    // 사용자별 데이터 로드
+    if (userId) {
+      setPets(getPetsForUser(userId));
+      setDiagnoses(getDiagnosesForUser(userId));
+      setBookings(getBookingsForUser(userId));
+    } else {
+      setPets(getPetsFromStorage());
+      setDiagnoses(getDiagnosesFromStorage());
+      setBookings(getBookingsFromStorage());
+    }
+  }, [userId]);
 
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('ko-KR', {
@@ -104,12 +166,18 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
 
   const handleSaveEdit = () => {
     if (!editFormData) return;
-    
-    const updatedPets = pets.map(p => 
+
+    const updatedPets = pets.map(p =>
       p.id === editingPet ? { ...editFormData } : p
     );
     setPets(updatedPets);
-    savePetsToStorage(updatedPets);
+
+    // 사용자별로 저장
+    if (userId) {
+      savePetsForUser(userId, updatedPets);
+    } else {
+      savePetsToStorage(updatedPets);
+    }
     setEditingPet(null);
     setEditFormData(null);
   };
@@ -123,7 +191,13 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
     if (window.confirm('정말 삭제하시겠습니까?')) {
       const updatedPets = pets.filter(p => p.id !== petId);
       setPets(updatedPets);
-      savePetsToStorage(updatedPets);
+
+      // 사용자별로 저장
+      if (userId) {
+        savePetsForUser(userId, updatedPets);
+      } else {
+        savePetsToStorage(updatedPets);
+      }
     }
   };
 
@@ -150,7 +224,13 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
         b.id === bookingId ? { ...b, status: 'cancelled' } : b
       );
       setBookings(updatedBookings);
-      saveBookingsToStorage(updatedBookings);
+
+      // 사용자별로 저장
+      if (userId) {
+        saveBookingsForUser(userId, updatedBookings);
+      } else {
+        saveBookingsToStorage(updatedBookings);
+      }
     }
   };
 
@@ -255,6 +335,61 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                   {editingPet === pet.id ? (
                     // 편집 모드
                     <div className="space-y-4">
+                      {/* 프로필 사진 변경 */}
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">프로필 사진</label>
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-4xl overflow-hidden">
+                            {editFormData?.profileImage ? (
+                              <img
+                                src={editFormData.profileImage}
+                                alt="프로필"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              editFormData?.species === 'dog' ? '🐕' : '🐈'
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id={`profileImage-${pet.id}`}
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    alert('이미지 크기는 5MB 이하여야 합니다.');
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    handleInputChange('profileImage', event.target.result);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`profileImage-${pet.id}`}
+                              className="inline-block px-4 py-2 bg-primary/10 text-primary rounded-lg font-medium cursor-pointer hover:bg-primary/20 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm align-middle mr-1">photo_camera</span>
+                              사진 변경
+                            </label>
+                            {editFormData?.profileImage && (
+                              <button
+                                onClick={() => handleInputChange('profileImage', null)}
+                                className="ml-2 px-3 py-2 text-red-500 text-sm hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                삭제
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">이름</label>
                         <input
@@ -301,8 +436,16 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                     // 보기 모드
                     <>
                       <div className="flex items-center gap-4 mb-3">
-                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl">
-                          {pet.species === 'dog' ? '🐕' : '🐈'}
+                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl overflow-hidden">
+                          {pet.profileImage ? (
+                            <img
+                              src={pet.profileImage}
+                              alt={pet.petName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            pet.species === 'dog' ? '🐕' : '🐈'
+                          )}
                         </div>
                         <div className="flex-1">
                           <h3 className="text-slate-900 font-bold text-lg mb-1 font-display">{pet.petName}</h3>

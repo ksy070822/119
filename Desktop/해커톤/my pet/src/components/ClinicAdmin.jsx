@@ -150,6 +150,8 @@ export function ClinicAdmin({ onBack, onLogout, onModeSwitch, onHome }) {
         <div className="flex">
           {[
             { id: 'today', label: '오늘 예약', icon: 'calendar_today' },
+            { id: 'monthly', label: '이번달', icon: 'calendar_month' },
+            { id: 'schedule', label: '진료 스케줄', icon: 'schedule' },
             { id: 'packets', label: '사전 문진', icon: 'description' },
             { id: 'patients', label: '환자 관리', icon: 'folder_shared' },
             { id: 'settings', label: '설정', icon: 'settings' },
@@ -184,6 +186,22 @@ export function ClinicAdmin({ onBack, onLogout, onModeSwitch, onHome }) {
               setSelectedBooking(b);
               setShowResultModal(true);
             }}
+          />
+        )}
+
+        {activeTab === 'monthly' && (
+          <MonthlyBookings
+            bookings={bookings}
+            onSelectBooking={(b) => {
+              setSelectedBooking(b);
+            }}
+            onUpdateStatus={updateBookingStatus}
+          />
+        )}
+
+        {activeTab === 'schedule' && (
+          <TodaySchedule
+            bookings={bookings}
           />
         )}
 
@@ -486,6 +504,252 @@ function PatientManagement({ bookings }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// 이번달 예약 탭
+function MonthlyBookings({ bookings, onSelectBooking, onUpdateStatus }) {
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // 이번달 예약만 필터링
+  const monthlyBookings = bookings.filter(b => {
+    const bookingDate = new Date(b.date);
+    return bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear;
+  });
+
+  // 날짜별로 그룹화
+  const groupedByDate = monthlyBookings.reduce((acc, booking) => {
+    const date = booking.date;
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(booking);
+    return acc;
+  }, {});
+
+  // 날짜순 정렬
+  const sortedDates = Object.keys(groupedByDate).sort();
+
+  const formatDateLabel = (dateStr) => {
+    const date = new Date(dateStr);
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+    if (dateStr === today) return '오늘';
+    if (dateStr === tomorrow) return '내일';
+
+    return date.toLocaleDateString('ko-KR', {
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
+
+  if (monthlyBookings.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <span className="material-symbols-outlined text-5xl text-slate-300 mb-3 block">
+          calendar_month
+        </span>
+        <p className="text-slate-500">이번달 예약이 없습니다</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-bold text-slate-800 flex items-center gap-2">
+        <span className="material-symbols-outlined text-emerald-500">calendar_month</span>
+        {currentMonth + 1}월 예약 현황 ({monthlyBookings.length}건)
+      </h2>
+
+      {/* 월간 요약 */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="bg-amber-50 rounded-lg p-2 text-center">
+          <p className="text-lg font-bold text-amber-600">
+            {monthlyBookings.filter(b => b.status === 'pending').length}
+          </p>
+          <p className="text-xs text-amber-700">대기</p>
+        </div>
+        <div className="bg-green-50 rounded-lg p-2 text-center">
+          <p className="text-lg font-bold text-green-600">
+            {monthlyBookings.filter(b => b.status === 'confirmed').length}
+          </p>
+          <p className="text-xs text-green-700">확정</p>
+        </div>
+        <div className="bg-sky-50 rounded-lg p-2 text-center">
+          <p className="text-lg font-bold text-sky-600">
+            {monthlyBookings.filter(b => b.status === 'completed').length}
+          </p>
+          <p className="text-xs text-sky-700">완료</p>
+        </div>
+        <div className="bg-red-50 rounded-lg p-2 text-center">
+          <p className="text-lg font-bold text-red-600">
+            {monthlyBookings.filter(b => b.status === 'cancelled').length}
+          </p>
+          <p className="text-xs text-red-700">취소</p>
+        </div>
+      </div>
+
+      {/* 날짜별 예약 목록 */}
+      {sortedDates.map(date => (
+        <div key={date} className="space-y-2">
+          <div className="flex items-center gap-2 sticky top-16 bg-slate-100 py-2 z-5">
+            <span className="material-symbols-outlined text-slate-400 text-sm">event</span>
+            <span className="text-sm font-medium text-slate-600">{formatDateLabel(date)}</span>
+            <span className="text-xs text-slate-400">({groupedByDate[date].length}건)</span>
+          </div>
+
+          {groupedByDate[date]
+            .sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+            .map(booking => {
+              const statusInfo = getBookingStatusInfo(booking.status);
+              return (
+                <div
+                  key={booking.id}
+                  className="bg-white rounded-xl shadow-sm p-3 cursor-pointer hover:shadow-md transition"
+                  onClick={() => onSelectBooking(booking)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-lg">
+                        🐾
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-800 text-sm">{booking.petName || '이름 없음'}</p>
+                        <p className="text-xs text-slate-500">{booking.time || '시간 미정'}</p>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 오늘 진료 스케줄 탭
+function TodaySchedule({ bookings }) {
+  const today = new Date().toISOString().split('T')[0];
+  const todayBookings = bookings.filter(b => b.date === today && b.status !== 'cancelled');
+
+  // 시간대별 스케줄 생성 (9시~18시)
+  const timeSlots = [];
+  for (let hour = 9; hour <= 18; hour++) {
+    const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+    const halfTimeStr = `${hour.toString().padStart(2, '0')}:30`;
+
+    const slotBookings = todayBookings.filter(b => {
+      if (!b.time) return false;
+      const bookingHour = parseInt(b.time.split(':')[0]);
+      const bookingMinute = parseInt(b.time.split(':')[1] || 0);
+      return bookingHour === hour && bookingMinute < 30;
+    });
+
+    const halfSlotBookings = todayBookings.filter(b => {
+      if (!b.time) return false;
+      const bookingHour = parseInt(b.time.split(':')[0]);
+      const bookingMinute = parseInt(b.time.split(':')[1] || 0);
+      return bookingHour === hour && bookingMinute >= 30;
+    });
+
+    timeSlots.push({ time: timeStr, bookings: slotBookings });
+    timeSlots.push({ time: halfTimeStr, bookings: halfSlotBookings });
+  }
+
+  const currentTime = new Date();
+  const currentHour = currentTime.getHours();
+  const currentMinute = currentTime.getMinutes();
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-bold text-slate-800 flex items-center gap-2">
+        <span className="material-symbols-outlined text-emerald-500">schedule</span>
+        오늘의 진료 스케줄
+      </h2>
+
+      {/* 현재 시간 표시 */}
+      <div className="bg-emerald-50 rounded-lg p-3 flex items-center gap-2">
+        <span className="material-symbols-outlined text-emerald-600">access_time</span>
+        <span className="text-emerald-700 font-medium">
+          현재 시간: {currentHour.toString().padStart(2, '0')}:{currentMinute.toString().padStart(2, '0')}
+        </span>
+      </div>
+
+      {/* 타임라인 */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {timeSlots.map((slot, idx) => {
+          const slotHour = parseInt(slot.time.split(':')[0]);
+          const slotMinute = parseInt(slot.time.split(':')[1]);
+          const isPast = slotHour < currentHour || (slotHour === currentHour && slotMinute < currentMinute);
+          const isCurrent = slotHour === currentHour &&
+            ((slotMinute === 0 && currentMinute < 30) || (slotMinute === 30 && currentMinute >= 30));
+
+          return (
+            <div
+              key={slot.time}
+              className={`flex border-b border-slate-100 last:border-b-0 ${
+                isCurrent ? 'bg-emerald-50' : isPast ? 'bg-slate-50' : ''
+              }`}
+            >
+              {/* 시간 */}
+              <div className={`w-16 py-3 px-2 text-center border-r border-slate-100 ${
+                isCurrent ? 'text-emerald-600 font-bold' : isPast ? 'text-slate-400' : 'text-slate-600'
+              }`}>
+                <span className="text-sm">{slot.time}</span>
+              </div>
+
+              {/* 예약 내용 */}
+              <div className="flex-1 py-2 px-3">
+                {slot.bookings.length > 0 ? (
+                  <div className="space-y-1">
+                    {slot.bookings.map(booking => {
+                      const statusInfo = getBookingStatusInfo(booking.status);
+                      return (
+                        <div
+                          key={booking.id}
+                          className={`flex items-center justify-between p-2 rounded-lg ${
+                            booking.status === 'completed' ? 'bg-slate-100' :
+                            booking.status === 'confirmed' ? 'bg-emerald-100' : 'bg-amber-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🐾</span>
+                            <span className="font-medium text-sm text-slate-800">{booking.petName}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-xs ${statusInfo.color}`}>
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className={`text-sm ${isPast ? 'text-slate-300' : 'text-slate-400'}`}>
+                    -
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 예약 없음 안내 */}
+      {todayBookings.length === 0 && (
+        <div className="text-center py-8 text-slate-500">
+          <span className="material-symbols-outlined text-4xl text-slate-300 mb-2 block">event_busy</span>
+          오늘 예정된 진료가 없습니다
+        </div>
+      )}
     </div>
   );
 }

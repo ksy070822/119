@@ -8,41 +8,83 @@ const KAKAO_JS_KEY = '72f88f8c8193dd28d0539df80f16ab87';
 let isKakaoInitialized = false;
 
 /**
- * Kakao SDK 초기화
+ * Kakao SDK 스크립트 동적 로드
  */
-export const initKakao = () => {
+const loadKakaoScript = () => {
   return new Promise((resolve, reject) => {
-    // 이미 초기화되어 있으면 바로 반환
-    if (isKakaoInitialized && window.Kakao?.isInitialized()) {
+    // 이미 스크립트가 있는지 확인
+    if (window.Kakao) {
       resolve(true);
       return;
     }
 
-    // Kakao SDK가 로드되어 있는지 확인
-    if (window.Kakao) {
-      if (!window.Kakao.isInitialized()) {
-        window.Kakao.init(KAKAO_JS_KEY);
-      }
-      isKakaoInitialized = true;
+    // 이미 로드 중인 스크립트가 있는지 확인
+    const existingScript = document.querySelector('script[src*="kakao_js_sdk"]');
+    if (existingScript) {
+      existingScript.onload = () => resolve(true);
+      existingScript.onerror = () => reject(new Error('Kakao SDK 로딩 실패'));
+      return;
+    }
+
+    // 스크립트 동적 로드
+    const script = document.createElement('script');
+    script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js';
+    script.integrity = 'sha384-6MFdIr0zOira1CHQkedUqJVql0YtcZA1P0nbPrQYJXVJZUkTk/oX4U9GhLYe0LQ6';
+    script.crossOrigin = 'anonymous';
+    script.async = true;
+
+    script.onload = () => {
       resolve(true);
-    } else {
-      // SDK가 아직 로드되지 않았으면 대기
+    };
+
+    script.onerror = () => {
+      reject(new Error('Kakao SDK 스크립트 로딩 실패'));
+    };
+
+    document.head.appendChild(script);
+  });
+};
+
+/**
+ * Kakao SDK 초기화
+ */
+export const initKakao = () => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 이미 초기화되어 있으면 바로 반환
+      if (isKakaoInitialized && window.Kakao?.isInitialized()) {
+        resolve(true);
+        return;
+      }
+
+      // SDK 스크립트 로드
+      await loadKakaoScript();
+
+      // SDK 로드 대기 (최대 10초)
+      let attempts = 0;
+      const maxAttempts = 100;
+
       const checkKakao = setInterval(() => {
+        attempts++;
+
         if (window.Kakao) {
           clearInterval(checkKakao);
-          if (!window.Kakao.isInitialized()) {
-            window.Kakao.init(KAKAO_JS_KEY);
+          try {
+            if (!window.Kakao.isInitialized()) {
+              window.Kakao.init(KAKAO_JS_KEY);
+            }
+            isKakaoInitialized = true;
+            resolve(true);
+          } catch (error) {
+            reject(new Error('Kakao SDK 초기화 오류: ' + error.message));
           }
-          isKakaoInitialized = true;
-          resolve(true);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkKakao);
+          reject(new Error('Kakao SDK 로딩 시간 초과'));
         }
       }, 100);
-
-      // 5초 후 타임아웃
-      setTimeout(() => {
-        clearInterval(checkKakao);
-        reject(new Error('Kakao SDK 로딩 실패'));
-      }, 5000);
+    } catch (error) {
+      reject(error);
     }
   });
 };

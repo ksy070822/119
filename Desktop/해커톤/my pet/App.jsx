@@ -22,7 +22,8 @@ import { callCareAgent } from './src/services/ai/careAgent'
 import { CareActionButton } from './src/components/CareActionButton'
 import { loadDailyLog, saveDailyLog, getTodayKey } from './src/lib/careLogs'
 import DiagnosisReport from './src/components/DiagnosisReport'
-import { initializeDummyData, DUMMY_PETS, DUMMY_MEDICAL_RECORDS } from './src/lib/dummyData'
+// 더미 데이터 비활성화 - 실제 서비스용
+// import { initializeDummyData, DUMMY_PETS, DUMMY_MEDICAL_RECORDS } from './src/lib/dummyData'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
 import { OCRUpload } from './src/components/OCRUpload'
 import { ClinicAdmin } from './src/components/ClinicAdmin'
@@ -31,6 +32,32 @@ import { ClinicAdmin } from './src/components/ClinicAdmin'
 const STORAGE_KEY = 'petMedical_pets';
 const DIAGNOSIS_KEY = 'petMedical_diagnoses';
 
+// 사용자별 반려동물 키
+const getUserPetsKey = (userId) => `petMedical_pets_${userId}`;
+const getUserDiagnosesKey = (userId) => `petMedical_diagnoses_${userId}`;
+
+// 사용자별 반려동물 데이터 가져오기
+const getPetsForUser = (userId) => {
+  if (!userId) return [];
+  try {
+    const data = localStorage.getItem(getUserPetsKey(userId));
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+// 사용자별 반려동물 데이터 저장
+const savePetsForUser = (userId, pets) => {
+  if (!userId) return;
+  try {
+    localStorage.setItem(getUserPetsKey(userId), JSON.stringify(pets));
+  } catch (error) {
+    console.error('Failed to save pets:', error);
+  }
+};
+
+// 기존 호환용 (마이그레이션용)
 const getPetsFromStorage = () => {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -147,7 +174,7 @@ const SPECIES_OPTIONS = [
 ];
 
 // ============ 프로필 등록 화면 ============
-function ProfileRegistration({ onComplete }) {
+function ProfileRegistration({ onComplete, userId }) {
   const [formData, setFormData] = useState({
     petName: '',
     species: 'dog',
@@ -213,16 +240,27 @@ function ProfileRegistration({ onComplete }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     setTimeout(() => {
       const newPet = {
         ...formData,
         id: Date.now(),
+        userId: userId, // 소유자 ID 저장
         createdAt: new Date().toISOString()
       };
-      const pets = getPetsFromStorage();
-      pets.push(newPet);
-      savePetsToStorage(pets);
+
+      // 사용자별로 저장
+      if (userId) {
+        const pets = getPetsForUser(userId);
+        pets.push(newPet);
+        savePetsForUser(userId, pets);
+      } else {
+        // 호환성 유지
+        const pets = getPetsFromStorage();
+        pets.push(newPet);
+        savePetsToStorage(pets);
+      }
+
       onComplete(newPet);
     }, 1000);
   };
@@ -737,8 +775,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
       <div className="px-4 pt-2 pb-40">
         {/* Pet Info Card */}
         <div className="flex items-center gap-4 bg-surface-light p-4 rounded-lg shadow-soft min-h-[72px] mb-4">
-          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl">
-            {petData.species === 'dog' ? '🐕' : '🐈'}
+          <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl overflow-hidden">
+            {petData.profileImage ? (
+              <img
+                src={petData.profileImage}
+                alt={petData.petName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              petData.species === 'dog' ? '🐕' : '🐈'
+            )}
           </div>
           <div className="flex-1">
             <h2 className="font-bold text-slate-900 text-lg font-display">{petData.petName}</h2>
@@ -2320,17 +2366,13 @@ function App() {
       setCurrentUser(savedSession);
       setUserMode(savedSession.userMode || 'guardian');
       setAuthScreen(null);
-    }
 
-    // 더미데이터 초기화 (처음 실행시에만)
-    initializeDummyData();
-
-    const savedPets = getPetsFromStorage();
-    setPets(savedPets);
-
-    // 저장된 반려동물이 있으면 첫 번째 선택, 없으면 샘플 데이터로 시작
-    if (savedPets.length > 0) {
-      setPetData(savedPets[0]);
+      // 로그인된 사용자의 반려동물 데이터 로드
+      const userPets = getPetsForUser(savedSession.uid);
+      setPets(userPets);
+      if (userPets.length > 0) {
+        setPetData(userPets[0]);
+      }
     }
     // 등록 화면 없이 바로 대시보드로 (등록은 마이페이지에서)
     setCurrentTab('care');
@@ -2341,6 +2383,15 @@ function App() {
     setCurrentUser(user);
     setUserMode(user.userMode || 'guardian');
     setAuthScreen(null);
+
+    // 로그인한 사용자의 반려동물 데이터 로드
+    const userPets = getPetsForUser(user.uid);
+    setPets(userPets);
+    if (userPets.length > 0) {
+      setPetData(userPets[0]);
+    } else {
+      setPetData(null);
+    }
   };
 
   // 회원가입 성공 핸들러
@@ -2348,18 +2399,25 @@ function App() {
     setCurrentUser(user);
     setUserMode(user.userMode || 'guardian');
     setAuthScreen(null);
+
+    // 새 사용자는 데이터 초기화
+    setPets([]);
+    setPetData(null);
   };
 
   // 로그아웃 핸들러
   const handleLogout = () => {
     clearAuthSession();
     setCurrentUser(null);
+    setPets([]);
+    setPetData(null);
     setAuthScreen('login');
   };
 
-  // 로그인 없이 바로 입장 (테스트용)
+  // 로그인 없이 바로 입장 (테스트용) - 비활성화
   const handleSkipLogin = () => {
-    setAuthScreen(null);
+    // 실제 서비스에서는 로그인 필수
+    // setAuthScreen(null);
   };
 
   // 인증 화면 렌더링
@@ -2368,7 +2426,7 @@ function App() {
       <LoginScreen
         onLogin={handleLogin}
         onGoToRegister={() => setAuthScreen('register')}
-        onSkipLogin={handleSkipLogin}
+        // onSkipLogin 제거 - 실제 서비스에서는 로그인 필수
       />
     );
   }
@@ -2383,8 +2441,11 @@ function App() {
   }
 
   const handleRegistrationComplete = (data) => {
-    const updatedPets = getPetsFromStorage();
-    setPets(updatedPets);
+    // 현재 사용자의 반려동물 데이터 로드
+    if (currentUser?.uid) {
+      const updatedPets = getPetsForUser(currentUser.uid);
+      setPets(updatedPets);
+    }
     setPetData(data);
     setCurrentView(null);
     setCurrentTab('care');
@@ -2456,6 +2517,7 @@ function App() {
       {currentView === 'registration' && (
         <ProfileRegistration
           onComplete={handleRegistrationComplete}
+          userId={currentUser?.uid}
         />
       )}
       
@@ -2474,7 +2536,10 @@ function App() {
         <SymptomInput
           petData={petData}
           onComplete={handleSymptomSubmit}
-          onBack={() => setCurrentView('dashboard')}
+          onBack={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}
         />
       )}
       
@@ -2583,11 +2648,15 @@ function App() {
 
       {currentView === 'mypage' && (
         <MyPage
-          onBack={() => setCurrentView('dashboard')}
+          onBack={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}
           onHome={handleGoHome}
           onSelectPet={(pet) => {
             setPetData(pet);
-            setCurrentView('dashboard');
+            setCurrentView(null);
+            setCurrentTab('care');
           }}
           onViewDiagnosis={(diagnosis) => {
             setLastDiagnosis(diagnosis);
@@ -2599,6 +2668,7 @@ function App() {
             setCurrentView('diagnosis-view');
           }}
           onClinicMode={() => setCurrentView('clinic-admin')}
+          userId={currentUser?.uid}
         />
       )}
 
@@ -2730,7 +2800,10 @@ function App() {
 
       {currentView === 'history' && (
         <div className="history-container">
-          <button className="back-btn" onClick={() => setCurrentView('dashboard')}>← 뒤로</button>
+          <button className="back-btn" onClick={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}>← 뒤로</button>
           <h1>📋 진료 기록</h1>
           <div className="history-content">
             <p>마이페이지에서 확인하실 수 있습니다.</p>
@@ -2766,8 +2839,8 @@ function App() {
         />
       )}
 
-      {/* 탭 기반 메인 화면 - currentView가 없을 때만 표시 */}
-      {!currentView && currentTab && (
+      {/* 탭 기반 메인 화면 - 보호자 모드이고 currentView가 없을 때만 표시 */}
+      {userMode === 'guardian' && !currentView && currentTab && (
         <div className="main-content" style={{ paddingBottom: '80px' }}>
           {/* 내 동물 돌보기 탭 */}
           {currentTab === 'care' && petData && (
@@ -2850,6 +2923,7 @@ function App() {
                 setCurrentView('diagnosis-view');
               }}
               onClinicMode={() => setCurrentView('clinic-admin')}
+              userId={currentUser?.uid}
             />
           )}
 
