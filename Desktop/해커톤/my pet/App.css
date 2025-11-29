@@ -168,7 +168,7 @@ body {
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #667eea;
+  border-top: 4px solid #38bdf8;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
@@ -202,7 +202,7 @@ body {
 .profile-photo {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -260,7 +260,7 @@ body {
 }
 
 .action-card.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
 }
 
@@ -283,6 +283,9 @@ body {
 .diagnosis-container {
   max-width: 800px;
   margin: 0 auto;
+  min-height: 100vh;
+  padding: 20px;
+  background: #f0fdfa;
 }
 
 .diagnosis-header {
@@ -343,7 +346,7 @@ body {
 }
 
 .step.active .step-circle {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
 }
 
@@ -388,6 +391,43 @@ body {
   background: #555;
 }
 
+.initial-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #38bdf8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.initial-loading p {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.initial-loading .loading-subtitle {
+  font-size: 14px;
+  color: #666;
+  font-weight: normal;
+}
+
 .message {
   margin-bottom: 25px;
   animation: slideIn 0.5s ease-out;
@@ -399,7 +439,7 @@ body {
 }
 
 .user-message .message-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border-radius: 15px 15px 5px 15px;
 }
@@ -482,6 +522,59 @@ body {
   white-space: pre-line;
   line-height: 1.6;
   color: #333;
+}
+
+/* 협업 메시지 스타일 */
+.collaboration-message {
+  border-left: 4px solid #38bdf8;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.05) 0%, transparent 100%);
+}
+
+.collaboration-message .message-content {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.collaboration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.collaboration-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.collaboration-line {
+  color: #0369a1;
+  font-weight: 600;
+  margin: 4px 0;
+  padding: 4px 8px;
+  background: rgba(56, 189, 248, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #38bdf8;
+}
+
+.has-collaboration {
+  position: relative;
+}
+
+.has-collaboration::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #38bdf8 0%, #a78bfa 100%);
+  border-radius: 2px;
 }
 
 .typing-indicator {
@@ -574,7 +667,7 @@ body {
 
 .add-pet-btn {
   background: white;
-  color: #667eea;
+  color: #38bdf8;
   border: none;
   padding: 12px 24px;
   border-radius: 25px;
@@ -632,7 +725,7 @@ body {
 .profile-item-photo {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -663,7 +756,7 @@ body {
 
 .profile-item-arrow {
   font-size: 24px;
-  color: #667eea;
+  color: #38bdf8;
 }
 
 .dashboard-header {
@@ -761,7 +854,7 @@ body {
 
 .symptom-textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #38bdf8;
 }
 
 .image-upload-area {
@@ -781,7 +874,7 @@ body {
 
 .upload-btn:hover {
   background: #e8e8e8;
-  border-color: #667eea;
+  border-color: #38bdf8;
 }
 
 .image-preview-grid {
@@ -844,14 +937,14 @@ body {
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
 }
 
 .action-btn.secondary {
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #38bdf8;
+  border: 2px solid #38bdf8;
 }
 
 .action-btn:hover {
@@ -939,7 +1032,7 @@ body {
 
 .chat-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #38bdf8;
 }
 
 .chat-input:disabled {
@@ -949,7 +1042,7 @@ body {
 
 .chat-send-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border: none;
   border-radius: 25px;
@@ -977,7 +1070,7 @@ body {
 }
 
 .agent-icon.user {
-  background: #667eea;
+  background: #38bdf8;
   color: white;
 }
 
@@ -1149,7 +1242,7 @@ body {
   align-items: center;
   gap: 20px;
   padding: 25px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   border-radius: 15px;
   color: white;
 }
@@ -1197,7 +1290,7 @@ body {
 .step-number {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -1240,7 +1333,7 @@ body {
 .recovery-time {
   font-size: 24px;
   font-weight: bold;
-  color: #667eea;
+  color: #38bdf8;
   margin: 0;
 }
 
@@ -1388,7 +1481,7 @@ body {
 }
 
 .mypage-tab.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
 }
 
@@ -1459,7 +1552,7 @@ body {
 
 .action-btn-small {
   padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border: none;
   border-radius: 20px;
@@ -1526,8 +1619,8 @@ body {
 .record-view-btn {
   padding: 8px 16px;
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #38bdf8;
+  border: 2px solid #38bdf8;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
@@ -1536,7 +1629,7 @@ body {
 }
 
 .record-view-btn:hover {
-  background: #667eea;
+  background: #38bdf8;
   color: white;
 }
 
@@ -1576,7 +1669,7 @@ body {
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1715,7 +1808,7 @@ body {
 .care-btn {
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border: none;
   border-radius: 15px;
@@ -1736,7 +1829,7 @@ body {
 .care-count {
   font-size: 18px;
   font-weight: 600;
-  color: #667eea;
+  color: #38bdf8;
 }
 
 .care-inputs {
@@ -1774,7 +1867,7 @@ body {
   min-width: 50px;
   text-align: right;
   font-weight: 600;
-  color: #667eea;
+  color: #38bdf8;
 }
 
 /* ========== 패턴 분석 카드 ========== */
@@ -1969,7 +2062,7 @@ body {
 }
 
 .hospital-card:hover {
-  border-color: #667eea;
+  border-color: #38bdf8;
   box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
 }
 
@@ -2057,7 +2150,7 @@ body {
 }
 
 .hospital-book-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
 }
 
@@ -2203,7 +2296,7 @@ body {
 .pattern-analysis-btn {
   width: 100%;
   padding: 16px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #38bdf8 0%, #a78bfa 100%);
   color: white;
   border: none;
   border-radius: 15px;

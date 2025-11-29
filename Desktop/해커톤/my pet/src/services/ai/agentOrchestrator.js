@@ -23,9 +23,11 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '상담 간호사',
       icon: '💬',
       type: 'cs',
-      content: '접수 중...',
+      content: '안녕하세요! 접수 도와드리겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     csResult = await callCSAgent(petData, symptomData);
     logs.push({
@@ -40,15 +42,29 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // CS Agent가 Information Agent에게 전달
+    onLogReceived({
+      agent: 'CS Agent',
+      role: '상담 간호사',
+      icon: '💬',
+      type: 'cs',
+      content: '🔍 Information Agent님, 증상 정보 분석 부탁드려요!',
+      timestamp: Date.now()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     // 2. Information Agent (시뮬레이션)
     onLogReceived({
       agent: 'Information Agent',
       role: '정보수집가',
       icon: '🔍',
       type: 'info',
-      content: '증상 정보 수집 및 분석 중...',
+      content: '네, CS Agent님! 증상 정보 수집 시작하겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     infoResult = await callInformationAgent(petData, symptomData, csResult.json);
     
@@ -62,7 +78,19 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Information Agent가 Medical Agent에게 전달
+    onLogReceived({
+      agent: 'Information Agent',
+      role: '정보수집가',
+      icon: '🔍',
+      type: 'info',
+      content: '👨‍⚕️ Veterinarian Agent님, 분석 결과 전달드립니다. 종합 진단 부탁드려요!',
+      timestamp: Date.now()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     // 3. Medical Agent (GPT-4o)
     onLogReceived({
@@ -70,9 +98,11 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '전문 수의사',
       icon: '👨‍⚕️',
       type: 'medical',
-      content: '종합 진단 수행 중...',
+      content: 'Information Agent님, 감사합니다! 종합 진단 시작하겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     medicalResult = await callMedicalAgent(petData, symptomData, csResult.json, infoResult.json);
     
@@ -86,7 +116,19 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Medical Agent가 Triage Engine에게 요청
+    onLogReceived({
+      agent: 'Veterinarian Agent',
+      role: '전문 수의사',
+      icon: '👨‍⚕️',
+      type: 'medical',
+      content: '🚨 Triage Engine님, 응급도 평가 부탁드립니다. 진단 결과 전달드릴게요.',
+      timestamp: Date.now()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     // 4. Triage Engine (GPT-4o) - 응급도 평가
     onLogReceived({
@@ -94,9 +136,11 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '응급도 평가',
       icon: '🚨',
       type: 'triage',
-      content: '응급도 평가 중...',
+      content: 'Veterinarian Agent님, 네! 응급도 평가 시작하겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     try {
       triageResult = await calculateTriageScore(petData, symptomData, medicalResult.json, csResult.json);
@@ -105,7 +149,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
         role: '응급도 평가',
         icon: '🚨',
         type: 'triage',
-        content: `응급도 평가 완료.\n\nTriage Score: ${triageResult.triage_score}/5\n응급도: ${triageResult.triage_level}\n시급성: ${triageResult.recommended_action_window}\n\n${triageResult.emergency_summary_kor}`,
+        content: `응급도 평가 완료.\n\nTriage Score: ${triageResult.triage_score}/5\n응급도: ${triageResult.triage_level}\n시급성: ${triageResult.recommended_action_window}\n\n${triageResult.emergency_summary_kor}\n\n💾 Data Agent님, 진단서 작성 부탁드려요!`,
         timestamp: Date.now()
       });
       onLogReceived(logs[logs.length - 1]);
@@ -121,9 +165,11 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '데이터 처리자',
       icon: '💾',
       type: 'data',
-      content: '진료 기록 생성 중...',
+      content: 'Triage Engine님, 네! 진료 기록 정리 시작하겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     opsResult = await callOpsAgent(
       petData, 
@@ -146,15 +192,29 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Data Agent가 Care Agent에게 요청
+    onLogReceived({
+      agent: 'Data Agent',
+      role: '데이터 처리자',
+      icon: '💾',
+      type: 'data',
+      content: '💊 Care Agent님, 홈케어 가이드 작성 부탁드려요!',
+      timestamp: Date.now()
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     // 6. Care Agent (Gemini Pro)
     onLogReceived({
       agent: 'Care Agent',
       role: '케어 플래너',
       icon: '💊',
       type: 'care',
-      content: '홈케어 가이드 작성 중...',
+      content: 'Data Agent님, 네! 보호자님께 도움이 되는 케어 가이드 작성하겠습니다.',
       timestamp: Date.now()
     });
+
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     careResult = await callCareAgent(
       petData, 
@@ -172,6 +232,18 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
     onLogReceived(logs[logs.length - 1]);
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    // 최종 완료 메시지
+    onLogReceived({
+      agent: 'CS Agent',
+      role: '상담 간호사',
+      icon: '💬',
+      type: 'cs',
+      content: '✅ 모든 에이전트 협업 완료! 진단서가 준비되었습니다.',
+      timestamp: Date.now()
+    });
 
     // 최종 진단서 생성
     const medicalLog = opsResult.json.medical_log;

@@ -1,0 +1,238 @@
+import { useState } from 'react';
+
+export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPacket, onBack, onEdit, onSend, onSave }) {
+  const [requestNote, setRequestNote] = useState('');
+
+  if (!petData || !diagnosis || !hospital) {
+    return null;
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getTriageColor = (score) => {
+    if (score >= 4) return 'text-red-600 bg-red-100';
+    if (score >= 3) return 'text-orange-600 bg-orange-100';
+    if (score >= 2) return 'text-yellow-600 bg-yellow-100';
+    return 'text-green-600 bg-green-100';
+  };
+
+  const getTriageLabel = (score) => {
+    if (score >= 4) return '응급';
+    if (score >= 3) return '주의';
+    if (score >= 2) return '경미';
+    return '정상';
+  };
+
+  return (
+    <div className="min-h-screen bg-background-light">
+      {/* Header */}
+      <div className="flex items-center bg-background-light/80 p-4 pb-2 justify-between sticky top-0 z-10 backdrop-blur-sm">
+        <div className="flex size-12 shrink-0 items-center text-slate-800">
+          <button onClick={onBack} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-full">
+            <span className="material-symbols-outlined text-3xl">arrow_back_ios_new</span>
+          </button>
+        </div>
+        <h2 className="text-slate-800 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center font-display">진단서 검토</h2>
+        <div className="flex size-12 shrink-0 items-center justify-end">
+          <span className="material-symbols-outlined text-3xl text-slate-400">more_horiz</span>
+        </div>
+      </div>
+
+      <div className="px-4 pt-6 pb-40">
+        {/* Welcome Message */}
+        <div className="flex items-center gap-3 px-1 pt-2 pb-6">
+          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+            <span className="text-2xl">{petData.species === 'dog' ? '🐕' : '🐈'}</span>
+          </div>
+          <div>
+            <h1 className="text-slate-900 text-[32px] font-bold leading-tight tracking-tight font-display">확인해주세요!</h1>
+            <p className="text-slate-500 text-base font-normal leading-normal">이 내용이 사전진단으로 병원에 전송돼요.</p>
+          </div>
+        </div>
+
+        {/* 선택한 병원 정보 */}
+        <div className="mb-6 rounded-lg bg-surface-light p-4 shadow-soft">
+          <h3 className="text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 font-display">선택한 병원 정보</h3>
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center rounded-lg bg-primary/20 shrink-0 size-12 text-primary">
+                <span className="material-symbols-outlined text-3xl">local_hospital</span>
+              </div>
+              <div>
+                <p className="text-slate-800 text-base font-medium leading-normal">{hospital.name}</p>
+                <p className="text-slate-500 text-sm font-normal leading-normal">{hospital.distance ? `${(hospital.distance / 1000).toFixed(1)}km` : ''}</p>
+              </div>
+            </div>
+            {hospital.phone && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center shrink-0 size-12">
+                  <span className="material-symbols-outlined text-slate-400 text-3xl">call</span>
+                </div>
+                <p className="text-slate-800 text-base font-normal leading-normal flex-1">{hospital.phone}</p>
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center shrink-0 size-12">
+                <span className="material-symbols-outlined text-slate-400 text-3xl">location_on</span>
+              </div>
+              <p className="text-slate-800 text-base font-normal leading-normal flex-1">{hospital.roadAddress || hospital.address}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 반려동물 정보 */}
+        <div className="mb-6 rounded-lg bg-surface-light p-4 shadow-soft">
+          <h3 className="flex items-center gap-2 text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 font-display">
+            <span className="material-symbols-outlined text-secondary">pets</span>
+            <span>반려동물 정보</span>
+          </h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">이름</span>
+              <span className="text-slate-800 font-medium">{petData.petName}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">품종</span>
+              <span className="text-slate-800 font-medium">{petData.breed || '미등록'}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">나이</span>
+              <span className="text-slate-800 font-medium">
+                {petData.birthDate ? (() => {
+                  const birth = new Date(petData.birthDate);
+                  const today = new Date();
+                  const age = today.getFullYear() - birth.getFullYear();
+                  return `${age}세`;
+                })() : '미등록'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">성별</span>
+              <span className="text-slate-800 font-medium">
+                {petData.sex === 'M' ? '수컷' : petData.sex === 'F' ? '암컷' : '미등록'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm text-slate-500">중성화</span>
+              <span className="text-slate-800 font-medium">{petData.neutered ? '완료' : '미완료'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 방문 이유 & 증상 타임라인 */}
+        {diagnosis.symptom && (
+          <div className="mb-6 rounded-lg bg-surface-light p-4 shadow-soft">
+            <h3 className="flex items-center gap-2 text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 font-display">
+              <span className="material-symbols-outlined text-secondary">history</span>
+              <span>방문 이유 & 증상 타임라인</span>
+            </h3>
+            <p className="text-slate-800 font-medium pb-3">{diagnosis.symptom}</p>
+            {diagnosis.symptomTimeline && diagnosis.symptomTimeline.length > 0 ? (
+              <ul className="space-y-2 pl-1">
+                {diagnosis.symptomTimeline.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3 text-slate-600">
+                    <span className="material-symbols-outlined text-base mt-1 text-primary">check_circle</span>
+                    <p>{item}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-600 text-sm">증상 타임라인 정보가 없습니다.</p>
+            )}
+          </div>
+        )}
+
+        {/* AI 감별진단 요약 */}
+        {diagnosis.possible_diseases && diagnosis.possible_diseases.length > 0 && (
+          <div className="mb-6 rounded-lg bg-surface-light p-4 shadow-soft">
+            <h3 className="flex items-center gap-2 text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 font-display">
+              <span className="material-symbols-outlined text-secondary">smart_toy</span>
+              <span>AI 감별진단 요약</span>
+            </h3>
+            <div className="space-y-3">
+              {diagnosis.possible_diseases.map((disease, idx) => (
+                <div key={idx} className={`rounded-lg border border-slate-200 p-3 ${idx === 0 ? 'bg-slate-50/50' : ''}`}>
+                  <div className="flex justify-between items-center">
+                    <p className="text-base font-semibold text-slate-900">{disease.name || disease}</p>
+                    <p className={`text-lg font-bold ${idx === 0 ? 'text-primary' : idx === 1 ? 'text-primary/70' : 'text-primary/50'}`}>
+                      {disease.probability || disease.probability_percent || 'N/A'}%
+                    </p>
+                  </div>
+                  {disease.related_area && (
+                    <p className="text-sm text-slate-500">관련 부위: {disease.related_area}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 응급도 */}
+        {diagnosis.triage_score !== undefined && (
+          <div className={`mb-6 rounded-lg p-4 border ${getTriageColor(diagnosis.triage_score)}`}>
+            <div className="flex items-start gap-3">
+              <span className="material-symbols-outlined text-3xl">warning</span>
+              <div>
+                <h3 className={`text-lg font-bold leading-tight ${getTriageColor(diagnosis.triage_score).split(' ')[0]}`}>
+                  응급도: {getTriageLabel(diagnosis.triage_score)}
+                </h3>
+                <p className="text-slate-700 mt-1">{diagnosis.triage_note || '지속적인 모니터링이 필요해요.'}</p>
+                <p className="text-slate-800 mt-3 font-semibold">
+                  권장 조치: {diagnosis.hospitalVisitTime || '24시간 이내'} 병원 방문
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 병원에 요청사항 */}
+        <div className="mb-6 rounded-lg bg-surface-light p-4 shadow-soft">
+          <h3 className="flex items-center gap-2 text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em] pb-4 font-display">
+            <span className="material-symbols-outlined text-secondary">edit_note</span>
+            <span>병원에 요청사항</span>
+          </h3>
+          <textarea
+            className="w-full rounded-lg border-slate-300 bg-slate-100 text-slate-900 focus:ring-primary focus:border-primary p-3 text-base"
+            rows="4"
+            placeholder="기본 혈액 검사와 복부 초음파를 요청합니다. 필요시 진통제 및 소염제 처치도 부탁드립니다."
+            value={requestNote}
+            onChange={(e) => setRequestNote(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Bottom Buttons */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-sm p-4 border-t border-slate-200">
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={onEdit}
+            className="w-full bg-slate-200 text-slate-700 font-bold py-4 px-6 rounded-lg text-base hover:bg-slate-300 transition-colors"
+          >
+            내용 수정하기
+          </button>
+          <button
+            onClick={() => onSend && onSend({ ...hospitalPacket, requestNote })}
+            className="w-full bg-primary text-white font-bold py-4 px-6 rounded-lg text-base hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
+          >
+            병원에 전송하기
+          </button>
+          <button
+            onClick={() => onSave && onSave({ ...hospitalPacket, requestNote })}
+            className="w-full text-slate-500 font-medium py-2 px-6 rounded-lg text-sm hover:text-slate-700 transition-colors"
+          >
+            진단서만 저장하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

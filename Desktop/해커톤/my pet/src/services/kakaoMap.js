@@ -131,6 +131,10 @@ function getMockHospitals(lat, lng) {
       category: '동물병원',
       url: '',
       is24Hours: true,
+      rating: 4.7,
+      reviewCount: 128,
+      homepage: null,
+      businessHours: null,
     },
     {
       id: 'h2',
@@ -144,6 +148,10 @@ function getMockHospitals(lat, lng) {
       category: '동물병원',
       url: '',
       is24Hours: false,
+      rating: 4.9,
+      reviewCount: 254,
+      homepage: null,
+      businessHours: null,
     },
     {
       id: 'h3',
@@ -157,6 +165,10 @@ function getMockHospitals(lat, lng) {
       category: '동물병원',
       url: '',
       is24Hours: false,
+      rating: 4.8,
+      reviewCount: 188,
+      homepage: null,
+      businessHours: null,
     },
   ];
 }

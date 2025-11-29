@@ -16,11 +16,40 @@ import "./Avatar.css";
 export function Avatar({ pet, healthFlags = {}, size = "md" }) {
   const { name, species, breed } = pet || {};
 
-  // 종별 기본 이모지 (나중에 이미지로 교체)
-  const baseEmoji =
-    species === "dog" ? "🐶" :
-    species === "cat" ? "🐱" :
-    "🐾";
+  // 건강 상태에 따른 캐릭터 이모지 결정
+  const getHealthEmoji = () => {
+    const hasIssue = healthFlags.earIssue || healthFlags.digestionIssue || 
+                     healthFlags.skinIssue || healthFlags.fever;
+    const energyLevel = healthFlags.energyLevel || 1;
+    
+    // 아픈 상태
+    if (hasIssue || energyLevel < 0.4) {
+      if (species === "dog") {
+        if (healthFlags.earIssue) return "😟"; // 귀 아픔
+        if (healthFlags.digestionIssue) return "🤢"; // 소화 문제
+        if (healthFlags.skinIssue) return "😰"; // 피부 문제
+        if (healthFlags.fever) return "🤒"; // 발열
+        return "😴"; // 피곤함
+      } else if (species === "cat") {
+        if (healthFlags.earIssue) return "😿"; // 귀 아픔
+        if (healthFlags.digestionIssue) return "🤮"; // 소화 문제
+        if (healthFlags.skinIssue) return "😾"; // 피부 문제
+        if (healthFlags.fever) return "🤧"; // 발열
+        return "😪"; // 피곤함
+      }
+      return "😔"; // 기타
+    }
+    
+    // 회복 중 (에너지 레벨이 중간)
+    if (energyLevel >= 0.4 && energyLevel < 0.7) {
+      return species === "dog" ? "🙂" : species === "cat" ? "😼" : "😊";
+    }
+    
+    // 건강한 상태
+    return species === "dog" ? "🐶" : species === "cat" ? "🐱" : "🐾";
+  };
+
+  const baseEmoji = getHealthEmoji();
 
   // 품종에 따라 살짝 스타일 텍스트
   const breedLabel = (() => {
@@ -53,11 +82,49 @@ export function Avatar({ pet, healthFlags = {}, size = "md" }) {
 
   const sizeClass = size === "lg" ? "avatar-card-lg" : "avatar-card-md";
 
+  // 건강 상태에 따른 애니메이션 클래스
+  const healthStatus = (() => {
+    const hasIssue = healthFlags.earIssue || healthFlags.digestionIssue || 
+                     healthFlags.skinIssue || healthFlags.fever;
+    const energyLevel = healthFlags.energyLevel || 1;
+    
+    if (hasIssue || energyLevel < 0.4) return 'sick';
+    if (energyLevel >= 0.4 && energyLevel < 0.7) return 'recovering';
+    return 'healthy';
+  })();
+
+  // 건강 게이지 계산 (0~100%)
+  const healthGauge = Math.round((healthFlags.energyLevel || 1) * 100);
+  const gaugeColor = healthGauge >= 70 ? '#4ade80' : healthGauge >= 40 ? '#fbbf24' : '#f87171';
+
   return (
-    <div className={`avatar-card ${sizeClass}`}>
+    <div className={`avatar-card ${sizeClass} avatar-${healthStatus}`}>
       <div className="avatar-emoji-wrapper">
-        <div className="avatar-emoji">{baseEmoji}</div>
-        {/* 건강 상태에 따라 작은 아이콘 겹치기 (나중에 레이어 이미지로 교체 가능) */}
+        <div className={`avatar-emoji ${healthStatus === 'sick' ? 'sick-animation' : healthStatus === 'recovering' ? 'recovering-animation' : 'healthy-animation'}`}>
+          {baseEmoji}
+        </div>
+        {/* 부위별 하이라이트 레이어 */}
+        {healthFlags.earIssue && (
+          <div className="avatar-health-layer avatar-layer-ear">
+            <div className="health-highlight-ear"></div>
+          </div>
+        )}
+        {healthFlags.digestionIssue && (
+          <div className="avatar-health-layer avatar-layer-belly">
+            <div className="health-highlight-belly"></div>
+          </div>
+        )}
+        {healthFlags.skinIssue && (
+          <div className="avatar-health-layer avatar-layer-skin">
+            <div className="health-highlight-skin"></div>
+          </div>
+        )}
+        {healthFlags.fever && (
+          <div className="avatar-health-layer avatar-layer-fever">
+            <div className="health-highlight-fever"></div>
+          </div>
+        )}
+        {/* 건강 상태에 따라 작은 아이콘 겹치기 */}
         {healthFlags.earIssue && <div className="avatar-tag avatar-tag-ear">👂</div>}
         {healthFlags.digestionIssue && <div className="avatar-tag avatar-tag-belly">🤢</div>}
         {healthFlags.skinIssue && <div className="avatar-tag avatar-tag-skin">🩹</div>}
@@ -67,6 +134,23 @@ export function Avatar({ pet, healthFlags = {}, size = "md" }) {
       <div className="avatar-info">
         <div className="avatar-name">{name || "이름 없음"}</div>
         <div className="avatar-breed">{breedLabel}</div>
+        
+        {/* 건강 게이지 */}
+        <div className="avatar-health-gauge">
+          <div className="gauge-label">건강 게이지</div>
+          <div className="gauge-bar">
+            <div 
+              className="gauge-fill" 
+              style={{ 
+                width: `${healthGauge}%`, 
+                backgroundColor: gaugeColor,
+                transition: 'width 0.5s ease, background-color 0.5s ease'
+              }}
+            ></div>
+          </div>
+          <div className="gauge-value">{healthGauge}%</div>
+        </div>
+
         <div className="avatar-energy">{energyLabel}</div>
 
         {statusBadges.length > 0 && (

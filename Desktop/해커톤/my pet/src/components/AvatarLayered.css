@@ -1,0 +1,384 @@
+/* 디지털 트윈 아바타 - 레이어 기반 스타일 */
+
+.avatar-layered-card {
+  background: linear-gradient(135deg, #f9f5ff 0%, #e3f2fd 100%);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.avatar-layered-md {
+  max-width: 320px;
+}
+
+.avatar-layered-lg {
+  max-width: 420px;
+}
+
+/* 건강 상태별 배경 */
+.avatar-layered-card.avatar-sick {
+  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+  border: 2px solid #fecaca;
+}
+
+.avatar-layered-card.avatar-recovering {
+  background: linear-gradient(135deg, #fffbf0 0%, #fef3c7 100%);
+  border: 2px solid #fde68a;
+}
+
+.avatar-layered-card.avatar-healthy {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #bbf7d0;
+}
+
+/* 레이어 컨테이너 */
+.avatar-layered-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+}
+
+/* 기본 캐릭터 레이어 */
+.avatar-base-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.avatar-base-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+
+.avatar-emoji-fallback {
+  font-size: 64px;
+  line-height: 1;
+}
+
+/* 품종별 레이어 */
+.avatar-breed-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.avatar-breed-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+}
+
+/* 귀 레이어 위치 조정 */
+.avatar-ear-layer {
+  z-index: 3;
+}
+
+/* 색상 필터 */
+.avatar-color-filter {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+
+.avatar-color-white {
+  background: rgba(255, 255, 255, 0.3);
+  mix-blend-mode: lighten;
+}
+
+.avatar-color-brown {
+  background: rgba(139, 69, 19, 0.4);
+}
+
+.avatar-color-gray {
+  background: rgba(128, 128, 128, 0.4);
+}
+
+/* 건강 상태 레이어 */
+.avatar-health-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.avatar-health-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+  animation: health-pulse 2s ease-in-out infinite;
+}
+
+/* 건강 레이어별 위치 조정 */
+.avatar-health-ear {
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 40%;
+}
+
+.avatar-health-belly {
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 35%;
+}
+
+.avatar-health-skin {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+}
+
+.avatar-health-fever {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  opacity: 0.5;
+}
+
+.avatar-health-tired {
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 30%;
+}
+
+/* PNG가 없을 때 CSS fallback */
+.avatar-health-layer.health-fallback {
+  border-radius: 50%;
+  animation: health-pulse 2s ease-in-out infinite;
+}
+
+.avatar-health-ear.health-fallback {
+  background: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 40%;
+}
+
+.avatar-health-belly.health-fallback {
+  background: rgba(234, 179, 8, 0.3);
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.5);
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 35%;
+}
+
+.avatar-health-skin.health-fallback {
+  background: rgba(251, 146, 60, 0.3);
+  box-shadow: 0 0 20px rgba(251, 146, 60, 0.5);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+}
+
+.avatar-health-fever.health-fallback {
+  background: rgba(220, 38, 38, 0.3);
+  box-shadow: 0 0 30px rgba(220, 38, 38, 0.6);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+}
+
+.avatar-health-tired.health-fallback {
+  background: rgba(107, 114, 128, 0.3);
+  box-shadow: 0 0 15px rgba(107, 114, 128, 0.4);
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 30%;
+}
+
+@keyframes health-pulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+/* 건강 태그 */
+.avatar-tag {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 10;
+  animation: tag-bounce 2s ease-in-out infinite;
+}
+
+.avatar-tag-ear {
+  top: -6px;
+  right: -6px;
+}
+
+.avatar-tag-belly {
+  bottom: -6px;
+  right: 0;
+}
+
+.avatar-tag-skin {
+  bottom: -6px;
+  left: 0;
+}
+
+.avatar-tag-fever {
+  top: -6px;
+  left: -6px;
+}
+
+@keyframes tag-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* 정보 영역 */
+.avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.avatar-name {
+  font-weight: 700;
+  font-size: 18px;
+  color: #333;
+}
+
+.avatar-breed {
+  font-size: 13px;
+  color: #666;
+}
+
+/* 건강 게이지 */
+.avatar-health-gauge {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.gauge-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.gauge-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+.gauge-value {
+  text-align: right;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+}
+
+/* 상태 뱃지 */
+.avatar-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.avatar-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #0369a1;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .avatar-layered-container {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .avatar-emoji-fallback {
+    font-size: 56px;
+  }
+}
+

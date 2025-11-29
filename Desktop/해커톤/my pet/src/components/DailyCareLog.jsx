@@ -5,6 +5,7 @@ import { loadDailyLog, saveDailyLog, getTodayKey } from "../lib/careLogs";
 
 export function DailyCareLog({ pet }) {
   const [log, setLog] = useState(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!pet) return;
@@ -18,7 +19,13 @@ export function DailyCareLog({ pet }) {
   const updateField = (field, value) => {
     const updated = { ...log, [field]: value };
     setLog(updated);
-    saveDailyLog(pet.id, updated);
+    // 자동 저장은 제거하고 저장 버튼으로만 저장
+  };
+
+  const handleSave = () => {
+    saveDailyLog(pet.id, log);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const inc = (field) => {
@@ -91,6 +98,15 @@ export function DailyCareLog({ pet }) {
           className="carelog-textarea"
           placeholder="오늘 아이 상태를 간단히 적어주세요."
         />
+      </div>
+
+      <div className="carelog-save-section">
+        <button 
+          onClick={handleSave}
+          className={`carelog-save-btn ${saved ? 'saved' : ''}`}
+        >
+          {saved ? '✓ 저장되었습니다!' : '💾 저장하기'}
+        </button>
       </div>
     </div>
   );

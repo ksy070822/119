@@ -27,15 +27,29 @@ export async function analyzeCarePatternWithGemini(pet, days = 7) {
   }
 
   const systemPrompt = `당신은 반려동물 건강 패턴 분석 AI입니다.
-아래 ${days}일치 케어 로그를 보고, 건강상태 플래그를 JSON으로만 출력하세요.
+아래 ${days}일치 케어 로그를 보고, 패턴 변화를 감지하고 건강상태 플래그와 예측을 JSON으로만 출력하세요.
 
-health_flags 형식:
+출력 형식:
 {
-  "earIssue": boolean,        // 귀 문제 의심되면 true
-  "digestionIssue": boolean,  // 구토/설사/배변 이상 시 true
-  "skinIssue": boolean,       // 가려움/피부 트러블 의심시 true
-  "energyLevel": number,      // 0~1 사이 값 (0=매우 무기력, 1=매우 활발)
-  "fever": boolean            // 발열 의심시 true
+  "health_flags": {
+    "earIssue": boolean,
+    "digestionIssue": boolean,
+    "skinIssue": boolean,
+    "energyLevel": number,  // 0~1
+    "fever": boolean
+  },
+  "patterns": [
+    "패턴 변화 설명 1",
+    "패턴 변화 설명 2"
+  ],
+  "predictions": [
+    "다음 3일 예측 1",
+    "다음 3일 예측 2"
+  ],
+  "risk_changes": {
+    "description": "위험도 변화 설명",
+    "trend": "up" | "down" | "stable"
+  }
 }
 
 꼭 JSON만 출력하세요. 설명 문장은 쓰지 마세요.`;
@@ -48,7 +62,12 @@ health_flags 형식:
 최근 ${logs.length}일 케어 로그:
 ${logs.map(l => `- ${l.date}: 밥 ${l.mealCount || 0}회, 물 ${l.waterCount || 0}회, 산책 ${l.walkCount || 0}회, 배변 ${l.poopCount || 0}회, 체중 ${l.weight || "?"}kg, 메모: ${l.note || "없음"}`).join("\n")}
 
-위 로그를 분석하여 health_flags JSON을 출력하세요.`;
+위 로그를 분석하여:
+1. 패턴 변화 감지 (예: "최근 3일간 활동량 20% 감소", "배변 패턴이 불규칙해짐")
+2. 다음 3일 예측 (예: "활동량 증가 필요", "소화기 건강 주의")
+3. health_flags 생성
+
+JSON으로 출력하세요.`;
 
   try {
     const response = await fetch(
@@ -80,6 +99,15 @@ ${logs.map(l => `- ${l.date}: 밥 ${l.mealCount || 0}회, 물 ${l.waterCount || 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
+      // health_flags를 최상위로 올리기 (하위에 있을 경우)
+      if (parsed.health_flags) {
+        return {
+          ...parsed.health_flags,
+          patterns: parsed.patterns || [],
+          predictions: parsed.predictions || [],
+          risk_changes: parsed.risk_changes || null
+        };
+      }
       return parsed;
     }
     
