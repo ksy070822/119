@@ -267,7 +267,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
   }
 
   return (
-    <div className="min-h-screen bg-background-light">
+    <div className="hospital-booking-page">
       {/* Header */}
       <div className="flex items-center bg-background-light/80 p-4 pb-2 justify-between sticky top-0 z-10 backdrop-blur-sm">
         <div className="flex size-12 shrink-0 items-center text-slate-800">
@@ -467,34 +467,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         </div>
       </div>
 
-      {/* 예약 완료 모달 */}
-      {selectedHospital && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-xl">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-              ✅
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">예약 요청 완료!</h2>
-            <p className="text-gray-600 mb-6">
-              <span className="font-bold text-gray-800">{selectedHospital.name}</span>으로<br/>
-              AI 진단 패킷이 전송되었습니다.
-            </p>
-            <div className="bg-gray-50 p-4 rounded-xl mb-6 text-left text-sm border border-gray-100">
-              <p className="mb-1"><strong>보낸 내용:</strong> {hospitalPacket?.packet_json?.packet_title || 'AI 진단 요약'}</p>
-              <p><strong>병원 연락처:</strong> {selectedHospital.phone || '정보 없음'}</p>
-            </div>
-            <button 
-              onClick={() => {
-                setSelectedHospital(null);
-                onBack();
-              }}
-              className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold shadow-lg shadow-teal-200 hover:bg-teal-700 transition-colors"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 예약 완료 모달 - App.jsx의 hospital-review 화면에서 처리됨 */}
     </div>
   );
 }
