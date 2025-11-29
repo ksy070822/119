@@ -22,6 +22,8 @@ import { callCareAgent } from './src/services/ai/careAgent'
 import { CareActionButton } from './src/components/CareActionButton'
 import { loadDailyLog, saveDailyLog, getTodayKey } from './src/lib/careLogs'
 import DiagnosisReport from './src/components/DiagnosisReport'
+import { initializeDummyData, DUMMY_PETS, DUMMY_MEDICAL_RECORDS } from './src/lib/dummyData'
+import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -86,6 +88,26 @@ const calculateAge = (birthDate) => {
   return `${age}세`;
 };
 
+// ============ 캐릭터 옵션 ============
+const PET_CHARACTERS = {
+  dog: [
+    { id: 'dog_white', emoji: '🐶', label: '흰색 강아지', color: '#F5F5F5' },
+    { id: 'dog_brown', emoji: '🐕', label: '갈색 강아지', color: '#8B4513' },
+    { id: 'dog_golden', emoji: '🦮', label: '골든 리트리버', color: '#DAA520' },
+    { id: 'dog_poodle', emoji: '🐩', label: '푸들', color: '#FFB6C1' },
+    { id: 'dog_shiba', emoji: '🐕‍🦺', label: '시바이누', color: '#D2691E' },
+    { id: 'dog_husky', emoji: '🐺', label: '허스키', color: '#708090' },
+  ],
+  cat: [
+    { id: 'cat_orange', emoji: '🐱', label: '치즈 고양이', color: '#FFA500' },
+    { id: 'cat_black', emoji: '🐈‍⬛', label: '검은 고양이', color: '#2C2C2C' },
+    { id: 'cat_white', emoji: '🐈', label: '흰 고양이', color: '#FFFAFA' },
+    { id: 'cat_gray', emoji: '😺', label: '회색 고양이', color: '#808080' },
+    { id: 'cat_calico', emoji: '😸', label: '삼색 고양이', color: '#FFE4B5' },
+    { id: 'cat_siamese', emoji: '😻', label: '샴 고양이', color: '#D2B48C' },
+  ]
+};
+
 // ============ 프로필 등록 화면 ============
 function ProfileRegistration({ onComplete }) {
   const [formData, setFormData] = useState({
@@ -96,11 +118,40 @@ function ProfileRegistration({ onComplete }) {
     sex: 'M',
     neutered: true,
     sido: '',
-    sigungu: ''
+    sigungu: '',
+    profileImage: null,
+    character: 'dog_white'
   });
-  
+
   const [loading, setLoading] = useState(false);
-  
+  const [previewImage, setPreviewImage] = useState(null);
+
+  // 이미지 업로드 핸들러
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // 파일 크기 체크 (5MB 이하)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('이미지 크기는 5MB 이하여야 합니다.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setPreviewImage(base64);
+        setFormData(prev => ({ ...prev, profileImage: base64 }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 종류 변경시 캐릭터도 변경
+  const handleSpeciesChange = (species) => {
+    const defaultCharacter = species === 'dog' ? 'dog_white' : 'cat_orange';
+    setFormData(prev => ({ ...prev, species, character: defaultCharacter }));
+  };
+
   const regions = {
     '서울특별시': ['강남구', '강동구', '강북구', '강서구', '관악구'],
     '경기도': ['수원시', '성남시', '고양시', '용인시'],
@@ -139,6 +190,73 @@ function ProfileRegistration({ onComplete }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="registration-form">
+            {/* 프로필 사진/캐릭터 선택 */}
+            <div className="form-group">
+              <label>프로필 사진 또는 캐릭터 *</label>
+              <div className="profile-selector">
+                {/* 프로필 이미지 미리보기 */}
+                <div className="profile-preview-container">
+                  {previewImage ? (
+                    <div className="profile-preview">
+                      <img src={previewImage} alt="프로필 미리보기" />
+                      <button
+                        type="button"
+                        className="remove-image-btn"
+                        onClick={() => {
+                          setPreviewImage(null);
+                          setFormData(prev => ({ ...prev, profileImage: null }));
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className="profile-preview character"
+                      style={{ backgroundColor: PET_CHARACTERS[formData.species].find(c => c.id === formData.character)?.color + '40' }}
+                    >
+                      <span className="character-emoji">
+                        {PET_CHARACTERS[formData.species].find(c => c.id === formData.character)?.emoji}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 사진 업로드 버튼 */}
+                <div className="profile-options">
+                  <label className="upload-btn">
+                    📷 사진 업로드
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                  <span className="or-text">또는</span>
+                </div>
+
+                {/* 캐릭터 선택 */}
+                <div className="character-grid">
+                  {PET_CHARACTERS[formData.species].map(char => (
+                    <button
+                      key={char.id}
+                      type="button"
+                      className={`character-btn ${formData.character === char.id && !previewImage ? 'active' : ''}`}
+                      onClick={() => {
+                        setPreviewImage(null);
+                        setFormData(prev => ({ ...prev, profileImage: null, character: char.id }));
+                      }}
+                      style={{ backgroundColor: char.color + '40' }}
+                    >
+                      <span className="char-emoji">{char.emoji}</span>
+                      <span className="char-label">{char.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="form-group">
               <label>반려동물 이름 *</label>
               <input
@@ -149,7 +267,7 @@ function ProfileRegistration({ onComplete }) {
                 onChange={(e) => setFormData({...formData, petName: e.target.value})}
               />
             </div>
-            
+
             <div className="form-group">
               <label>종류 *</label>
               <div className="radio-group">
@@ -160,7 +278,7 @@ function ProfileRegistration({ onComplete }) {
                     name="species"
                     value="dog"
                     checked={formData.species === 'dog'}
-                    onChange={(e) => setFormData({...formData, species: e.target.value})}
+                    onChange={(e) => handleSpeciesChange(e.target.value)}
                   />
                   <label htmlFor="dog">🐕 개</label>
                 </div>
@@ -171,7 +289,7 @@ function ProfileRegistration({ onComplete }) {
                     name="species"
                     value="cat"
                     checked={formData.species === 'cat'}
-                    onChange={(e) => setFormData({...formData, species: e.target.value})}
+                    onChange={(e) => handleSpeciesChange(e.target.value)}
                   />
                   <label htmlFor="cat">🐈 고양이</label>
                 </div>
@@ -2115,6 +2233,10 @@ const getEmergencyColor = (emergency) => {
 
 // ============ 메인 앱 ============
 function App() {
+  // 인증 상태
+  const [authScreen, setAuthScreen] = useState('login'); // 'login', 'register', null (로그인됨)
+  const [currentUser, setCurrentUser] = useState(null);
+
   const [currentTab, setCurrentTab] = useState('care');
   const [currentView, setCurrentView] = useState(null); // 모달/서브 화면용
   const [petData, setPetData] = useState(null);
@@ -2125,6 +2247,16 @@ function App() {
   const [hospitalPacket, setHospitalPacket] = useState(null);
 
   useEffect(() => {
+    // 기존 로그인 세션 확인
+    const savedSession = getAuthSession();
+    if (savedSession) {
+      setCurrentUser(savedSession);
+      setAuthScreen(null);
+    }
+
+    // 더미데이터 초기화 (처음 실행시에만)
+    initializeDummyData();
+
     const savedPets = getPetsFromStorage();
     setPets(savedPets);
 
@@ -2135,6 +2267,50 @@ function App() {
     // 등록 화면 없이 바로 대시보드로 (등록은 마이페이지에서)
     setCurrentTab('care');
   }, []);
+
+  // 로그인 성공 핸들러
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    setAuthScreen(null);
+  };
+
+  // 회원가입 성공 핸들러
+  const handleRegister = (user) => {
+    setCurrentUser(user);
+    setAuthScreen(null);
+  };
+
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    clearAuthSession();
+    setCurrentUser(null);
+    setAuthScreen('login');
+  };
+
+  // 로그인 없이 바로 입장 (테스트용)
+  const handleSkipLogin = () => {
+    setAuthScreen(null);
+  };
+
+  // 인증 화면 렌더링
+  if (authScreen === 'login') {
+    return (
+      <LoginScreen
+        onLogin={handleLogin}
+        onGoToRegister={() => setAuthScreen('register')}
+        onSkipLogin={handleSkipLogin}
+      />
+    );
+  }
+
+  if (authScreen === 'register') {
+    return (
+      <RegisterScreen
+        onRegister={handleRegister}
+        onGoToLogin={() => setAuthScreen('login')}
+      />
+    );
+  }
 
   const handleRegistrationComplete = (data) => {
     const updatedPets = getPetsFromStorage();
@@ -2333,77 +2509,127 @@ function App() {
       )}
 
       {currentView === 'diagnosis-view' && petData && lastDiagnosis && (
-        <div className="diagnosis-view-container">
-          <button className="back-btn" onClick={() => setCurrentView('mypage')}>← 뒤로</button>
-          <div className="diagnosis-result">
-            <div className="result-header">
-              <h2>✅ 진단서</h2>
-              <p className="result-date">
-                {new Date(lastDiagnosis.created_at || lastDiagnosis.date).toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
+        <div className="page-container">
+          {/* Header */}
+          <div className="page-header">
+            <div className="flex size-12 shrink-0 items-center">
+              <button onClick={() => setCurrentView('mypage')} className="p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-full">
+                <span className="material-symbols-outlined text-3xl">arrow_back_ios_new</span>
+              </button>
             </div>
-            
-            <div className="result-card">
-              <div className="result-section">
-                <h3>🎯 진단 결과</h3>
-                <p className="diagnosis-text">
-                  <strong>{lastDiagnosis.diagnosis || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상'}</strong>
-                </p>
-                <div
-                  className="emergency-badge"
-                  style={{
-                    backgroundColor: getEmergencyColor(lastDiagnosis.riskLevel || lastDiagnosis.emergency),
-                    color: 'white',
-                    padding: '10px 20px',
-                    borderRadius: '25px',
-                    display: 'inline-block',
-                    marginTop: '15px',
-                    fontSize: '14px',
-                    fontWeight: '600'
-                  }}
-                >
-                  {lastDiagnosis.riskLevel === 'Low' || lastDiagnosis.emergency === 'low' ? '🟢 경미' :
-                   lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? '🟡 보통' :
-                   lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? '🔴 응급' : '🟡 보통'}
-                </div>
-              </div>
-              
-              {lastDiagnosis.description && (
-                <div className="result-section">
-                  <h3>📋 상세 설명</h3>
-                  <p className="description-text">{lastDiagnosis.description}</p>
-                </div>
-              )}
-              
-              {lastDiagnosis.actions && lastDiagnosis.actions.length > 0 && (
-                <div className="result-section">
-                  <h3>💊 즉시 조치 사항</h3>
-                  <ul className="action-list">
-                    {lastDiagnosis.actions.map((action, idx) => (
-                      <li key={idx}>
-                        <span className="action-icon">✓</span>
-                        <span>{action}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            <h2 className="text-slate-800 text-lg font-bold flex-1 text-center">진단서 상세</h2>
+            <div className="flex size-12 shrink-0 items-center justify-end"></div>
+          </div>
 
-              {lastDiagnosis.hospitalVisit && (
-                <div className="result-section hospital-section">
-                  <h3>🏥 병원 방문 권장</h3>
-                  <div className="hospital-alert">
-                    <p className="hospital-time">
-                      <strong>{lastDiagnosis.hospitalVisitTime || '24시간 내'}</strong> 내 병원 방문을 권장합니다.
+          <div className="px-4 pt-4 pb-24 space-y-4">
+            {/* 진단 날짜 */}
+            <div className="text-center text-sm text-slate-500">
+              {new Date(lastDiagnosis.created_at || lastDiagnosis.date).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </div>
+
+            {/* 반려동물 정보 카드 */}
+            <div className="bg-surface-light rounded-lg p-4 shadow-soft border border-slate-200">
+              <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-3">
+                <span className="material-symbols-outlined text-primary">pets</span>
+                반려동물 정보
+              </h3>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl">
+                  {petData.species === 'dog' ? '🐕' : '🐈'}
+                </div>
+                <div className="flex-1 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-slate-500">이름</span>
+                    <p className="font-medium text-slate-900">{petData.petName || '미상'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">품종</span>
+                    <p className="font-medium text-slate-900">{petData.breed || '미상'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">나이</span>
+                    <p className="font-medium text-slate-900">
+                      {petData.birthDate ? (() => {
+                        const birth = new Date(petData.birthDate);
+                        const today = new Date();
+                        const age = today.getFullYear() - birth.getFullYear();
+                        return `${age}세`;
+                      })() : '미상'}
                     </p>
                   </div>
+                  <div>
+                    <span className="text-slate-500">체중</span>
+                    <p className="font-medium text-slate-900">{petData.weight ? `${petData.weight}kg` : '미상'}</p>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
+
+            {/* 진단 결과 카드 */}
+            <div className="bg-surface-light rounded-lg p-4 shadow-soft border border-slate-200">
+              <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-3">
+                <span className="material-symbols-outlined text-primary">diagnosis</span>
+                진단 결과
+              </h3>
+              <p className="text-lg font-semibold text-slate-900 mb-2">
+                {lastDiagnosis.diagnosis || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상'}
+              </p>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
+                lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? 'bg-red-100 text-red-600' :
+                lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                'bg-green-100 text-green-600'
+              }`}>
+                {lastDiagnosis.riskLevel === 'Low' || lastDiagnosis.emergency === 'low' ? '경미' :
+                 lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? '보통' :
+                 lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? '응급' : '보통'}
+              </span>
+            </div>
+
+            {/* 상세 설명 */}
+            {lastDiagnosis.description && (
+              <div className="bg-surface-light rounded-lg p-4 shadow-soft border border-slate-200">
+                <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-3">
+                  <span className="material-symbols-outlined text-primary">description</span>
+                  상세 설명
+                </h3>
+                <p className="text-slate-700 text-sm leading-relaxed">{lastDiagnosis.description}</p>
+              </div>
+            )}
+
+            {/* 조치 사항 */}
+            {lastDiagnosis.actions && lastDiagnosis.actions.length > 0 && (
+              <div className="bg-surface-light rounded-lg p-4 shadow-soft border border-slate-200">
+                <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-3">
+                  <span className="material-symbols-outlined text-primary">medication</span>
+                  즉시 조치 사항
+                </h3>
+                <ul className="space-y-2">
+                  {lastDiagnosis.actions.map((action, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="material-symbols-outlined text-green-500 text-base mt-0.5">check_circle</span>
+                      <span>{action}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 병원 방문 권장 */}
+            {lastDiagnosis.hospitalVisit && (
+              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                <h3 className="flex items-center gap-2 text-orange-800 font-bold mb-2">
+                  <span className="material-symbols-outlined">local_hospital</span>
+                  병원 방문 권장
+                </h3>
+                <p className="text-orange-700 text-sm">
+                  <strong>{lastDiagnosis.hospitalVisitTime || '24시간 내'}</strong> 병원 방문을 권장합니다.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2470,9 +2696,13 @@ function App() {
 
           {/* 기록보기 탭 */}
           {currentTab === 'records' && petData && (
-            <RecordsView 
+            <RecordsView
               petData={petData}
               onBack={() => setCurrentTab('care')}
+              onViewDiagnosis={(diagnosis) => {
+                setLastDiagnosis(diagnosis);
+                setCurrentView('diagnosis-view');
+              }}
             />
           )}
 
@@ -2496,17 +2726,74 @@ function App() {
             />
           )}
 
-          {/* 반려동물이 없을 때 */}
-          {!petData && currentTab && (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-              <div className="text-center">
-                <div className="text-6xl mb-4">🐾</div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">반려동물을 등록해주세요</h2>
+          {/* 반려동물이 없을 때 - care 탭에서만 등록 유도 */}
+          {!petData && currentTab === 'care' && (
+            <div className="page-container">
+              <div className="px-4 pt-8 pb-24">
+                <div className="text-center mb-8">
+                  <div className="text-6xl mb-4">🐾</div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">환영합니다!</h2>
+                  <p className="text-slate-600">반려동물을 등록하고 AI 건강 관리를 시작하세요</p>
+                </div>
+
+                {/* 기능 소개 카드들 */}
+                <div className="space-y-4 mb-8">
+                  <div className="bg-surface-light p-4 rounded-lg shadow-soft border border-slate-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-primary">smart_toy</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900">AI 증상 진단</h3>
+                        <p className="text-sm text-slate-600">증상을 입력하면 AI가 분석해드려요</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-surface-light p-4 rounded-lg shadow-soft border border-slate-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-accent">local_hospital</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900">병원 예약</h3>
+                        <p className="text-sm text-slate-600">주변 동물병원 검색 및 예약</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-surface-light p-4 rounded-lg shadow-soft border border-slate-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center">
+                        <span className="material-symbols-outlined text-secondary">monitor_heart</span>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900">건강 기록</h3>
+                        <p className="text-sm text-slate-600">일일 케어 및 건강 상태 추적</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <button
                   onClick={() => setCurrentView('registration')}
-                  className="mt-4 bg-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-teal-700 transition-colors"
+                  className="w-full bg-primary text-white px-6 py-4 rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
                 >
                   반려동물 등록하기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 반려동물 없이 다른 탭 접근 시 */}
+          {!petData && currentTab && currentTab !== 'care' && (
+            <div className="page-container flex items-center justify-center">
+              <div className="text-center p-4">
+                <div className="text-5xl mb-4">🐾</div>
+                <h2 className="text-lg font-bold text-slate-900 mb-2">반려동물을 먼저 등록해주세요</h2>
+                <button
+                  onClick={() => setCurrentView('registration')}
+                  className="mt-4 bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors"
+                >
+                  등록하러 가기
                 </button>
               </div>
             </div>
@@ -2514,10 +2801,10 @@ function App() {
         </div>
       )}
 
-      {/* 하단 탭 네비게이션 */}
-      {currentTab && petData && !currentView && (
-        <BottomTabNavigation 
-          currentTab={currentTab} 
+      {/* 하단 탭 네비게이션 - 반려동물 없어도 표시 */}
+      {currentTab && !currentView && (
+        <BottomTabNavigation
+          currentTab={currentTab}
           onTabChange={handleTabChange}
         />
       )}
