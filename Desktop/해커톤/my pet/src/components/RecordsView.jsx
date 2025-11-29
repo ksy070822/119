@@ -98,6 +98,54 @@ const DUMMY_CHECKUPS = [
   }
 ];
 
+// 더미 데이터 - 케어 기록
+const DUMMY_CARE_LOGS = [
+  {
+    id: 'care_1',
+    date: '2024-11-29',
+    meals: 3,
+    water: 4,
+    walks: 2,
+    treats: 2,
+    grooming: 1,
+    weight: 6.2,
+    notes: '오늘 산책 중 기분 좋아 보였어요!'
+  },
+  {
+    id: 'care_2',
+    date: '2024-11-28',
+    meals: 2,
+    water: 3,
+    walks: 1,
+    treats: 3,
+    grooming: 0,
+    weight: null,
+    notes: ''
+  },
+  {
+    id: 'care_3',
+    date: '2024-11-27',
+    meals: 3,
+    water: 5,
+    walks: 2,
+    treats: 1,
+    grooming: 1,
+    weight: 6.1,
+    notes: '목욕 완료'
+  },
+  {
+    id: 'care_4',
+    date: '2024-11-26',
+    meals: 2,
+    water: 4,
+    walks: 2,
+    treats: 2,
+    grooming: 0,
+    weight: null,
+    notes: ''
+  }
+];
+
 // 더미 데이터 - 예방접종
 const DUMMY_VACCINATIONS = [
   {
@@ -172,7 +220,8 @@ export function RecordsView({ petData, onBack, onViewDiagnosis }) {
     { id: 'visits', label: '방문이력', icon: 'local_hospital' },
     { id: 'medication', label: '의약품', icon: 'medication' },
     { id: 'checkup', label: '건강검진', icon: 'assignment' },
-    { id: 'vaccination', label: '예방접종', icon: 'vaccines' }
+    { id: 'vaccination', label: '예방접종', icon: 'vaccines' },
+    { id: 'care', label: '케어기록', icon: 'favorite' }
   ];
 
   // 방문이력 데이터 (실제 + 더미)
@@ -199,6 +248,9 @@ export function RecordsView({ petData, onBack, onViewDiagnosis }) {
 
   // 예방접종 기록
   const vaccinationRecords = useDummyData ? DUMMY_VACCINATIONS : [];
+
+  // 케어 기록
+  const careRecords = useDummyData ? DUMMY_CARE_LOGS : [];
 
   // 의약품 상태 카운트
   const effectiveMeds = medicationRecords.filter(m => m.status === 'effective').length;
@@ -232,12 +284,9 @@ export function RecordsView({ petData, onBack, onViewDiagnosis }) {
           </button>
         </div>
         <h2 className="text-slate-800 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center font-display">의료기록</h2>
-        <div className="flex size-12 shrink-0 items-center justify-end gap-2">
+        <div className="flex size-12 shrink-0 items-center justify-end">
           <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-full">
             <span className="material-symbols-outlined text-2xl">refresh</span>
-          </button>
-          <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-full">
-            <span className="material-symbols-outlined text-2xl">settings</span>
           </button>
         </div>
       </div>
@@ -504,6 +553,115 @@ export function RecordsView({ petData, onBack, onViewDiagnosis }) {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* 케어기록 */}
+        {activeTab === 'care' && (
+          <div className="space-y-4">
+            {/* 요약 카드 */}
+            <div className="bg-surface-light rounded-lg p-4 shadow-soft mb-4">
+              <h3 className="text-slate-900 font-bold text-base mb-3 font-display">이번 주 케어 현황</h3>
+              <div className="grid grid-cols-5 gap-2">
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🍚</div>
+                  <p className="text-xs text-slate-500">밥</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {careRecords.reduce((sum, r) => sum + (r.meals || 0), 0)}회
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">💧</div>
+                  <p className="text-xs text-slate-500">물</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {careRecords.reduce((sum, r) => sum + (r.water || 0), 0)}회
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🦮</div>
+                  <p className="text-xs text-slate-500">산책</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {careRecords.reduce((sum, r) => sum + (r.walks || 0), 0)}회
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🍖</div>
+                  <p className="text-xs text-slate-500">간식</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {careRecords.reduce((sum, r) => sum + (r.treats || 0), 0)}회
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">✨</div>
+                  <p className="text-xs text-slate-500">그루밍</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {careRecords.reduce((sum, r) => sum + (r.grooming || 0), 0)}회
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 일별 케어 기록 */}
+            <h3 className="text-slate-900 font-bold text-base mb-3 font-display">일별 기록</h3>
+            {careRecords.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4">📝</div>
+                <p className="text-slate-500">케어 기록이 없습니다.</p>
+                <p className="text-slate-400 text-sm mt-1">대시보드에서 케어 활동을 기록해보세요!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {careRecords.map(record => (
+                  <div key={record.id} className="bg-surface-light rounded-lg p-4 shadow-soft">
+                    <div className="flex justify-between items-start mb-3">
+                      <p className="text-slate-500 text-sm font-medium">{formatDateShort(record.date)}</p>
+                      {record.weight && (
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
+                          {record.weight}kg
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-4 text-sm">
+                      {record.meals > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">🍚</span>
+                          <span className="text-slate-700">{record.meals}</span>
+                        </span>
+                      )}
+                      {record.water > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">💧</span>
+                          <span className="text-slate-700">{record.water}</span>
+                        </span>
+                      )}
+                      {record.walks > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">🦮</span>
+                          <span className="text-slate-700">{record.walks}</span>
+                        </span>
+                      )}
+                      {record.treats > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">🍖</span>
+                          <span className="text-slate-700">{record.treats}</span>
+                        </span>
+                      )}
+                      {record.grooming > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="text-lg">✨</span>
+                          <span className="text-slate-700">{record.grooming}</span>
+                        </span>
+                      )}
+                    </div>
+                    {record.notes && (
+                      <p className="text-slate-600 text-sm mt-3 p-2 bg-slate-50 rounded-lg">
+                        💬 {record.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

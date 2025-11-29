@@ -105,8 +105,44 @@ const PET_CHARACTERS = {
     { id: 'cat_gray', emoji: '😺', label: '회색 고양이', color: '#808080' },
     { id: 'cat_calico', emoji: '😸', label: '삼색 고양이', color: '#FFE4B5' },
     { id: 'cat_siamese', emoji: '😻', label: '샴 고양이', color: '#D2B48C' },
+  ],
+  bird: [
+    { id: 'bird_parrot', emoji: '🦜', label: '앵무새', color: '#32CD32' },
+    { id: 'bird_canary', emoji: '🐦', label: '카나리아', color: '#FFD700' },
+    { id: 'bird_budgie', emoji: '🐤', label: '잉꼬', color: '#87CEEB' },
+  ],
+  hamster: [
+    { id: 'hamster_gold', emoji: '🐹', label: '골든햄스터', color: '#F4A460' },
+    { id: 'hamster_dwarf', emoji: '🐹', label: '드워프햄스터', color: '#D3D3D3' },
+  ],
+  rabbit: [
+    { id: 'rabbit_white', emoji: '🐰', label: '흰 토끼', color: '#FFFAF0' },
+    { id: 'rabbit_brown', emoji: '🐇', label: '갈색 토끼', color: '#A0522D' },
+  ],
+  fish: [
+    { id: 'fish_gold', emoji: '🐠', label: '금붕어', color: '#FF6347' },
+    { id: 'fish_tropical', emoji: '🐟', label: '열대어', color: '#00CED1' },
+  ],
+  turtle: [
+    { id: 'turtle_land', emoji: '🐢', label: '육지거북', color: '#228B22' },
+    { id: 'turtle_water', emoji: '🐢', label: '반수생거북', color: '#3CB371' },
+  ],
+  other: [
+    { id: 'other_pet', emoji: '🐾', label: '기타', color: '#808080' },
   ]
 };
+
+// 동물 종류 옵션
+const SPECIES_OPTIONS = [
+  { id: 'dog', label: '강아지', emoji: '🐕' },
+  { id: 'cat', label: '고양이', emoji: '🐈' },
+  { id: 'bird', label: '새', emoji: '🐦' },
+  { id: 'hamster', label: '햄스터', emoji: '🐹' },
+  { id: 'rabbit', label: '토끼', emoji: '🐰' },
+  { id: 'fish', label: '물고기', emoji: '🐠' },
+  { id: 'turtle', label: '거북이', emoji: '🐢' },
+  { id: 'other', label: '기타', emoji: '🐾' },
+];
 
 // ============ 프로필 등록 화면 ============
 function ProfileRegistration({ onComplete }) {
@@ -179,7 +215,7 @@ function ProfileRegistration({ onComplete }) {
     <div className="registration-container">
       <div className="registration-card">
         <div className="header-gradient">
-          <h1>🐾 PetMedical.AI</h1>
+          <h1>🐾 PetLink AI</h1>
           <p>반려동물 건강 관리의 시작</p>
         </div>
         
@@ -671,7 +707,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
             <span className="material-symbols-outlined text-3xl">arrow_back_ios_new</span>
           </button>
         </div>
-        <h2 className="text-slate-800 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center font-display">Dashboard</h2>
+        <h2 className="text-slate-800 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center font-display">🐾 PetLink AI</h2>
         <div className="flex size-12 shrink-0 items-center justify-end">
           <button 
             onClick={() => onNavigate('profile-list')}
@@ -759,14 +795,14 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         {/* 빠른 액션 버튼들 (작게) */}
         <div className="flex gap-3 mb-6">
           <button
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 text-white font-bold text-sm shadow-md hover:bg-slate-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
             onClick={() => onNavigate('symptom-input')}
           >
             <span className="text-lg">🩺</span>
             <span>AI 진단</span>
           </button>
           <button
-            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-400 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-sky-600 text-white font-bold text-sm shadow-md hover:bg-sky-700 transition-all hover:scale-[1.02] active:scale-[0.98]"
             onClick={() => onNavigate('hospital')}
           >
             <span className="text-lg">🏥</span>

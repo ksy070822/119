@@ -82,7 +82,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
         <div className="w-24 h-24 bg-white rounded-3xl shadow-lg mx-auto mb-4 flex items-center justify-center">
           <span className="text-5xl">🐾</span>
         </div>
-        <h1 className="text-3xl font-bold text-slate-900 font-display">PetMedical.AI</h1>
+        <h1 className="text-3xl font-bold text-slate-900 font-display">PetLink AI</h1>
         <p className="text-slate-500 mt-2">반려동물 건강 관리의 시작</p>
       </div>
 

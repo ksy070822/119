@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 const DIAGNOSIS_KEY = 'petMedical_diagnoses';
 const STORAGE_KEY = 'petMedical_pets';
+const BOOKINGS_KEY = 'petMedical_bookings';
 
 const getDiagnosesFromStorage = () => {
   try {
@@ -29,16 +30,35 @@ const savePetsToStorage = (pets) => {
   }
 };
 
+const getBookingsFromStorage = () => {
+  try {
+    const data = localStorage.getItem(BOOKINGS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveBookingsToStorage = (bookings) => {
+  try {
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(bookings));
+  } catch (error) {
+    console.error('Failed to save bookings:', error);
+  }
+};
+
 export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet }) {
-  const [activeTab, setActiveTab] = useState('pets'); // 'pets' or 'records'
+  const [activeTab, setActiveTab] = useState('pets'); // 'pets', 'records', or 'bookings'
   const [pets, setPets] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [editingPet, setEditingPet] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
 
   useEffect(() => {
     setPets(getPetsFromStorage());
     setDiagnoses(getDiagnosesFromStorage());
+    setBookings(getBookingsFromStorage());
   }, []);
 
   const formatDate = (timestamp) => {
@@ -111,6 +131,39 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet }) {
     setEditFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const getBookingStatusInfo = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return { label: '예약 확정', color: 'bg-green-100 text-green-700', icon: 'check_circle' };
+      case 'cancelled':
+        return { label: '예약 취소', color: 'bg-red-100 text-red-700', icon: 'cancel' };
+      case 'completed':
+        return { label: '진료 완료', color: 'bg-slate-100 text-slate-700', icon: 'task_alt' };
+      default:
+        return { label: '확인 대기', color: 'bg-amber-100 text-amber-700', icon: 'schedule' };
+    }
+  };
+
+  const handleCancelBooking = (bookingId) => {
+    if (window.confirm('예약을 취소하시겠습니까?')) {
+      const updatedBookings = bookings.map(b =>
+        b.id === bookingId ? { ...b, status: 'cancelled' } : b
+      );
+      setBookings(updatedBookings);
+      saveBookingsToStorage(updatedBookings);
+    }
+  };
+
+  const formatBookingDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background-light">
       {/* Header */}
@@ -125,10 +178,10 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 px-4 pt-2 pb-2 bg-background-light border-b border-slate-200">
+      <div className="flex items-center gap-2 px-4 pt-2 pb-2 bg-background-light border-b border-slate-200 overflow-x-auto">
         <button
           onClick={() => setActiveTab('pets')}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-colors ${
+          className={`flex-1 py-3 px-3 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
             activeTab === 'pets'
               ? 'bg-primary text-white'
               : 'bg-surface-light text-slate-600'
@@ -137,8 +190,23 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet }) {
           내 반려동물
         </button>
         <button
+          onClick={() => setActiveTab('bookings')}
+          className={`flex-1 py-3 px-3 rounded-lg font-medium text-sm transition-colors whitespace-nowrap relative ${
+            activeTab === 'bookings'
+              ? 'bg-primary text-white'
+              : 'bg-surface-light text-slate-600'
+          }`}
+        >
+          내 예약
+          {bookings.filter(b => b.status === 'pending').length > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              {bookings.filter(b => b.status === 'pending').length}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => setActiveTab('records')}
-          className={`flex-1 py-3 px-4 rounded-lg font-medium text-sm transition-colors ${
+          className={`flex-1 py-3 px-3 rounded-lg font-medium text-sm transition-colors whitespace-nowrap ${
             activeTab === 'records'
               ? 'bg-primary text-white'
               : 'bg-surface-light text-slate-600'
@@ -265,6 +333,124 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet }) {
                 <span className="material-symbols-outlined">add</span>
                 반려동물 추가하기
               </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'bookings' && (
+        <div className="px-4 pt-4 pb-40">
+          {bookings.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">📅</div>
+              <p className="text-slate-500 mb-2">예약 내역이 없습니다</p>
+              <p className="text-slate-400 text-sm">병원 예약을 하면 여기서 확인할 수 있어요</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* 예약 상태별 요약 */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-amber-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-amber-600">
+                    {bookings.filter(b => b.status === 'pending').length}
+                  </p>
+                  <p className="text-xs text-amber-700">대기중</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-600">
+                    {bookings.filter(b => b.status === 'confirmed').length}
+                  </p>
+                  <p className="text-xs text-green-700">확정</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-slate-600">
+                    {bookings.filter(b => b.status === 'completed').length}
+                  </p>
+                  <p className="text-xs text-slate-700">완료</p>
+                </div>
+              </div>
+
+              {/* 예약 목록 */}
+              {bookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(booking => {
+                const statusInfo = getBookingStatusInfo(booking.status);
+                return (
+                  <div
+                    key={booking.id}
+                    className="bg-surface-light rounded-lg p-4 shadow-soft"
+                  >
+                    {/* 상태 배지 */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary">local_hospital</span>
+                        <h3 className="text-slate-900 font-bold font-display">
+                          {booking.hospital?.name || '병원'}
+                        </h3>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${statusInfo.color}`}>
+                        <span className="material-symbols-outlined text-sm">{statusInfo.icon}</span>
+                        {statusInfo.label}
+                      </span>
+                    </div>
+
+                    {/* 예약 정보 */}
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <span className="material-symbols-outlined text-sm text-slate-400">calendar_today</span>
+                        <span>{formatBookingDate(booking.date)}</span>
+                        <span className="text-slate-400">|</span>
+                        <span className="material-symbols-outlined text-sm text-slate-400">schedule</span>
+                        <span>{booking.time}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <span className="material-symbols-outlined text-sm text-slate-400">pets</span>
+                        <span>{booking.petName || '반려동물'}</span>
+                      </div>
+                      {booking.hospital?.address && (
+                        <div className="flex items-start gap-2 text-sm text-slate-500">
+                          <span className="material-symbols-outlined text-sm text-slate-400">location_on</span>
+                          <span>{booking.hospital.address}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 전달 메시지 */}
+                    {booking.message && (
+                      <div className="bg-slate-50 rounded-lg p-2 mb-3 text-sm text-slate-600">
+                        💬 {booking.message}
+                      </div>
+                    )}
+
+                    {/* 액션 버튼 */}
+                    {booking.status === 'pending' && (
+                      <div className="flex gap-2">
+                        {booking.hospital?.phone && (
+                          <a
+                            href={`tel:${booking.hospital.phone}`}
+                            className="flex-1 py-2 text-center border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                          >
+                            📞 전화하기
+                          </a>
+                        )}
+                        <button
+                          onClick={() => handleCancelBooking(booking.id)}
+                          className="flex-1 py-2 text-center bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors"
+                        >
+                          예약 취소
+                        </button>
+                      </div>
+                    )}
+
+                    {booking.status === 'confirmed' && booking.hospital?.phone && (
+                      <a
+                        href={`tel:${booking.hospital.phone}`}
+                        className="block w-full py-2 text-center bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                      >
+                        📞 병원 연락하기
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

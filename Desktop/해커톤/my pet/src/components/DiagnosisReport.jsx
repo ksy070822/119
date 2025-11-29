@@ -6,6 +6,52 @@ function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoT
   const [isSending, setIsSending] = useState(false);
   const reportRef = useRef(null);
 
+  // 반려동물 정보 매핑 (다양한 필드명 지원)
+  const getPetInfo = () => {
+    if (!petData) return { name: '미등록', age: '미상', weight: '미상', breed: '미상', species: 'dog' };
+
+    // 이름
+    const name = petData.petName || petData.name || '미등록';
+
+    // 나이 계산
+    let age = '미상';
+    if (petData.age) {
+      age = petData.age;
+    } else if (petData.birthDate) {
+      const birth = new Date(petData.birthDate);
+      const today = new Date();
+      const years = today.getFullYear() - birth.getFullYear();
+      const months = today.getMonth() - birth.getMonth();
+      if (years > 0) {
+        age = `${years}세`;
+      } else if (months > 0) {
+        age = `${months}개월`;
+      } else {
+        age = '1개월 미만';
+      }
+    }
+
+    // 체중
+    const weight = petData.weight ? `${petData.weight}kg` : '미상';
+
+    // 품종
+    const breed = petData.breed || '미상';
+
+    // 종류
+    const species = petData.species || 'dog';
+
+    // 성별
+    const gender = petData.sex || petData.gender;
+
+    // 프로필 이미지
+    const profileImage = petData.profileImage || null;
+    const character = petData.character || null;
+
+    return { name, age, weight, breed, species, gender, profileImage, character };
+  };
+
+  const petInfo = getPetInfo();
+
   const reportDate = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',
     month: 'long',
@@ -56,7 +102,7 @@ function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoT
   const generateReportText = () => {
     return `
 ═══════════════════════════════════════
-       🐾 PetMedical.AI 진단서
+       🐾 PetLink AI 진단서
 ═══════════════════════════════════════
 
 📅 발급일시: ${reportDate}
@@ -65,11 +111,11 @@ function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoT
 ───────────────────────────────────────
               환자 정보
 ───────────────────────────────────────
-🐕 이름: ${petData?.name || '미등록'}
-🎂 나이: ${petData?.age || '미상'}
-⚖️ 몸무게: ${petData?.weight || '미상'}
-🏷️ 품종: ${petData?.breed || '미상'}
-${petData?.gender ? `⚥ 성별: ${petData.gender === 'male' ? '수컷' : '암컷'}` : ''}
+🐕 이름: ${petInfo.name}
+🎂 나이: ${petInfo.age}
+⚖️ 몸무게: ${petInfo.weight}
+🏷️ 품종: ${petInfo.breed}
+${petInfo.gender ? `⚥ 성별: ${petInfo.gender === 'M' ? '수컷' : '암컷'}` : ''}
 
 ───────────────────────────────────────
               증상 분석
@@ -131,7 +177,7 @@ ${diagnosisResult?.hospitalVisit ? `
           {/* 헤더 */}
           <div className="report-header">
             <div className="report-logo">🐾</div>
-            <h1>PetMedical.AI 진단서</h1>
+            <h1>PetLink AI 진단서</h1>
             <p className="report-subtitle">AI 기반 반려동물 건강 분석 리포트</p>
           </div>
 
@@ -145,24 +191,28 @@ ${diagnosisResult?.hospitalVisit ? `
             <h2>🏥 환자 정보</h2>
             <div className="patient-grid">
               <div className="patient-avatar">
-                {petData?.species === 'cat' ? '🐱' : '🐕'}
+                {petInfo.profileImage ? (
+                  <img src={petInfo.profileImage} alt={petInfo.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                  petInfo.species === 'cat' ? '🐱' : petInfo.species === 'dog' ? '🐕' : petInfo.species === 'bird' ? '🐦' : petInfo.species === 'hamster' ? '🐹' : petInfo.species === 'rabbit' ? '🐰' : petInfo.species === 'fish' ? '🐠' : petInfo.species === 'turtle' ? '🐢' : '🐾'
+                )}
               </div>
               <div className="patient-details">
                 <div className="detail-row">
                   <span className="label">이름</span>
-                  <span className="value">{petData?.name || '미등록'}</span>
+                  <span className="value">{petInfo.name}</span>
                 </div>
                 <div className="detail-row">
                   <span className="label">품종</span>
-                  <span className="value">{petData?.breed || '미상'}</span>
+                  <span className="value">{petInfo.breed}</span>
                 </div>
                 <div className="detail-row">
                   <span className="label">나이</span>
-                  <span className="value">{petData?.age || '미상'}</span>
+                  <span className="value">{petInfo.age}</span>
                 </div>
                 <div className="detail-row">
                   <span className="label">체중</span>
-                  <span className="value">{petData?.weight || '미상'}</span>
+                  <span className="value">{petInfo.weight}</span>
                 </div>
               </div>
             </div>
@@ -262,7 +312,7 @@ ${diagnosisResult?.hospitalVisit ? `
               정확한 진단을 위해 반드시 수의사와 상담하세요.
             </p>
             <div className="footer-logo">
-              <span>🐾</span> PetMedical.AI
+              <span>🐾</span> PetLink AI
             </div>
           </div>
         </div>
