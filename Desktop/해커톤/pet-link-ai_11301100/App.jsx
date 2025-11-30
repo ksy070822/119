@@ -36,55 +36,69 @@ import {
   getSymptomTagsForDepartment,
   getFollowUpQuestions
 } from './src/data/petMedicalData'
+// Firestore 서비스 import
+import { petService, diagnosisService, userService, migrationHelper } from './src/services/firestore'
 
-// ============ 로컬 스토리지 유틸리티 ============
-const STORAGE_KEY = 'petMedical_pets';
-const DIAGNOSIS_KEY = 'petMedical_diagnoses';
+// ============ Firestore 데이터 서비스 (운영 환경) ============
 
-// 사용자별 반려동물 키
-const getUserPetsKey = (userId) => `petMedical_pets_${userId}`;
-const getUserDiagnosesKey = (userId) => `petMedical_diagnoses_${userId}`;
-
-// 사용자별 반려동물 데이터 가져오기
-const getPetsForUser = (userId) => {
+// 사용자별 반려동물 데이터 가져오기 (Firestore)
+const getPetsForUser = async (userId) => {
   if (!userId) return [];
   try {
-    const data = localStorage.getItem(getUserPetsKey(userId));
-    return data ? JSON.parse(data) : [];
-  } catch {
+    const result = await petService.getPetsByUser(userId);
+    if (result.success) {
+      return result.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to get pets from Firestore:', error);
     return [];
   }
 };
 
-// 사용자별 반려동물 데이터 저장
-const savePetsForUser = (userId, pets) => {
-  if (!userId) return;
+// 사용자별 반려동물 데이터 저장 (Firestore)
+const savePetsForUser = async (userId, pets) => {
+  if (!userId || !pets || pets.length === 0) return;
   try {
-    localStorage.setItem(getUserPetsKey(userId), JSON.stringify(pets));
+    // 기존 반려동물 목록 가져오기
+    const existingResult = await petService.getPetsByUser(userId);
+    const existingPets = existingResult.success ? existingResult.data : [];
+    const existingIds = new Set(existingPets.map(p => p.id));
+    
+    // 새 반려동물만 추가
+    for (const pet of pets) {
+      if (!existingIds.has(pet.id)) {
+        await petService.addPet(userId, pet);
+      } else {
+        // 기존 반려동물 업데이트
+        const existingPet = existingPets.find(p => p.id === pet.id);
+        if (existingPet && existingPet.firestoreId) {
+          await petService.updatePet(existingPet.firestoreId, pet);
+        }
+      }
+    }
   } catch (error) {
-    console.error('Failed to save pets:', error);
+    console.error('Failed to save pets to Firestore:', error);
   }
 };
 
-// 기존 호환용 (마이그레이션용)
-const getPetsFromStorage = () => {
+// 반려동물 저장 (단일)
+const savePetToFirestore = async (userId, petData) => {
+  if (!userId) return null;
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
-
-const savePetsToStorage = (pets) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pets));
+    const result = await petService.addPet(userId, petData);
+    if (result.success) {
+      return { ...petData, firestoreId: result.id };
+    }
+    return null;
   } catch (error) {
-    console.error('Failed to save pets:', error);
+    console.error('Failed to save pet to Firestore:', error);
+    return null;
   }
 };
 
-const saveDiagnosisToStorage = (diagnosis) => {
+// 진단 기록 저장 (Firestore)
+const saveDiagnosisToStorage = async (diagnosis) => {
   try {
     // healthFlags가 없으면 계산해서 추가
     let diagnosisWithFlags = { ...diagnosis };
@@ -92,29 +106,84 @@ const saveDiagnosisToStorage = (diagnosis) => {
       diagnosisWithFlags.healthFlags = mapDiagnosisToHealthFlags(diagnosis);
     }
     
-    const diagnoses = JSON.parse(localStorage.getItem(DIAGNOSIS_KEY) || '[]');
-    diagnoses.unshift({ 
+    // Firestore에 저장
+    const result = await diagnosisService.saveDiagnosis({
       ...diagnosisWithFlags, 
       id: diagnosisWithFlags.id || Date.now().toString(), 
-      date: new Date().toISOString() 
+      date: new Date().toISOString(),
+      userId: diagnosis.userId || diagnosis.petId?.split('_')[0], // userId 추출
+      petId: diagnosis.petId
     });
-    localStorage.setItem(DIAGNOSIS_KEY, JSON.stringify(diagnoses));
+    
+    if (result.success) {
+      console.log('진단 기록이 Firestore에 저장되었습니다:', result.id);
+    }
   } catch (error) {
-    console.error('Failed to save diagnosis:', error);
+    console.error('Failed to save diagnosis to Firestore:', error);
   }
 };
 
-// 최근 진단 기록 가져오기
-const getLatestDiagnosisRecord = (petId) => {
+// 최근 진단 기록 가져오기 (Firestore)
+const getLatestDiagnosisRecord = async (petId) => {
+  if (!petId) return null;
   try {
-    const diagnoses = JSON.parse(localStorage.getItem(DIAGNOSIS_KEY) || '[]');
-    const petDiagnoses = diagnoses.filter(d => d.petId === petId);
-    if (petDiagnoses.length === 0) return null;
-    // 가장 최근 기록 반환 (첫 번째가 가장 최신)
-    return petDiagnoses[0];
-  } catch (error) {
-    console.error('Failed to get latest diagnosis:', error);
+    const result = await diagnosisService.getLatestDiagnosis(petId);
+    if (result.success && result.data) {
+      return result.data;
+    }
     return null;
+  } catch (error) {
+    console.error('Failed to get latest diagnosis from Firestore:', error);
+    return null;
+  }
+};
+
+// localStorage에서 Firestore로 마이그레이션
+const migrateLocalStorageToFirestore = async (userId) => {
+  if (!userId) return;
+  
+  try {
+    // 마이그레이션 완료 플래그 확인
+    const migrationKey = `migrated_to_firestore_${userId}`;
+    const alreadyMigrated = localStorage.getItem(migrationKey);
+    if (alreadyMigrated === 'true') {
+      console.log('이미 Firestore로 마이그레이션되었습니다.');
+      return;
+    }
+    
+    console.log('localStorage에서 Firestore로 마이그레이션 시작...');
+    
+    // 기존 localStorage 데이터 가져오기
+    const localPetsKey = `petMedical_pets_${userId}`;
+    const localDiagnosesKey = `petMedical_diagnoses_${userId}`;
+    
+    const localPets = JSON.parse(localStorage.getItem(localPetsKey) || '[]');
+    const localDiagnoses = JSON.parse(localStorage.getItem(localDiagnosesKey) || '[]');
+    
+    // Firestore로 마이그레이션
+    if (localPets.length > 0) {
+      for (const pet of localPets) {
+        await petService.addPet(userId, pet);
+      }
+      console.log(`${localPets.length}개의 반려동물 데이터 마이그레이션 완료`);
+    }
+    
+    if (localDiagnoses.length > 0) {
+      for (const diagnosis of localDiagnoses) {
+        await diagnosisService.saveDiagnosis({
+          ...diagnosis,
+          userId,
+          petId: diagnosis.petId
+        });
+      }
+      console.log(`${localDiagnoses.length}개의 진단 기록 마이그레이션 완료`);
+    }
+    
+    // 마이그레이션 완료 플래그 설정
+    localStorage.setItem(migrationKey, 'true');
+    console.log('마이그레이션 완료!');
+  } catch (error) {
+    console.error('마이그레이션 오류:', error);
   }
 };
 
@@ -267,27 +336,30 @@ function ProfileRegistration({ onComplete, userId }) {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const newPet = {
         ...formData,
-        id: Date.now(),
+        id: Date.now().toString(),
         userId: userId, // 소유자 ID 저장
         createdAt: new Date().toISOString()
       };
 
-      // 사용자별로 저장
+      // Firestore에 저장
       if (userId) {
-        const pets = getPetsForUser(userId);
-        pets.push(newPet);
-        savePetsForUser(userId, pets);
+        try {
+          const savedPet = await savePetToFirestore(userId, newPet);
+          if (savedPet) {
+            onComplete(savedPet);
       } else {
-        // 호환성 유지
-        const pets = getPetsFromStorage();
-        pets.push(newPet);
-        savePetsToStorage(pets);
-      }
-
+            onComplete(newPet); // 실패해도 진행
+          }
+        } catch (error) {
+          console.error('반려동물 저장 오류:', error);
+          onComplete(newPet); // 실패해도 진행
+        }
+      } else {
       onComplete(newPet);
+      }
     }, 1000);
   };
   
@@ -1890,8 +1962,12 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
           setIsProcessing(false);
           setChatMode(true);
           
-          // 진단서 저장
-          saveDiagnosisToStorage(finalDiagnosis);
+          // 진단서 저장 (Firestore)
+          saveDiagnosisToStorage({
+            ...finalDiagnosis,
+            userId: safePetData?.userId || currentUser?.uid,
+            petId: safePetData?.id
+          });
           
           // 부모 컴포넌트에 진단 결과 전달
           if (onDiagnosisResult) {
@@ -1941,7 +2017,11 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
                 setDiagnosisResult(finalDiagnosis);
                 setShowResult(true);
                 setChatMode(true);
-                saveDiagnosisToStorage(finalDiagnosis);
+                saveDiagnosisToStorage({
+                  ...finalDiagnosis,
+                  userId: safePetData?.userId || currentUser?.uid,
+                  petId: safePetData?.id
+                });
                 if (onDiagnosisResult) {
                   onDiagnosisResult(finalDiagnosis);
                 }
@@ -1967,13 +2047,14 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
     setShowResult(true);
     setChatMode(false);
     
-    // 진단서 저장
+    // 진단서 저장 (Firestore)
     const savedDiagnosis = {
       petId: petData.id,
       petName: petData.petName,
       symptom: symptomText,
       images: hasImages ? symptomData.images.length : 0,
       conversationHistory: conversationHistory,
+      userId: petData.userId || currentUser?.uid,
       ...analysis
     };
     saveDiagnosisToStorage(savedDiagnosis);
@@ -2811,29 +2892,48 @@ function App() {
       setUserMode(savedSession.userMode || 'guardian');
       setAuthScreen(null);
 
-      // 로그인된 사용자의 반려동물 데이터 로드
-      const userPets = getPetsForUser(savedSession.uid);
+      // Firestore에서 반려동물 데이터 로드
+      (async () => {
+        try {
+          // 마이그레이션 실행
+          await migrateLocalStorageToFirestore(savedSession.uid);
+          
+          // Firestore에서 반려동물 로드
+          const userPets = await getPetsForUser(savedSession.uid);
       setPets(userPets);
       if (userPets.length > 0) {
         setPetData(userPets[0]);
       }
+        } catch (error) {
+          console.error('반려동물 데이터 로드 오류:', error);
+        }
+      })();
     }
     // 등록 화면 없이 바로 대시보드로 (등록은 마이페이지에서)
     setCurrentTab('care');
   }, []);
 
   // 로그인 성공 핸들러
-  const handleLogin = (user) => {
+  const handleLogin = async (user) => {
     setCurrentUser(user);
     setUserMode(user.userMode || 'guardian');
     setAuthScreen(null);
 
-    // 로그인한 사용자의 반려동물 데이터 로드
-    const userPets = getPetsForUser(user.uid);
+    try {
+      // 마이그레이션 실행
+      await migrateLocalStorageToFirestore(user.uid);
+      
+      // Firestore에서 반려동물 데이터 로드
+      const userPets = await getPetsForUser(user.uid);
     setPets(userPets);
     if (userPets.length > 0) {
       setPetData(userPets[0]);
     } else {
+        setPetData(null);
+      }
+    } catch (error) {
+      console.error('반려동물 데이터 로드 오류:', error);
+      setPets([]);
       setPetData(null);
     }
   };
@@ -2892,13 +2992,24 @@ function App() {
     );
   }
 
-  const handleRegistrationComplete = (data) => {
+  const handleRegistrationComplete = async (data) => {
     // 현재 사용자의 반려동물 데이터 로드
     if (currentUser?.uid) {
-      const updatedPets = getPetsForUser(currentUser.uid);
-      setPets(updatedPets);
+      try {
+        const updatedPets = await getPetsForUser(currentUser.uid);
+        setPets(updatedPets);
+        if (updatedPets.length > 0) {
+          setPetData(updatedPets[0]);
+        } else {
+          setPetData(data);
+        }
+      } catch (error) {
+        console.error('반려동물 데이터 로드 오류:', error);
+        setPetData(data);
+      }
+    } else {
+      setPetData(data);
     }
-    setPetData(data);
     setCurrentView(null);
     setCurrentTab('care');
   };
