@@ -1638,16 +1638,10 @@ const getTriageApiBaseUrl = () => {
                        window.location.hostname.includes('github.io');
   
   if (isProduction) {
-    // 프로덕션 환경: 백엔드 서버 URL
-    // 백엔드 서버를 배포한 후 실제 URL로 변경 필요
-    // 예: 'https://petcare-backend.railway.app' 또는 'https://petcare-backend.render.com'
-    // 현재는 백엔드가 배포되지 않아서 로컬 URL 사용 (작동하지 않음)
-    // TODO: 백엔드 배포 후 아래 주석을 해제하고 실제 URL로 변경
-    // return 'https://your-backend-url.railway.app';
-    
-    // 임시: 빈 화면 대신 에러 메시지 표시를 위해 로컬 URL 반환
-    // (실제 API 호출 시 에러 처리에서 명확한 메시지 표시)
-    return 'http://127.0.0.1:8000';
+    // 프로덕션 환경: Railway 백엔드 서버 URL
+    // GitHub Secrets에 VITE_TRIAGE_API_BASE_URL이 설정되어 있으면 자동으로 사용됨
+    // 설정되지 않았으면 기본값 사용
+    return 'https://web-production-97ec2.up.railway.app';
   }
   
   // 로컬 개발 환경
