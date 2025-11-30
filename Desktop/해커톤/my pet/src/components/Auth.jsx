@@ -1,7 +1,7 @@
 // src/components/Auth.jsx
 import { useState, useEffect } from 'react';
 import { authService } from '../services/firebaseAuth';
-import { loginWithKakao } from '../services/kakaoAuth';
+import { loginWithKakao, handleKakaoRedirectResult } from '../services/kakaoAuth';
 import { userService } from '../services/firestore';
 
 // Firebase 인증 상태 변경 리스너 export
@@ -30,14 +30,39 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 페이지 로드 시 리다이렉트 결과 확인 (모바일 구글 로그인)
+  // 페이지 로드 시 리다이렉트 결과 확인 (모바일 구글/카카오 로그인)
   useEffect(() => {
     const checkRedirectResult = async () => {
       setLoading(true);
       try {
-        const result = await authService.handleRedirectResult();
-        if (result.success) {
-          onLogin(result.user);
+        // 구글 리다이렉트 결과 확인
+        const googleResult = await authService.handleRedirectResult();
+        if (googleResult.success) {
+          onLogin(googleResult.user);
+          setLoading(false);
+          return;
+        }
+
+        // 카카오 리다이렉트 결과 확인
+        try {
+          const kakaoResult = await handleKakaoRedirectResult();
+          if (kakaoResult.success) {
+            // Firestore에 사용자 정보 저장
+            await userService.saveUser(kakaoResult.user.uid, {
+              email: kakaoResult.user.email,
+              displayName: kakaoResult.user.displayName,
+              photoURL: kakaoResult.user.photoURL,
+              provider: 'kakao',
+              userMode: kakaoResult.user.userMode,
+              createdAt: new Date().toISOString()
+            });
+            onLogin(kakaoResult.user);
+          }
+        } catch (kakaoError) {
+          if (kakaoError.error) {
+            setError(kakaoError.error);
+          }
+          console.error('카카오 리다이렉트 결과 확인 실패:', kakaoError);
         }
       } catch (error) {
         console.error('리다이렉트 결과 확인 실패:', error);
@@ -91,7 +116,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
     setLoading(true);
 
     try {
-      const result = await loginWithKakao();
+      const result = await loginWithKakao(userMode);
 
       if (result.success) {
         // Firestore에 사용자 정보 저장
@@ -105,6 +130,9 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
         });
 
         onLogin({ ...result.user, userMode });
+      } else if (result.redirecting) {
+        // 모바일에서 리다이렉트 중이면 아무것도 안함
+        return;
       } else {
         setError(result.error || '카카오 로그인에 실패했습니다.');
       }
