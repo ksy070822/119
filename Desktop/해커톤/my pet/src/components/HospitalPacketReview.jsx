@@ -3,6 +3,35 @@ import { useState } from 'react';
 export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPacket, onBack, onEdit, onSend, onSave }) {
   const [requestNote, setRequestNote] = useState('');
 
+  // 보호자 요청사항을 패킷에 추가하는 함수
+  const createFinalPacket = () => {
+    if (!hospitalPacket) return null;
+
+    const ownerRequest = requestNote.trim();
+    let updatedPacketText = hospitalPacket.packet_text || '';
+
+    // 기존 패킷에 보호자 요청사항이 없으면 추가
+    if (!updatedPacketText.includes('[보호자 요청사항]')) {
+      updatedPacketText += `\n\n[보호자 요청사항]\n${ownerRequest || '- 없음'}`;
+    } else {
+      // 이미 있으면 교체
+      updatedPacketText = updatedPacketText.replace(
+        /\[보호자 요청사항\]\n[\s\S]*$/,
+        `[보호자 요청사항]\n${ownerRequest || '- 없음'}`
+      );
+    }
+
+    return {
+      ...hospitalPacket,
+      packet_text: updatedPacketText,
+      packet_json: {
+        ...hospitalPacket.packet_json,
+        owner_request_note: ownerRequest
+      },
+      requestNote: ownerRequest
+    };
+  };
+
   if (!petData || !diagnosis || !hospital) {
     return null;
   }
@@ -219,13 +248,13 @@ export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPac
             내용 수정하기
           </button>
           <button
-            onClick={() => onSend && onSend({ ...hospitalPacket, requestNote })}
+            onClick={() => onSend && onSend(createFinalPacket())}
             className="w-full bg-primary text-white font-bold py-4 px-6 rounded-lg text-base hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
           >
             병원에 전송하기
           </button>
           <button
-            onClick={() => onSave && onSave({ ...hospitalPacket, requestNote })}
+            onClick={() => onSave && onSave(createFinalPacket())}
             className="w-full text-slate-500 font-medium py-2 px-6 rounded-lg text-sm hover:text-slate-700 transition-colors"
           >
             진단서만 저장하기

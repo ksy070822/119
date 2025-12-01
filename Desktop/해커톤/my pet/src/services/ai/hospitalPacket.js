@@ -1,11 +1,15 @@
 // 병원 진단 패킷 생성 - Ops Agent 결과 활용
 import { getApiKey, API_KEY_TYPES } from '../apiKeyManager';
 
-export const generateHospitalPacket = async (petData, diagnosisResult, symptomData) => {
+export const generateHospitalPacket = async (petData, diagnosisResult, symptomData, requestNote = '') => {
   // 이미 Ops Agent에서 hospital_previsit_packet을 생성했으므로 그것을 사용
   if (diagnosisResult.hospitalPacket) {
     const packet = diagnosisResult.hospitalPacket;
-    
+
+    // AI 권장사항과 보호자 요청사항 통합
+    const aiRecommendations = packet.requested_actions_for_hospital || [];
+    const ownerRequest = requestNote ? requestNote.trim() : '';
+
     // 텍스트 형식으로 변환
     const packetText = `
 === ${packet.packet_title} ===
@@ -26,7 +30,7 @@ ${packet.visit_reason}
 ${packet.symptom_timeline}
 
 [AI 감별 진단]
-${packet.ai_differential_diagnosis.map((d, idx) => 
+${packet.ai_differential_diagnosis.map((d, idx) =>
   `${idx + 1}. ${d.name_kor} (확률: ${Math.round(d.probability * 100)}%)\n   ${d.note_for_vet || ''}`
 ).join('\n\n')}
 
@@ -36,21 +40,29 @@ Triage Score: ${packet.triage_and_risk.triage_score}/5
 위험도: ${packet.triage_and_risk.risk_level}
 시급성: ${packet.triage_and_risk.urgency_comment}
 
-[권장 검사/조치]
-${packet.requested_actions_for_hospital.map(a => `- ${a}`).join('\n')}
+[AI 권장 검사/조치]
+${aiRecommendations.length > 0 ? aiRecommendations.map(a => `- ${a}`).join('\n') : '- 일반 건강 검진 권장'}
+
+[보호자 요청사항]
+${ownerRequest || '- 없음'}
     `.trim();
-    
+
     return {
       packet_text: packetText,
-      packet_json: packet
+      packet_json: {
+        ...packet,
+        owner_request_note: ownerRequest
+      }
     };
   }
   
-  // Fallback: 기존 방식
-  const apiKey = getApiKey(API_KEY_TYPES.ANTHROPIC);
+  // Fallback: 기존 방식 (Gemini 사용)
+  const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
   if (!apiKey) {
-    throw new Error('Anthropic API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
+    throw new Error('Gemini API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
   }
+
+  const ownerRequest = requestNote ? requestNote.trim() : '';
 
   const prompt = `당신은 동물병원을 위한 사전 진단 패킷을 생성하는 전문가입니다.
 

@@ -22,6 +22,7 @@ import { callCareAgent } from './src/services/ai/careAgent'
 import { CareActionButton } from './src/components/CareActionButton'
 import { loadDailyLog, saveDailyLog, getTodayKey } from './src/lib/careLogs'
 import DiagnosisReport from './src/components/DiagnosisReport'
+import { getApiKey, API_KEY_TYPES } from './src/services/apiKeyManager'
 // 더미 데이터 비활성화 - 실제 서비스용
 // import { initializeDummyData, DUMMY_PETS, DUMMY_MEDICAL_RECORDS } from './src/lib/dummyData'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
@@ -1820,9 +1821,9 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
 
     try {
       // Gemini API를 직접 사용하여 질문에 답변
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
       if (!apiKey) {
-        throw new Error('Gemini API 키가 설정되지 않았습니다.');
+        throw new Error('Gemini API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
       }
 
       // 진단 결과에서 상세 정보 추출
@@ -1873,7 +1874,7 @@ ${userQuestion}
 답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다. 추측이나 검증되지 않은 정보는 제공하지 마세요.`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1953,6 +1954,48 @@ ${userQuestion}
     }
   };
   
+  // 에이전트 룸 정의 (카드 형태 UI용)
+  const agentRooms = [
+    { id: 'cs', name: '접수 도우미', icon: '🏥', role: '상담 간호사', agentKey: 'CS Agent' },
+    { id: 'info', name: '간호사 상담', icon: '💉', role: '정보수집가', agentKey: 'Information Agent' },
+    { id: 'medical', name: '주치의 진찰', icon: '👨‍⚕️', role: '전문 수의사', agentKey: 'Veterinarian Agent' },
+    { id: 'triage', name: '위급도 판단실', icon: '🚨', role: '응급도 평가', agentKey: 'Triage Engine' },
+    { id: 'data', name: '치료 계획실', icon: '📋', role: '데이터 처리자', agentKey: 'Data Agent' },
+    { id: 'care', name: '약국 안내', icon: '💊', role: '케어 플래너', agentKey: 'Care Agent' },
+    { id: 'summary', name: '진료 요약실', icon: '📄', role: '진료 완료', agentKey: 'summary' }
+  ];
+
+  // 각 에이전트 룸의 상태 (pending, processing, completed)
+  const getAgentRoomStatus = (room) => {
+    const agentMessages = messages.filter(m => m.agent === room.agentKey || m.type === room.id);
+    if (agentMessages.length === 0) {
+      // 이전 룸이 완료되었는지 확인
+      const roomIndex = agentRooms.findIndex(r => r.id === room.id);
+      if (roomIndex === 0) return 'processing';
+      const prevRoom = agentRooms[roomIndex - 1];
+      const prevMessages = messages.filter(m => m.agent === prevRoom.agentKey || m.type === prevRoom.id);
+      if (prevMessages.length > 0) return 'processing';
+      return 'pending';
+    }
+    // 다음 룸에 메시지가 있으면 완료된 것
+    const roomIndex = agentRooms.findIndex(r => r.id === room.id);
+    if (roomIndex < agentRooms.length - 1) {
+      const nextRoom = agentRooms[roomIndex + 1];
+      const nextMessages = messages.filter(m => m.agent === nextRoom.agentKey || m.type === nextRoom.id);
+      if (nextMessages.length > 0) return 'completed';
+    }
+    // summary 룸이고 showResult가 true면 완료
+    if (room.id === 'summary' && showResult) return 'completed';
+    return agentMessages.length > 0 ? 'processing' : 'pending';
+  };
+
+  // 에이전트 룸의 마지막 메시지 가져오기
+  const getAgentRoomMessage = (room) => {
+    const agentMessages = messages.filter(m => m.agent === room.agentKey || m.type === room.id);
+    if (agentMessages.length === 0) return null;
+    return agentMessages[agentMessages.length - 1];
+  };
+
   const steps = [
     { label: '접수', icon: '1' },
     { label: '분석', icon: '2' },
@@ -1966,83 +2009,228 @@ ${userQuestion}
       <div className="diagnosis-header">
         <button className="back-btn" onClick={onBack} style={{ position: 'absolute', left: '20px', top: '20px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>←</button>
         <h1>👨‍⚕️ AI 온라인 진료실</h1>
-        <p>AI 의료진 4명이 {petData.petName}를 진료합니다</p>
+        <p>AI 의료진이 {petData.petName}를 진료합니다</p>
       </div>
-      
-      <div className="progress-bar">
-        <div className="steps-container">
-          {steps.map((step, index) => (
-            <div key={index} className={`step ${index + 1 <= currentStep ? 'active' : ''}`}>
-              <div className="step-circle">{index + 1 <= currentStep ? '✓' : step.icon}</div>
-              <div className="step-label">{step.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="chat-container">
-        <div className="chat-messages">
-          {messages.length === 0 && isProcessing && (
-            <div className="initial-loading">
-              <div className="loading-spinner"></div>
-              <p>AI 진료실에 연결 중입니다...</p>
-              <p className="loading-subtitle">잠시만 기다려주세요</p>
-            </div>
-          )}
-          {messages.map((msg, index) => {
-            // 에이전트 간 협업 메시지 감지 (다른 에이전트를 언급하는 경우)
-            const isCollaboration = !msg.isUser && msg.content.includes('님,') || msg.content.includes('Agent님');
-            const mentionsOtherAgent = msg.content.match(/(CS|Information|Veterinarian|Triage|Data|Care)\s*Agent님/);
-            
-            return (
-              <div key={index} className={`message ${msg.isUser ? 'user-message' : 'agent-message'} ${index === messages.length - 1 ? 'latest' : ''} ${isCollaboration ? 'collaboration-message' : ''}`}>
-                <div className="message-header">
-                  <div className={`agent-icon ${msg.type} ${index === messages.length - 1 && !msg.isUser ? 'pulse' : ''}`}>{msg.icon}</div>
-                  <div>
-                    <div className="agent-name">{msg.agent}</div>
-                    <div className="agent-role">{msg.role}</div>
-                  </div>
-                  <div className="message-time">{new Date(msg.timestamp || Date.now()).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+
+      {/* 에이전트 룸 카드 UI */}
+      <div className="agent-rooms-container" style={{
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        maxHeight: 'calc(100vh - 300px)',
+        overflowY: 'auto'
+      }}>
+        {messages.length === 0 && isProcessing && (
+          <div className="initial-loading" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px',
+            gap: '16px'
+          }}>
+            <div className="loading-spinner"></div>
+            <p style={{ margin: 0, fontSize: '16px', color: '#333' }}>AI 진료실에 연결 중입니다...</p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>잠시만 기다려주세요</p>
+          </div>
+        )}
+
+        {messages.length > 0 && agentRooms.map((room, index) => {
+          const status = getAgentRoomStatus(room);
+          const lastMessage = getAgentRoomMessage(room);
+          const isActive = status === 'processing' || status === 'completed';
+
+          // 아직 시작 안된 룸은 숨김
+          if (status === 'pending' && index > 0) {
+            const prevRoom = agentRooms[index - 1];
+            const prevStatus = getAgentRoomStatus(prevRoom);
+            if (prevStatus === 'pending') return null;
+          }
+
+          return (
+            <div
+              key={room.id}
+              className={`agent-room-card ${status}`}
+              style={{
+                background: status === 'completed' ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' :
+                           status === 'processing' ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' :
+                           '#f8fafc',
+                borderRadius: '16px',
+                padding: '16px',
+                border: status === 'completed' ? '2px solid #22c55e' :
+                        status === 'processing' ? '2px solid #3b82f6' :
+                        '1px solid #e2e8f0',
+                boxShadow: status === 'processing' ? '0 4px 12px rgba(59, 130, 246, 0.15)' :
+                          status === 'completed' ? '0 2px 8px rgba(34, 197, 94, 0.1)' :
+                          '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.3s ease',
+                opacity: status === 'pending' ? 0.5 : 1
+              }}
+            >
+              {/* 카드 헤더 */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: isActive && lastMessage ? '12px' : '0'
+              }}>
+                {/* 아이콘 */}
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '12px',
+                  background: status === 'completed' ? '#22c55e' :
+                             status === 'processing' ? '#3b82f6' :
+                             '#94a3b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}>
+                  {room.icon}
                 </div>
-                <div className={`message-content ${msg.isQuestion ? 'question-message' : ''} ${isCollaboration ? 'has-collaboration' : ''}`}>
-                  {isCollaboration && (
-                    <div className="collaboration-badge">
-                      <span className="material-symbols-outlined">handshake</span>
-                      협업 중
+
+                {/* 텍스트 */}
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    color: '#1e293b',
+                    marginBottom: '2px'
+                  }}>
+                    {room.name}
+                  </div>
+                  <div style={{
+                    fontSize: '13px',
+                    color: '#64748b'
+                  }}>
+                    {room.role}
+                  </div>
+                </div>
+
+                {/* 상태 표시 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  {status === 'completed' && (
+                    <div style={{
+                      background: '#22c55e',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <span>✓</span> 완료
                     </div>
                   )}
-                  {msg.content.split('\n').map((line, lineIdx) => {
-                    // 다른 에이전트를 언급하는 줄 강조
-                    if (line.includes('님,') || line.includes('Agent님')) {
-                      return (
-                        <div key={lineIdx} className="collaboration-line">
-                          {line}
-                        </div>
-                      );
-                    }
-                    return <div key={lineIdx}>{line}</div>;
-                  })}
-                  {msg.isQuestion && (
-                    <div className="question-hint">💡 위 입력창에 답변을 입력해주세요</div>
+                  {status === 'processing' && (
+                    <div style={{
+                      background: '#3b82f6',
+                      color: 'white',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      <div className="typing-dots" style={{ display: 'flex', gap: '3px' }}>
+                        <div style={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          background: 'white',
+                          animation: 'pulse 1s infinite',
+                          animationDelay: '0s'
+                        }}></div>
+                        <div style={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          background: 'white',
+                          animation: 'pulse 1s infinite',
+                          animationDelay: '0.2s'
+                        }}></div>
+                        <div style={{
+                          width: '4px',
+                          height: '4px',
+                          borderRadius: '50%',
+                          background: 'white',
+                          animation: 'pulse 1s infinite',
+                          animationDelay: '0.4s'
+                        }}></div>
+                      </div>
+                      진행중
+                    </div>
+                  )}
+                  {status === 'pending' && (
+                    <div style={{
+                      background: '#e2e8f0',
+                      color: '#64748b',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      대기중
+                    </div>
                   )}
                 </div>
               </div>
-            );
-          })}
-          
-          {isProcessing && (
-            <div className="typing-indicator">
-              <span className="typing-text">
-                {waitingForAnswer ? '답변을 기다리는 중...' : '다음 에이전트가 작업 중입니다...'}
-              </span>
-              <div className="typing-dots">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
+
+              {/* 메시지 내용 (활성화된 경우만) */}
+              {isActive && lastMessage && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.7)',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  fontSize: '14px',
+                  color: '#334155',
+                  lineHeight: '1.6',
+                  maxHeight: '120px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  {lastMessage.content.split('\n').slice(0, 4).map((line, idx) => (
+                    <div key={idx} style={{ marginBottom: '4px' }}>{line}</div>
+                  ))}
+                  {lastMessage.content.split('\n').length > 4 && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: '30px',
+                      background: 'linear-gradient(transparent, rgba(255,255,255,0.9))'
+                    }}></div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })}
+
+        {/* 진행 중 표시 */}
+        {isProcessing && messages.length > 0 && (
+          <div style={{
+            textAlign: 'center',
+            padding: '12px',
+            color: '#64748b',
+            fontSize: '14px'
+          }}>
+            <span>AI 에이전트들이 협업하여 진료 중입니다...</span>
+          </div>
+        )}
+      </div>
 
         {chatMode && (
           <div className="chat-input-container">
