@@ -18,6 +18,8 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
   const [hospitals, setHospitals] = useState([]);
   const [mapLoading, setMapLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const [isRealLocation, setIsRealLocation] = useState(false); // 실제 위치 사용 여부
+  const [locationError, setLocationError] = useState(null); // 위치 오류 메시지
   const [reviewSummaries, setReviewSummaries] = useState({}); // 병원별 후기 요약
   const [loadingReviews, setLoadingReviews] = useState({}); // 후기 로딩 상태
   const mapRef = useRef(null);
@@ -53,7 +55,13 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         // 위치 및 병원 검색 (항상 수행)
         try {
           const position = await getCurrentPosition();
-          if (isMounted) setUserLocation(position);
+          if (isMounted) {
+            setUserLocation(position);
+            setIsRealLocation(position.isReal);
+            if (position.error) {
+              setLocationError(position.error);
+            }
+          }
 
           const hospitalList = await searchAnimalHospitals(position.lat, position.lng);
           if (isMounted) {
@@ -272,9 +280,14 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
   const handleRefreshLocation = async () => {
     setMapLoading(true);
+    setLocationError(null);
     try {
       const position = await getCurrentPosition();
       setUserLocation(position);
+      setIsRealLocation(position.isReal);
+      if (position.error) {
+        setLocationError(position.error);
+      }
       const hospitalList = await searchAnimalHospitals(position.lat, position.lng);
       setHospitals(hospitalList);
     } catch (error) {
@@ -391,6 +404,46 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
       </div>
 
       <div className="px-4 pt-4 pb-24 space-y-4">
+        {/* 위치 상태 배너 */}
+        {!isRealLocation && userLocation && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <div className="flex items-start gap-2">
+              <span className="text-amber-500 text-lg">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800">
+                  기본 위치(서울 강남)를 사용 중입니다
+                </p>
+                <p className="text-xs text-amber-600 mt-1">
+                  {locationError || '내 위치 기반 검색을 위해 위치 권한을 허용해주세요.'}
+                </p>
+                <button
+                  onClick={handleRefreshLocation}
+                  className="mt-2 px-3 py-1.5 bg-amber-500 text-white text-xs font-medium rounded-lg hover:bg-amber-600 transition-colors"
+                >
+                  📍 내 위치로 다시 검색
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isRealLocation && userLocation && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-green-500 text-lg">✅</span>
+              <p className="text-sm font-medium text-green-800">
+                내 위치 기반으로 주변 병원을 검색합니다
+              </p>
+              <button
+                onClick={handleRefreshLocation}
+                className="ml-auto px-2 py-1 text-xs text-green-600 hover:bg-green-100 rounded"
+              >
+                🔄 새로고침
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* AI 진단 요약 카드 */}
         {diagnosis && (
           <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl shadow-soft border border-primary/20 overflow-hidden">

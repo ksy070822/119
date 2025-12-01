@@ -40,28 +40,54 @@ export function loadKakao() {
 
 /**
  * 현재 위치 가져오기 (Geolocation API)
+ * @returns {Promise<{lat: number, lng: number, isReal: boolean, error?: string}>}
  */
 export function getCurrentPosition() {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocation을 지원하지 않습니다.'));
+      resolve({
+        lat: 37.4979,
+        lng: 127.0276,
+        isReal: false,
+        error: '이 브라우저는 위치 서비스를 지원하지 않습니다.'
+      });
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log('✅ 실제 위치 획득:', position.coords.latitude, position.coords.longitude);
         resolve({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
+          isReal: true
         });
       },
       (error) => {
-        // 위치 권한이 거부되면 서울 강남구 좌표 반환 (Fallback)
-        console.warn('위치 권한이 거부되었습니다. 기본 위치(서울 강남구)를 사용합니다.');
+        let errorMessage = '위치를 가져올 수 없습니다.';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = '위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = '위치 정보를 사용할 수 없습니다.';
+            break;
+          case error.TIMEOUT:
+            errorMessage = '위치 요청 시간이 초과되었습니다.';
+            break;
+        }
+        console.warn('⚠️ 위치 오류:', errorMessage);
         resolve({
           lat: 37.4979,
           lng: 127.0276,
+          isReal: false,
+          error: errorMessage
         });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
       }
     );
   });
