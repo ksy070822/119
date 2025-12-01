@@ -39,21 +39,30 @@ export const calculateTriageScore = async (petData, symptomData, medicalDiagnosi
 
 세부 규칙:
 - triage_score:
-  - 0~1: 거의 문제 없음
-  - 2: 경미, 외래 진료 필요성 낮음
-  - 3: 주의 필요, 24~48시간 내 외래 권장
+  - 0~1: 거의 문제 없음 → 홈케어로 충분, 병원 방문 불필요
+  - 2: 경미, 홈케어 권장 → 집에서 관찰하며 관리, 증상 악화 시에만 병원
+  - 3: 주의 필요 → 24~48시간 홈케어 후 개선 없으면 외래 진료
   - 4: 높은 위험, 오늘 안에 진료 권장
   - 5: 응급, 즉시 병원 방문 필요
 
 - triage_level:
-  - green: 0~1
-  - yellow: 2
-  - orange: 3~4
-  - red: 5
+  - green: 0~1 → "홈케어로 충분합니다. 경과 관찰하세요."
+  - yellow: 2 → "홈케어를 권장합니다. 증상이 악화되면 병원 방문을 고려하세요."
+  - orange: 3~4 → "24시간 내 병원 방문을 권장합니다."
+  - red: 5 → "즉시 병원 방문이 필요합니다."
+
+- recommended_action_window 선택 기준:
+  - "경과 관찰": green 등급, 홈케어로 충분한 경미한 증상
+  - "증상 악화 시": yellow 등급, 홈케어하며 악화 시에만 병원
+  - "24~48시간 내": orange 등급, 개선 없으면 병원
+  - "오늘 안에": orange 고위험
+  - "지금 바로": red 등급, 응급
 
 - health_flags:
   - Medical Agent의 possible_diseases와 body_part, risk_level을 근거로 값 설정
-  - energyLevel: 0~1 범위 실수 (0=매우 무기력, 1=정상 혹은 매우 활발)`;
+  - energyLevel: 0~1 범위 실수 (0=매우 무기력, 1=정상 혹은 매우 활발)
+
+중요: 경미한 증상(일시적 구토, 경미한 설사, 식욕 약간 감소, 가벼운 피부 증상)은 triage_score 0~2로 평가하고 홈케어를 우선 권장하세요. 모든 증상에 병원 방문을 권장하지 마세요.`;
 
   const userPrompt = `반려동물 정보:
 - 이름: ${petData.petName}
