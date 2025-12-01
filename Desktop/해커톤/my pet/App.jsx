@@ -2513,13 +2513,45 @@ function App() {
 
   // 로그인 없이 바로 입장 (테스트용)
   const handleSkipLogin = () => {
-    // 테스트용 게스트 유저
+    // 테스트용 게스트 유저 (고정 ID로 데이터 유지)
     const guestUser = {
-      uid: 'guest_' + Date.now(),
+      uid: 'guest_test_user',
       email: 'guest@test.com',
       displayName: '테스트 유저',
       userMode: 'guardian'
     };
+
+    // 이미 등록된 반려동물이 있는지 확인
+    const existingPets = getPetsForUser(guestUser.uid);
+
+    if (existingPets.length > 0) {
+      // 기존 반려동물 데이터 사용
+      setPets(existingPets);
+      setPetData(existingPets[0]);
+    } else {
+      // 기본 반려동물 자동 등록 (테스트 편의성)
+      const defaultPet = {
+        id: Date.now(),
+        userId: guestUser.uid,
+        name: '멍멍이',
+        species: 'dog',
+        breed: '믹스견',
+        birthDate: '2022-01-01',
+        sex: 'M',
+        neutered: true,
+        weight: 8.5,
+        sido: '서울특별시',
+        sigungu: '강남구',
+        profileImage: null,
+        character: 'dog_white',
+        createdAt: new Date().toISOString()
+      };
+
+      savePetsForUser(guestUser.uid, [defaultPet]);
+      setPets([defaultPet]);
+      setPetData(defaultPet);
+    }
+
     setCurrentUser(guestUser);
     setUserMode('guardian');
     setAuthScreen(null);
