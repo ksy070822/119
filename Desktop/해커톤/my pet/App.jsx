@@ -2327,43 +2327,6 @@ ${userQuestion}
         )}
       </div>
 
-        {chatMode && (
-          <div className="chat-input-container">
-            <div className="chat-input-wrapper">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (waitingForAnswer) {
-                      handleUserMessage();
-                    } else {
-                      handleUserQuestion();
-                    }
-                  }
-                }}
-                placeholder={waitingForAnswer ? "AI 의사의 질문에 답변해주세요..." : "궁금한 점을 물어보세요..."}
-                className="chat-input"
-                disabled={isProcessing}
-              />
-              <button
-                onClick={waitingForAnswer ? handleUserMessage : handleUserQuestion}
-                disabled={!userInput.trim() || isProcessing}
-                className="chat-send-btn"
-              >
-                {waitingForAnswer ? '답변하기' : '질문하기'}
-              </button>
-            </div>
-            {!waitingForAnswer && (
-              <div className="chat-hint">
-                💡 AI 의사에게 질문하거나, 추가 증상을 설명할 수 있습니다
-              </div>
-            )}
-          </div>
-        )}
-
       {showResult && diagnosisResult && (
         <div className="diagnosis-result">
           <div className="result-header">
@@ -2462,19 +2425,9 @@ ${userQuestion}
               <button
                 className="action-btn highlight"
                 onClick={() => setShowDiagnosisReport(true)}
-                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+                style={{ flex: '1 1 100%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
               >
                 📄 진단서 보기
-              </button>
-              <button
-                className="action-btn outline"
-                onClick={() => {
-                  setShowResult(false);
-                  setChatMode(true);
-                }}
-                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
-              >
-                💬 대화 계속하기
               </button>
               <button
                 className="action-btn outline"

@@ -80,7 +80,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '증상 사전 상담실',
       icon: '💉',
       type: 'info',
-      content: '네, 접수 확인했습니다. 보호자님, 증상에 대해 자세히 여쭤볼게요.',
+      content: '네, 접수 확인했습니다. 증상 정보를 분석 중입니다.',
       timestamp: Date.now()
     });
 

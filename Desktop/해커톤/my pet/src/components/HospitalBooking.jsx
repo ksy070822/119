@@ -375,13 +375,15 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     for (let hour = 9; hour <= 18; hour++) {
       // 오늘이면 현재 시간 이후만 표시
       if (isToday) {
-        // 정시 슬롯
-        if (hour > currentHour || (hour === currentHour && currentMinutes < 0)) {
+        // 정시 슬롯: 현재 시간보다 1시간 이상 후만 표시
+        if (hour > currentHour) {
           slots.push(`${hour.toString().padStart(2, '0')}:00`);
         }
-        // 30분 슬롯
-        if (hour < 18 && (hour > currentHour || (hour === currentHour && currentMinutes < 30))) {
-          slots.push(`${hour.toString().padStart(2, '0')}:30`);
+        // 30분 슬롯: 현재 시간+30분 이후만 표시
+        if (hour < 18) {
+          if (hour > currentHour || (hour === currentHour && currentMinutes < 30)) {
+            slots.push(`${hour.toString().padStart(2, '0')}:30`);
+          }
         }
       } else {
         // 오늘이 아니면 모든 시간 표시
