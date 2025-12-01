@@ -216,7 +216,35 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     const today = new Date().toISOString().split('T')[0];
     setBookingDate(today);
     setBookingTime('');
-    setBookingMessage('');
+
+    // AI 진단 요약이 있으면 자동으로 메시지에 포함
+    if (diagnosis) {
+      const symptomText = diagnosis.symptom || symptomData?.symptomText || '';
+      const diagnosisName = diagnosis.diagnosis || '';
+      const triageLevel = diagnosis.triage_level || '';
+      const hospitalVisitTime = diagnosis.hospitalVisitTime || '';
+
+      let defaultMessage = '';
+      if (symptomText) {
+        defaultMessage += `[증상] ${symptomText}\n`;
+      }
+      if (diagnosisName) {
+        defaultMessage += `[AI 진단] ${diagnosisName}\n`;
+      }
+      if (triageLevel) {
+        const levelText = triageLevel === 'red' ? '응급' :
+                         triageLevel === 'orange' ? '주의 필요' :
+                         triageLevel === 'yellow' ? '경미' : '정상';
+        defaultMessage += `[응급도] ${levelText}\n`;
+      }
+      if (hospitalVisitTime) {
+        defaultMessage += `[권장 방문] ${hospitalVisitTime}\n`;
+      }
+      defaultMessage += '\n※ AI 진단서가 함께 전송됩니다.';
+      setBookingMessage(defaultMessage.trim());
+    } else {
+      setBookingMessage('');
+    }
   };
 
   // AI 진단서 첨부 여부
@@ -312,13 +340,31 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     setBookingSuccess(true);
   };
 
-  // 예약 가능한 시간 슬롯 생성
+  // 예약 가능한 시간 슬롯 생성 (오늘인 경우 현재 시간 이후만)
   const getTimeSlots = () => {
     const slots = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const isToday = bookingDate === new Date().toISOString().split('T')[0];
+
     for (let hour = 9; hour <= 18; hour++) {
-      slots.push(`${hour.toString().padStart(2, '0')}:00`);
-      if (hour < 18) {
-        slots.push(`${hour.toString().padStart(2, '0')}:30`);
+      // 오늘이면 현재 시간 이후만 표시
+      if (isToday) {
+        // 정시 슬롯
+        if (hour > currentHour || (hour === currentHour && currentMinutes < 0)) {
+          slots.push(`${hour.toString().padStart(2, '0')}:00`);
+        }
+        // 30분 슬롯
+        if (hour < 18 && (hour > currentHour || (hour === currentHour && currentMinutes < 30))) {
+          slots.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
+      } else {
+        // 오늘이 아니면 모든 시간 표시
+        slots.push(`${hour.toString().padStart(2, '0')}:00`);
+        if (hour < 18) {
+          slots.push(`${hour.toString().padStart(2, '0')}:30`);
+        }
       }
     }
     return slots;

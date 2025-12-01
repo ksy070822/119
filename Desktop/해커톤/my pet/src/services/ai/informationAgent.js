@@ -1,21 +1,141 @@
-// Information Agent - 정보 수집가 (시뮬레이션)
+// Information Agent - Gemini Flash (빠른 증상 수집 + 질문 생성)
 import { COMMON_CONTEXT } from './commonContext';
+import { getApiKey, API_KEY_TYPES } from '../apiKeyManager';
 
-export const callInformationAgent = async (petData, symptomData, csSummary) => {
-  // 현재는 시뮬레이션, 나중에 실제 API 연동 가능
+// 보호자에게 물어볼 질문 생성
+export const generateFollowUpQuestions = async (petData, symptomData, csSummary) => {
+  const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
+  if (!apiKey) {
+    // Fallback: 기본 질문
+    return getDefaultQuestions(symptomData);
+  }
+
+  const prompt = `당신은 동물병원의 간호사입니다. 보호자가 설명한 증상을 바탕으로, 정확한 진단을 위해 추가로 확인해야 할 질문 2-3개를 생성해주세요.
+
+[반려동물 정보]
+- 이름: ${petData.petName}
+- 종류: ${petData.species === 'dog' ? '개' : '고양이'}
+- 품종: ${petData.breed || '미등록'}
+
+[보호자가 설명한 증상]
+${symptomData.symptomText || '증상 정보 없음'}
+
+[출력 형식 - JSON ONLY]
+{
+  "questions": [
+    {
+      "question": "보호자에게 물어볼 질문 (친절하고 구체적으로)",
+      "reason": "이 질문을 하는 이유 (내부용)"
+    }
+  ],
+  "intro_message": "보호자에게 질문하기 전 간단한 인사말"
+}
+
+규칙:
+- 질문은 2-3개만 생성하세요
+- 질문은 예/아니오로 답할 수 있거나, 구체적인 정보를 요청하는 형태로
+- 친근하고 이해하기 쉽게 작성`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+          }
+        })
+      }
+    );
+
+    if (!response.ok) throw new Error('API 오류');
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (error) {
+    console.error('질문 생성 오류:', error);
+  }
+
+  return getDefaultQuestions(symptomData);
+};
+
+// 기본 질문 (fallback)
+const getDefaultQuestions = (symptomData) => {
+  const symptomText = (symptomData?.symptomText || '').toLowerCase();
+  const questions = [];
+
+  if (symptomText.includes('구토') || symptomText.includes('설사')) {
+    questions.push({
+      question: "마지막으로 먹은 음식이 무엇인가요? 평소와 다른 음식을 먹었나요?",
+      reason: "식이 관련 원인 파악"
+    });
+    questions.push({
+      question: "구토/설사의 색깔이나 냄새에 특이한 점이 있나요?",
+      reason: "증상 심각도 파악"
+    });
+  } else if (symptomText.includes('귀') || symptomText.includes('긁')) {
+    questions.push({
+      question: "귀에서 냄새가 나거나 분비물이 보이나요?",
+      reason: "감염 여부 확인"
+    });
+    questions.push({
+      question: "언제부터 귀를 긁기 시작했나요?",
+      reason: "증상 기간 파악"
+    });
+  } else {
+    questions.push({
+      question: "증상이 언제부터 시작되었나요?",
+      reason: "증상 기간 파악"
+    });
+    questions.push({
+      question: "식욕과 활동량은 평소와 비교해서 어떤가요?",
+      reason: "전반적 건강 상태 파악"
+    });
+  }
+
+  return {
+    questions: questions,
+    intro_message: `${symptomData?.symptomText ? '말씀해주신 증상을 확인했습니다.' : ''} 정확한 진단을 위해 몇 가지 여쭤볼게요.`
+  };
+};
+
+// 보호자 답변 분석
+export const analyzeOwnerResponse = async (petData, symptomData, ownerResponses, csSummary) => {
+  const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
+
+  const combinedSymptoms = `${symptomData.symptomText || ''}\n\n[보호자 추가 답변]\n${ownerResponses.map((r, i) => `Q${i+1}: ${r.question}\nA${i+1}: ${r.answer}`).join('\n')}`;
+
+  if (!apiKey) {
+    // Fallback
+    return {
+      json: {
+        symptom_keywords: ['증상 확인됨'],
+        body_part_focus: ['기타'],
+        severity_hint: 'medium',
+        possible_categories: ['일반 질환'],
+        owner_responses_summary: ownerResponses.map(r => r.answer).join(', '),
+        notes_for_medical_agent: `보호자 답변을 바탕으로 추가 정보가 수집되었습니다. ${ownerResponses.length}개의 질문에 답변을 받았습니다.`
+      },
+      message: `보호자님 답변 감사합니다.\n\n📋 수집된 정보를 정리했습니다.\n👨‍⚕️ 담당 수의사 선생님께 진료 의뢰드립니다.`
+    };
+  }
+
   const prompt = `${COMMON_CONTEXT}
 
-당신은 "Information Agent (정보 수집가)"입니다.
+당신은 "Information Agent (증상 사전 상담실)"입니다.
 
 [역할]
-- 다른 에이전트들이 참고할 수 있도록, 비구조화된 입력에서 구조화된 정보와 힌트를 뽑아냅니다.
-- 실제 외부 API 호출, 웹 검색, 이미지 분석은 지금은 "시뮬레이션"으로만 처리합니다.
-- 유사 케이스, 이전 진료 기록, 증상 키워드, 의심 질환 키워드를 정리합니다.
-
-[입력]
-- cs_summary: CS Agent가 만든 요약 결과(JSON)
-- pet_profile: 반려동물 정보
-- user_description: 원본 보호자 증상 설명
+- 보호자의 초기 증상 설명과 추가 질문에 대한 답변을 종합하여 정보를 구조화합니다.
+- Medical Agent가 진단에 활용할 수 있도록 핵심 정보를 정리합니다.
 
 반려동물 정보:
 - 이름: ${petData.petName}
@@ -25,30 +145,73 @@ export const callInformationAgent = async (petData, symptomData, csSummary) => {
 CS Agent 요약:
 ${JSON.stringify(csSummary, null, 2)}
 
-원본 증상 설명:
-${symptomData.symptomText || '증상 정보 없음'}
+[보호자 증상 설명 및 답변]
+${combinedSymptoms}
 
 [출력 형식 - JSON ONLY]
-
 {
-  "symptom_keywords": ["짧은 키워드 형태의 증상 1", "증상 2"],
-  "body_part_focus": ["귀", "피부", "소화기", "호흡기", "눈", "관절/다리" 중 집중해야 할 부위 리스트],
-  "severity_hint": "low | medium | high 중 하나",
-  "possible_categories": ["피부질환", "귀질환", "소화기질환", "호흡기질환", "눈질환", "근골격", "행동/스트레스" 등 질환 카테고리 키워드],
-  "related_past_cases_summary": "과거 진료 기록 중 이번 케이스와 관련 있어 보이는 내용을 한 문단으로 요약 (없으면 빈 문자열)",
-  "notes_for_medical_agent": "Medical Agent가 진단에 참고할 만한 포인트를 한국어로 2~4문장으로 정리"
-}
+  "symptom_keywords": ["증상 키워드 1", "증상 키워드 2"],
+  "body_part_focus": ["귀", "피부", "소화기" 등 관련 부위],
+  "severity_hint": "low | medium | high",
+  "possible_categories": ["질환 카테고리 1", "질환 카테고리 2"],
+  "owner_responses_summary": "보호자 답변 요약 (한국어 2-3문장)",
+  "notes_for_medical_agent": "Medical Agent가 참고할 핵심 포인트 (한국어 3-4문장)"
+}`;
 
-규칙:
-- 외부 API나 실제 검색을 한 것처럼 구체적인 수치/병원명 등을 지어내지 마세요.
-- 대신 '유사 케이스가 많음/적음' 정도의 뉘앙스만 간단히 언급할 수 있습니다.`;
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1024,
+          }
+        })
+      }
+    );
 
-  // 시뮬레이션: 간단한 규칙 기반 분석
+    if (!response.ok) throw new Error('API 오류');
+
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+    if (jsonMatch) {
+      const content = JSON.parse(jsonMatch[0]);
+      return {
+        json: content,
+        message: `보호자님 답변 감사합니다.\n\n📋 ${content.owner_responses_summary}\n\n${content.notes_for_medical_agent}\n\n👨‍⚕️ 담당 수의사 선생님께 진료 의뢰드립니다.`
+      };
+    }
+  } catch (error) {
+    console.error('답변 분석 오류:', error);
+  }
+
+  // Fallback
+  return {
+    json: {
+      symptom_keywords: ['증상 확인됨'],
+      body_part_focus: ['기타'],
+      severity_hint: 'medium',
+      possible_categories: ['일반 질환'],
+      owner_responses_summary: ownerResponses.map(r => r.answer).join(', '),
+      notes_for_medical_agent: '보호자 답변을 바탕으로 추가 정보가 수집되었습니다.'
+    },
+    message: `보호자님 답변 감사합니다.\n\n📋 수집된 정보를 정리했습니다.\n👨‍⚕️ 담당 수의사 선생님께 진료 의뢰드립니다.`
+  };
+};
+
+// 기존 함수 (하위 호환용)
+export const callInformationAgent = async (petData, symptomData, csSummary) => {
   const symptomText = (symptomData.symptomText || '').toLowerCase();
   const keywords = [];
   const bodyParts = [];
   const categories = [];
-  
+
   if (symptomText.includes('귀') || symptomText.includes('이염')) {
     keywords.push('귀 문제');
     bodyParts.push('귀');
@@ -69,13 +232,13 @@ ${symptomData.symptomText || '증상 정보 없음'}
     bodyParts.push('호흡기');
     categories.push('호흡기질환');
   }
-  
-  const severityHint = csSummary?.first_urgency_assessment === 'emergency' || csSummary?.first_urgency_assessment === 'high' 
-    ? 'high' 
-    : csSummary?.first_urgency_assessment === 'moderate' 
-    ? 'medium' 
+
+  const severityHint = csSummary?.first_urgency_assessment === 'emergency' || csSummary?.first_urgency_assessment === 'high'
+    ? 'high'
+    : csSummary?.first_urgency_assessment === 'moderate'
+    ? 'medium'
     : 'low';
-  
+
   return {
     json: {
       symptom_keywords: keywords.length > 0 ? keywords : ['일반 증상'],
@@ -88,4 +251,3 @@ ${symptomData.symptomText || '증상 정보 없음'}
     message: `증상 정보 수집 완료.\n${symptomData.images?.length > 0 ? '📷 이미지 분석: 증상 부위 확인 중...\n' : ''}🔎 유사 케이스 검색: 데이터베이스 검색 중...\n📋 이전 진료 기록: 관련 기록 확인 중...\n📊 증상 패턴 분석: AI 모델 분석 중...\n\n→ 분석 완료. Veterinarian Agent에게 전달합니다.`
   };
 };
-

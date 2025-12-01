@@ -1,14 +1,14 @@
-// AI Triage Engine - GPT 활용
+// AI Triage Engine - Claude Sonnet (신중한 응급도 판정)
 import { COMMON_CONTEXT } from './commonContext';
 import { getApiKey, API_KEY_TYPES } from '../apiKeyManager';
 
 export const calculateTriageScore = async (petData, symptomData, medicalDiagnosis, csSummary) => {
-  const apiKey = getApiKey(API_KEY_TYPES.OPENAI);
+  const apiKey = getApiKey(API_KEY_TYPES.ANTHROPIC);
   if (!apiKey) {
-    throw new Error('OpenAI API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
+    throw new Error('Claude API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
   }
 
-  const model = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o';
+  const model = 'claude-sonnet-4-20250514';
 
   const systemPrompt = `${COMMON_CONTEXT}
 
@@ -18,22 +18,10 @@ export const calculateTriageScore = async (petData, symptomData, medicalDiagnosi
 - Medical Agent의 진단 결과와 증상 요약을 바탕으로 응급도를 점수화합니다.
 - 0~5 사이의 triage_score를 계산합니다. (0=전혀 응급 아님, 5=즉각적인 응급 상황)
 - health_flags를 생성하여 어떤 부위에 문제가 있는지, 전반적인 에너지 상태가 어떤지 정리합니다.
-- 이 출력은 아바타(디지털 트윈)와 병원 사전 패킷 양쪽 모두에서 사용됩니다.`;
-
-  const userPrompt = `반려동물 정보:
-- 이름: ${petData.petName}
-- 종류: ${petData.species === 'dog' ? '개' : '고양이'}
-- 나이: ${petData.age || '미등록'}세
-
-증상: ${symptomData?.symptomText || '증상 정보 없음'}
-
-수의사 진단:
-${JSON.stringify(medicalDiagnosis, null, 2)}
-
-CS Agent 요약:
-${JSON.stringify(csSummary, null, 2)}
+- 이 출력은 아바타(디지털 트윈)와 병원 사전 패킷 양쪽 모두에서 사용됩니다.
 
 [출력 형식 - JSON ONLY]
+반드시 아래 JSON 형식만 출력하세요. 다른 텍스트는 포함하지 마세요.
 
 {
   "triage_score": 0,
@@ -51,59 +39,93 @@ ${JSON.stringify(csSummary, null, 2)}
 
 세부 규칙:
 - triage_score:
-  - 0~1: 거의 문제 없음
-  - 2: 경미, 외래 진료 필요성 낮음
-  - 3: 주의 필요, 24~48시간 내 외래 권장
+  - 0~1: 거의 문제 없음 → 홈케어로 충분, 병원 방문 불필요
+  - 2: 경미, 홈케어 권장 → 집에서 관찰하며 관리, 증상 악화 시에만 병원
+  - 3: 주의 필요 → 24~48시간 홈케어 후 개선 없으면 외래 진료
   - 4: 높은 위험, 오늘 안에 진료 권장
   - 5: 응급, 즉시 병원 방문 필요
 
 - triage_level:
-  - green: 0~1
-  - yellow: 2
-  - orange: 3~4
-  - red: 5
+  - green: 0~1 → "홈케어로 충분합니다. 경과 관찰하세요."
+  - yellow: 2 → "홈케어를 권장합니다. 증상이 악화되면 병원 방문을 고려하세요."
+  - orange: 3~4 → "24시간 내 병원 방문을 권장합니다."
+  - red: 5 → "즉시 병원 방문이 필요합니다."
+
+- recommended_action_window 선택 기준:
+  - "경과 관찰": green 등급, 홈케어로 충분한 경미한 증상
+  - "증상 악화 시": yellow 등급, 홈케어하며 악화 시에만 병원
+  - "24~48시간 내": orange 등급, 개선 없으면 병원
+  - "오늘 안에": orange 고위험
+  - "지금 바로": red 등급, 응급
 
 - health_flags:
   - Medical Agent의 possible_diseases와 body_part, risk_level을 근거로 값 설정
   - energyLevel: 0~1 범위 실수 (0=매우 무기력, 1=정상 혹은 매우 활발)
 
+중요: 경미한 증상(일시적 구토, 경미한 설사, 식욕 약간 감소, 가벼운 피부 증상)은 triage_score 0~2로 평가하고 홈케어를 우선 권장하세요. 모든 증상에 병원 방문을 권장하지 마세요.`;
+
+  const userPrompt = `반려동물 정보:
+- 이름: ${petData.petName}
+- 종류: ${petData.species === 'dog' ? '개' : '고양이'}
+- 나이: ${petData.age || '미등록'}세
+
+증상: ${symptomData?.symptomText || '증상 정보 없음'}
+
+수의사 진단:
+${JSON.stringify(medicalDiagnosis, null, 2)}
+
+CS Agent 요약:
+${JSON.stringify(csSummary, null, 2)}
+
 출력은 반드시 JSON만 반환하세요.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model: model,
+        max_tokens: 1024,
+        system: systemPrompt,
         messages: [
-          { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.3,
-        response_format: { type: 'json_object' }
+        ]
       })
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API 오류: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Claude API 오류: ${response.status} - ${errorData.error?.message || '알 수 없는 오류'}`);
     }
 
     const data = await response.json();
-    const content = JSON.parse(data.choices[0].message.content);
-    
+    const textContent = data.content[0].text;
+
+    // JSON 파싱
+    let content;
+    try {
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      content = JSON.parse(jsonMatch ? jsonMatch[0] : textContent);
+    } catch (parseError) {
+      console.error('JSON 파싱 오류:', parseError);
+      throw new Error('응답 형식 오류');
+    }
+
     return content;
   } catch (error) {
     console.error('Triage Engine 오류:', error);
-    
+
     // Fallback
     const riskLevel = medicalDiagnosis?.risk_level || medicalDiagnosis?.riskLevel || 'moderate';
     let triageScore = 2;
     let triageLevel = 'yellow';
     let urgency = '24~48시간 내';
-    
+
     if (riskLevel === 'emergency' || riskLevel === 'Emergency') {
       triageScore = 5;
       triageLevel = 'red';
@@ -121,7 +143,7 @@ ${JSON.stringify(csSummary, null, 2)}
       triageLevel = 'orange';
       urgency = '24~48시간 내';
     }
-    
+
     // health_flags 생성
     const possibleDiseases = medicalDiagnosis?.possible_diseases || [];
     const healthFlags = {
@@ -131,7 +153,7 @@ ${JSON.stringify(csSummary, null, 2)}
       fever: false,
       energyLevel: triageScore <= 2 ? 0.8 : triageScore <= 3 ? 0.6 : 0.4
     };
-    
+
     return {
       triage_score: triageScore,
       triage_level: triageLevel,

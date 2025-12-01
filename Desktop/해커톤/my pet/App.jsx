@@ -1585,6 +1585,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
   const [messages, setMessages] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const [expandedRooms, setExpandedRooms] = useState({}); // 완료된 룸의 상세보기 확장 상태
   const [diagnosisResult, setDiagnosisResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(true);
   const [userInput, setUserInput] = useState('');
@@ -1608,15 +1609,20 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
           symptomData,
           (log) => {
             if (!isMounted) return; // 컴포넌트가 언마운트되었으면 무시
-            
-            // 중복 메시지 방지: 같은 에이전트의 "진행 중..." 메시지가 있으면 제거
+
+            // 모든 메시지를 유지하되, 완전히 동일한 중복 메시지만 제거
             setMessages(prev => {
-              const filtered = prev.filter(msg => 
-                !(msg.agent === log.agent && msg.content.includes('중...') && log.content !== msg.content)
+              // 완전히 동일한 메시지(같은 에이전트, 같은 내용)인 경우만 제거
+              const isDuplicate = prev.some(msg =>
+                msg.agent === log.agent && msg.content === log.content
               );
-              
-              // 새 메시지 추가
-              return [...filtered, {
+
+              if (isDuplicate) {
+                return prev; // 중복이면 추가하지 않음
+              }
+
+              // 새 메시지 추가 (기존 메시지 모두 유지)
+              return [...prev, {
                 agent: log.agent,
                 role: log.role,
                 icon: log.icon,
@@ -1820,10 +1826,10 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
     setIsProcessing(true);
 
     try {
-      // Gemini API를 직접 사용하여 질문에 답변
-      const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
+      // Claude API를 사용하여 질문에 답변 (더 정확한 수의학 답변)
+      const apiKey = getApiKey(API_KEY_TYPES.ANTHROPIC);
       if (!apiKey) {
-        throw new Error('Gemini API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
+        throw new Error('Claude API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
       }
 
       // 진단 결과에서 상세 정보 추출
@@ -1835,10 +1841,18 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
       const immediateActions = ownerSheet.immediate_home_actions || actions;
       const thingsToAvoid = ownerSheet.things_to_avoid || [];
       const monitoringGuide = ownerSheet.monitoring_guide || [];
+      const carePlan = diagnosisResult.carePlan || {};
+      const followUpGuide = carePlan.follow_up_guide || {};
 
-      const prompt = `당신은 전문 수의사입니다. 반려동물 보호자의 질문에 대해 정확하고 친절하게 답변해주세요.
+      const systemPrompt = `당신은 경력 10년 이상의 전문 수의사입니다. 반려동물 보호자의 질문에 대해 정확하고 친절하게 답변해주세요.
 
-[반려동물 정보]
+중요 원칙:
+- 경미한 증상은 홈케어를 우선 권장하고, 무조건 병원 방문을 권하지 마세요.
+- 구체적이고 실용적인 조언을 제공하세요 (예: 어떤 음식을 얼마나, 구체적인 케어 방법)
+- 증상이 악화되는 경우에만 병원 방문을 안내하세요.
+- 검증되지 않은 민간요법은 제안하지 마세요.`;
+
+      const userPrompt = `[반려동물 정보]
 - 이름: ${petData.petName}
 - 종류: ${petData.species === 'dog' ? '개' : '고양이'}
 - 품종: ${petData.breed || '미등록'}
@@ -1850,6 +1864,7 @@ ${petData.weight ? `- 체중: ${petData.weight}kg` : ''}
 - 위험도: ${riskLevel}
 - 응급도: ${diagnosisResult.triage_level || 'yellow'}
 - Triage Score: ${diagnosisResult.triage_score || 'N/A'}/5
+- 병원 방문 필요 여부: ${carePlan.hospital_needed ? '필요' : '홈케어로 충분'}
 
 [권장 조치사항]
 ${immediateActions.length > 0 ? immediateActions.map((a, i) => `${i + 1}. ${a}`).join('\n') : '추가 조치사항 없음'}
@@ -1860,6 +1875,10 @@ ${thingsToAvoid.length > 0 ? thingsToAvoid.map((a, i) => `${i + 1}. ${a}`).join(
 [관찰 포인트]
 ${monitoringGuide.length > 0 ? monitoringGuide.map((a, i) => `${i + 1}. ${a}`).join('\n') : '없음'}
 
+[재진료 안내]
+- 홈케어 기간: ${followUpGuide.home_care_duration || '2~3일간 관찰'}
+- 병원 방문 조건: ${followUpGuide.condition_for_hospital || '증상 악화 시'}
+
 ${careGuide ? `[케어 가이드]\n${careGuide}` : ''}
 
 [보호자 질문]
@@ -1869,45 +1888,46 @@ ${userQuestion}
 1. 질문에 대한 구체적이고 실용적인 답변
 2. 현재 진단 결과와 연관된 조언
 3. 구체적인 실행 방법 (예: 음식 추천, 케어 방법, 주의사항)
-4. 필요시 병원 방문 시점 안내
+4. 필요시에만 병원 방문 시점 안내 (경미한 경우 홈케어 우선)
 
-답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다. 추측이나 검증되지 않은 정보는 제공하지 마세요.`;
+답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다.`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              topK: 40,
-              topP: 0.95,
-              maxOutputTokens: 1024,
-            }
-          })
-        }
-      );
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [
+            { role: 'user', content: userPrompt }
+          ]
+        })
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Gemini API 오류:', response.status, errorData);
-        throw new Error(`API 호출 실패: ${response.status}`);
+        console.error('Claude API 오류:', response.status, errorData);
+        throw new Error(`API 호출 실패: ${response.status} - ${errorData.error?.message || '알 수 없는 오류'}`);
       }
 
       const data = await response.json();
-      
-      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+
+      if (!data.content || !data.content[0] || !data.content[0].text) {
         throw new Error('API 응답 형식 오류');
       }
 
-      const answer = data.candidates[0].content.parts[0].text;
-      
+      const answer = data.content[0].text;
+
       if (!answer || answer.trim().length === 0) {
         throw new Error('빈 답변을 받았습니다');
       }
-      
+
       setMessages(prev => [...prev, {
         agent: 'Veterinarian Agent',
         role: '전문 수의사',
@@ -2132,19 +2152,43 @@ ${userQuestion}
                   gap: '6px'
                 }}>
                   {status === 'completed' && (
-                    <div style={{
-                      background: '#22c55e',
-                      color: 'white',
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      <span>✓</span> 완료
-                    </div>
+                    <>
+                      <button
+                        onClick={() => setExpandedRooms(prev => ({
+                          ...prev,
+                          [room.id]: !prev[room.id]
+                        }))}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid #22c55e',
+                          color: '#22c55e',
+                          padding: '4px 10px',
+                          borderRadius: '16px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {expandedRooms[room.id] ? '▲ 접기' : '▼ 펼치기'}
+                      </button>
+                      <div style={{
+                        background: '#22c55e',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <span>✓</span> 완료
+                      </div>
+                    </>
                   )}
                   {status === 'processing' && (
                     <div style={{
@@ -2202,12 +2246,15 @@ ${userQuestion}
                 </div>
               </div>
 
-              {/* 대화 내용 (모든 메시지 표시) */}
-              {isActive && roomMessages.length > 0 && (
+              {/* 대화 내용 - 진행중이거나 펼친 상태일 때 표시 */}
+              {isActive && roomMessages.length > 0 && (status === 'processing' || expandedRooms[room.id]) && (
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px'
+                  gap: '8px',
+                  marginTop: '12px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid rgba(0,0,0,0.08)'
                 }}>
                   {roomMessages.map((msg, msgIdx) => {
                     const isUserMessage = msg.agent === '사용자';
@@ -2241,6 +2288,21 @@ ${userQuestion}
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* 완료된 룸 - 접힌 상태일 때 요약 메시지 표시 */}
+              {status === 'completed' && roomMessages.length > 0 && !expandedRooms[room.id] && (
+                <div style={{
+                  marginTop: '8px',
+                  padding: '8px 12px',
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  color: '#16a34a',
+                  fontWeight: '500'
+                }}>
+                  ✓ {roomMessages.length}개의 메시지 (클릭하여 상세 내용 확인)
                 </div>
               )}
             </div>
@@ -3248,6 +3310,30 @@ function App() {
                 </p>
               </div>
             )}
+
+            {/* 병원 예약 버튼 - 병원에 가지 않은 AI 진단인 경우 표시 */}
+            {(!lastDiagnosis.visitedHospital) && (
+              <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+                <h3 className="flex items-center gap-2 text-slate-900 font-bold mb-3">
+                  <span className="material-symbols-outlined text-primary">event_available</span>
+                  병원 예약
+                </h3>
+                <p className="text-slate-600 text-sm mb-4">
+                  AI 진단 결과를 바탕으로 가까운 동물병원에 예약하세요. 진단서가 자동으로 전송됩니다.
+                </p>
+                <button
+                  onClick={() => {
+                    setSymptomData({ symptomText: lastDiagnosis.symptom || lastDiagnosis.description });
+                    setCurrentTab('hospital');
+                    setCurrentView(null);
+                  }}
+                  className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+                >
+                  <span className="material-symbols-outlined">local_hospital</span>
+                  병원 예약하기
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3355,6 +3441,7 @@ function App() {
                 setCurrentView('diagnosis-view');
               }}
               onOCR={() => setCurrentView('ocr')}
+              onHospitalBooking={() => setCurrentTab('hospital')}
             />
           )}
 

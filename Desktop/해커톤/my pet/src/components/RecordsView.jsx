@@ -184,12 +184,12 @@ const DUMMY_VACCINATIONS = [
   }
 ];
 
-export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome }) {
+export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, onHospitalBooking }) {
   const [activeTab, setActiveTab] = useState('visits'); // visits, medication, checkup, vaccination
   const [diagnoses, setDiagnoses] = useState([]);
   const [clinicResults, setClinicResults] = useState([]);
   const [medicationFeedback, setMedicationFeedback] = useState({});
-  const [useDummyData, setUseDummyData] = useState(false); // 더미데이터 사용 플래그 - 실제 서비스용 false
+  const [useDummyData, setUseDummyData] = useState(true); // 더미데이터 사용 플래그 - 샘플 데이터 표시
 
   // 진단 기록 로드
   useEffect(() => {
@@ -756,11 +756,14 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome })
                 <div className="bg-surface-light rounded-lg p-4 shadow-soft">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="text-slate-900 font-bold text-sm mb-1">종합백신</h4>
+                      <h4 className="text-slate-900 font-bold text-sm mb-1">종합백신 (DHPPL)</h4>
                       <p className="text-slate-500 text-xs">1년에 1번 접종이 권장됩니다.</p>
                     </div>
-                    <button className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors">
-                      최저가 예약
+                    <button
+                      onClick={() => onHospitalBooking && onHospitalBooking()}
+                      className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      지금 예약하기
                     </button>
                   </div>
                 </div>
@@ -770,8 +773,25 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome })
                       <h4 className="text-slate-900 font-bold text-sm mb-1">심장사상충 예방약</h4>
                       <p className="text-slate-500 text-xs">1개월에 1번 접종이 권장됩니다.</p>
                     </div>
-                    <button className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors">
-                      최저가 예약
+                    <button
+                      onClick={() => onHospitalBooking && onHospitalBooking()}
+                      className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      지금 예약하기
+                    </button>
+                  </div>
+                </div>
+                <div className="bg-surface-light rounded-lg p-4 shadow-soft">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="text-slate-900 font-bold text-sm mb-1">광견병 백신</h4>
+                      <p className="text-slate-500 text-xs">1년에 1번 접종 (법적 의무)</p>
+                    </div>
+                    <button
+                      onClick={() => onHospitalBooking && onHospitalBooking()}
+                      className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary/90 transition-colors"
+                    >
+                      지금 예약하기
                     </button>
                   </div>
                 </div>

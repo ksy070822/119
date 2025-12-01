@@ -142,8 +142,8 @@ export const getRequiredApiKeysStatus = () => {
     },
     anthropic: {
       configured: isApiKeyConfigured(API_KEY_TYPES.ANTHROPIC),
-      label: 'Anthropic Claude',
-      description: '병원 패킷 생성에 사용',
+      label: 'Anthropic Claude (필수)',
+      description: 'Medical Agent, Triage, Ops Agent 핵심 진단에 사용',
       placeholder: 'sk-ant-...'
     }
   };

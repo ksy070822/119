@@ -1,14 +1,16 @@
-// Ops Agent - Gemini (JSON 구조화/기록 - CORS 이슈로 Anthropic에서 Gemini로 변경)
+// Ops Agent - Claude Sonnet (JSON 구조화/기록 최강)
 import { COMMON_CONTEXT } from './commonContext';
 import { getApiKey, API_KEY_TYPES } from '../apiKeyManager';
 
 export const callOpsAgent = async (petData, symptomData, medicalDiagnosis, triageResult, csSummary, infoSummary) => {
-  const apiKey = getApiKey(API_KEY_TYPES.GEMINI);
+  const apiKey = getApiKey(API_KEY_TYPES.ANTHROPIC);
   if (!apiKey) {
-    throw new Error('Gemini API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
+    throw new Error('Claude API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
   }
 
-  const prompt = `${COMMON_CONTEXT}
+  const model = 'claude-sonnet-4-20250514';
+
+  const systemPrompt = `${COMMON_CONTEXT}
 
 당신은 "Ops Agent (데이터 처리자)"입니다.
 
@@ -17,31 +19,8 @@ export const callOpsAgent = async (petData, symptomData, medicalDiagnosis, triag
 - 병원에 전달할 수 있는 "사전 진단 패킷(pre-visit packet)"을 생성합니다.
 - JSON 포맷을 엄격하게 지키고, 필드 누락 없이 출력합니다.
 
-[입력]
-- pet_profile: 반려동물 정보
-- cs_summary: CS Agent JSON
-- info_summary: Information Agent JSON
-- medical_result: Medical Agent JSON
-- triage_result: Triage Engine JSON
-
-반려동물 정보:
-- 이름: ${petData.petName}
-- 종류: ${petData.species === 'dog' ? '개' : '고양이'}
-- 품종: ${petData.breed || '미등록'}
-
-CS Agent 요약:
-${JSON.stringify(csSummary, null, 2)}
-
-Information Agent 요약:
-${JSON.stringify(infoSummary, null, 2)}
-
-Medical Agent 진단:
-${JSON.stringify(medicalDiagnosis, null, 2)}
-
-Triage Engine 결과:
-${JSON.stringify(triageResult, null, 2)}
-
 [출력 형식 - JSON ONLY]
+반드시 아래 JSON 형식만 출력하세요. 다른 텍스트는 포함하지 마세요.
 
 {
   "medical_log": {
@@ -112,46 +91,78 @@ ${JSON.stringify(triageResult, null, 2)}
 - JSON 구조를 반드시 지키고, 모든 필드를 포함하세요.
 - 보호자용(owner_friendly_diagnosis_sheet)과 병원용(hospital_previsit_packet)은 톤을 다르게 써야 합니다.
   - 보호자용: 쉽고 부드럽게
-  - 병원용: 전문 용어 허용, 요약 중심
-- 출력은 반드시 JSON만 반환하세요.`;
+  - 병원용: 전문 용어 허용, 요약 중심`;
+
+  const userPrompt = `[입력]
+- pet_profile: 반려동물 정보
+- cs_summary: CS Agent JSON
+- info_summary: Information Agent JSON
+- medical_result: Medical Agent JSON
+- triage_result: Triage Engine JSON
+
+반려동물 정보:
+- 이름: ${petData.petName}
+- 종류: ${petData.species === 'dog' ? '개' : '고양이'}
+- 품종: ${petData.breed || '미등록'}
+
+CS Agent 요약:
+${JSON.stringify(csSummary, null, 2)}
+
+Information Agent 요약:
+${JSON.stringify(infoSummary, null, 2)}
+
+Medical Agent 진단:
+${JSON.stringify(medicalDiagnosis, null, 2)}
+
+Triage Engine 결과:
+${JSON.stringify(triageResult, null, 2)}
+
+출력은 반드시 JSON만 반환하세요.`;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }]
-        })
-      }
-    );
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 4096,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: userPrompt }
+        ]
+      })
+    });
 
     if (!response.ok) {
-      throw new Error(`Gemini API 오류: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Claude API 오류: ${response.status} - ${errorData.error?.message || '알 수 없는 오류'}`);
     }
 
     const data = await response.json();
-    const text = data.candidates[0].content.parts[0].text;
-    
-    // JSON 추출
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const content = JSON.parse(jsonMatch[0]);
-      return {
-        json: content,
-        message: `진료 기록 생성 완료.\n진단서 템플릿 준비 중...\n데이터 저장 완료.\n\n→ 진단서 생성 완료!`
-      };
+    const textContent = data.content[0].text;
+
+    // JSON 파싱
+    let content;
+    try {
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      content = JSON.parse(jsonMatch ? jsonMatch[0] : textContent);
+    } catch (parseError) {
+      console.error('JSON 파싱 오류:', parseError);
+      throw new Error('응답 형식 오류');
     }
-    
-    throw new Error('JSON 파싱 실패');
+
+    return {
+      json: content,
+      message: `진료 기록 생성 완료.\n진단서 템플릿 준비 중...\n데이터 저장 완료.\n\n→ 진단서 생성 완료!`
+    };
   } catch (error) {
     console.error('Ops Agent 오류:', error);
-    
+
     // Fallback
     const healthFlags = triageResult?.health_flags || {
       earIssue: false,
@@ -160,7 +171,7 @@ ${JSON.stringify(triageResult, null, 2)}
       fever: false,
       energyLevel: 0.7
     };
-    
+
     return {
       json: {
         medical_log: {
