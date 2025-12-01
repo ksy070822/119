@@ -303,6 +303,8 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
     password: '',
     passwordConfirm: '',
     phone: '',
+    gender: '', // 선택: 'male', 'female', ''
+    birthYear: '', // 선택: 출생연도
     agreeTerms: false,
     agreePrivacy: false,
     agreeMarketing: false
@@ -355,6 +357,22 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
     );
 
     if (result.success) {
+      // Firestore에 추가 사용자 정보 저장 (gender, birthYear는 null 허용)
+      try {
+        await userService.saveUser(result.user.uid, {
+          email: formData.email,
+          displayName: formData.name,
+          phone: formData.phone || null,
+          gender: formData.gender || null,
+          birthYear: formData.birthYear ? parseInt(formData.birthYear) : null,
+          userMode: 'guardian', // 기본값
+          agreeMarketing: formData.agreeMarketing,
+          createdAt: new Date().toISOString()
+        });
+      } catch (firestoreError) {
+        console.warn('Firestore 추가 정보 저장 실패:', firestoreError);
+      }
+
       setRegisteredUser(result.user);
       setStep(3);
     } else {
@@ -457,6 +475,38 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
               />
+            </div>
+
+            {/* 선택 정보: 성별, 출생연도 */}
+            <div className="pt-2 border-t border-slate-200">
+              <p className="text-xs text-slate-400 mb-3">선택 정보</p>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">성별</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                  >
+                    <option value="">선택안함</option>
+                    <option value="male">남성</option>
+                    <option value="female">여성</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">출생연도</label>
+                  <select
+                    value={formData.birthYear}
+                    onChange={(e) => setFormData({ ...formData, birthYear: e.target.value })}
+                    className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
+                  >
+                    <option value="">선택안함</option>
+                    {Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}년</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {error && (

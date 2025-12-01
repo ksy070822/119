@@ -2822,11 +2822,11 @@ function App() {
     setUserMode(mode);
     setCurrentView(null);
     setCurrentTab('care');
-    // 세션에도 모드 저장
+    // userMode를 localStorage에 저장
+    localStorage.setItem('petMedical_userMode', mode);
     if (currentUser) {
       const updatedUser = { ...currentUser, userMode: mode };
       setCurrentUser(updatedUser);
-      localStorage.setItem('petMedical_auth', JSON.stringify(updatedUser));
     }
   };
 
@@ -2841,7 +2841,10 @@ function App() {
     const savedSession = getAuthSession();
     if (savedSession) {
       setCurrentUser(savedSession);
-      setUserMode(savedSession.userMode || 'guardian');
+
+      // localStorage에서 userMode 복원 (우선순위: localStorage > savedSession > 기본값)
+      const savedUserMode = localStorage.getItem('petMedical_userMode');
+      setUserMode(savedUserMode || savedSession.userMode || 'guardian');
       setAuthScreen(null);
 
       // 로그인된 사용자의 반려동물 데이터 로드
@@ -2857,9 +2860,13 @@ function App() {
 
   // 로그인 성공 핸들러
   const handleLogin = (user) => {
+    const mode = user.userMode || 'guardian';
     setCurrentUser(user);
-    setUserMode(user.userMode || 'guardian');
+    setUserMode(mode);
     setAuthScreen(null);
+
+    // userMode를 localStorage에 저장
+    localStorage.setItem('petMedical_userMode', mode);
 
     // 로그인한 사용자의 반려동물 데이터 로드
     const userPets = getPetsForUser(user.uid);
@@ -2885,7 +2892,9 @@ function App() {
   // 로그아웃 핸들러
   const handleLogout = () => {
     clearAuthSession();
+    localStorage.removeItem('petMedical_userMode');
     setCurrentUser(null);
+    setUserMode('guardian');
     setPets([]);
     setPetData(null);
     setAuthScreen('login');
