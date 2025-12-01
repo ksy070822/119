@@ -907,6 +907,19 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                   >
                     🗺️ 길찾기
                   </a>
+                  <a
+                    href="https://service.kakaomobility.com/launch/kakaot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2.5 text-center border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="24" height="24" rx="4" fill="#1E1B4B"/>
+                      <path d="M4 7H20V9H4V7Z" fill="#FACC15"/>
+                      <path d="M10 9H14V20H10V9Z" fill="#FACC15"/>
+                    </svg>
+                    펫택시
+                  </a>
                   <button
                     onClick={() => handleBookAppointment(hospital)}
                     className="flex-1 py-2.5 text-center bg-sky-500 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-colors"
