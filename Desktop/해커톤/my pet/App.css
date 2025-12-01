@@ -16,6 +16,35 @@ body {
   padding: 0;
 }
 
+/* ========== 웹 반응형 레이아웃 ========== */
+.app-root {
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  background-color: #f0f9ff;
+  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+}
+
+/* 웹에서 좌우 여백 표시 */
+@media (min-width: 481px) {
+  body {
+    background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%);
+  }
+
+  .app-root {
+    border-left: 1px solid #e2e8f0;
+    border-right: 1px solid #e2e8f0;
+  }
+}
+
+/* 태블릿/데스크톱에서 더 넓게 */
+@media (min-width: 768px) {
+  .app-root {
+    max-width: 430px;
+  }
+}
+
 /* Custom scrollbar */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
@@ -236,6 +265,70 @@ body {
   font-size: 11px;
   color: #64748b;
   text-align: center;
+}
+
+/* 동물 종류 선택 그리드 */
+.species-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.species-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f8fafc;
+}
+
+.species-btn:hover {
+  border-color: #38bdf8;
+  transform: scale(1.03);
+}
+
+.species-btn.active {
+  border-color: #0284c7;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.species-emoji {
+  font-size: 28px;
+}
+
+.species-label {
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+  font-weight: 500;
+}
+
+.species-btn.active .species-label {
+  color: #0284c7;
+  font-weight: 600;
+}
+
+/* 품종 선택 드롭다운 */
+.breed-select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.breed-select:focus {
+  outline: none;
+  border-color: #38bdf8;
 }
 
 .form-group {

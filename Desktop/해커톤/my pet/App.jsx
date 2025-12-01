@@ -165,12 +165,25 @@ const PET_CHARACTERS = {
 const SPECIES_OPTIONS = [
   { id: 'dog', label: '강아지', emoji: '🐕' },
   { id: 'cat', label: '고양이', emoji: '🐈' },
-  { id: 'bird', label: '새', emoji: '🐦' },
-  { id: 'hamster', label: '햄스터', emoji: '🐹' },
   { id: 'rabbit', label: '토끼', emoji: '🐰' },
-  { id: 'fish', label: '물고기', emoji: '🐠' },
+  { id: 'hamster', label: '햄스터', emoji: '🐹' },
+  { id: 'bird', label: '앵무새', emoji: '🦜' },
   { id: 'turtle', label: '거북이', emoji: '🐢' },
+  { id: 'fish', label: '물고기', emoji: '🐠' },
   { id: 'other', label: '기타', emoji: '🐾' },
+];
+
+// 개/고양이 대표 품종 목록
+const DOG_BREEDS = [
+  '믹스견', '말티즈', '푸들', '포메라니안', '치와와', '시츄', '요크셔테리어',
+  '비숑프리제', '골든리트리버', '래브라도리트리버', '사모예드', '웰시코기',
+  '진돗개', '시바이누', '비글', '프렌치불독', '불독', '닥스훈트', '슈나우저', '기타'
+];
+
+const CAT_BREEDS = [
+  '믹스묘', '코리안숏헤어', '러시안블루', '페르시안', '브리티시숏헤어',
+  '스코티시폴드', '먼치킨', '노르웨이숲', '메인쿤', '랙돌', '아비시니안',
+  '뱅갈', '샴', '버만', '터키시앙고라', '아메리칸숏헤어', '기타'
 ];
 
 // ============ 프로필 등록 화면 ============
@@ -211,10 +224,28 @@ function ProfileRegistration({ onComplete, userId }) {
     }
   };
 
-  // 종류 변경시 캐릭터도 변경
+  // 종류 변경시 캐릭터와 품종도 변경
   const handleSpeciesChange = (species) => {
-    const defaultCharacter = species === 'dog' ? 'dog_white' : 'cat_orange';
-    setFormData(prev => ({ ...prev, species, character: defaultCharacter }));
+    // 각 종류별 기본 캐릭터 설정
+    const defaultCharacters = {
+      dog: 'dog_white',
+      cat: 'cat_orange',
+      bird: 'bird_parrot',
+      hamster: 'hamster_gold',
+      rabbit: 'rabbit_white',
+      fish: 'fish_gold',
+      turtle: 'turtle_land',
+      other: 'other_pet'
+    };
+    const defaultCharacter = defaultCharacters[species] || 'other_pet';
+    // 개/고양이가 아닌 경우 품종 초기화
+    const shouldClearBreed = species !== 'dog' && species !== 'cat';
+    setFormData(prev => ({
+      ...prev,
+      species,
+      character: defaultCharacter,
+      breed: shouldClearBreed ? '' : prev.breed
+    }));
   };
 
   const regions = {
@@ -360,41 +391,37 @@ function ProfileRegistration({ onComplete, userId }) {
 
             <div className="form-group">
               <label>종류 *</label>
-              <div className="radio-group">
-                <div className={`radio-item ${formData.species === 'dog' ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    id="dog"
-                    name="species"
-                    value="dog"
-                    checked={formData.species === 'dog'}
-                    onChange={(e) => handleSpeciesChange(e.target.value)}
-                  />
-                  <label htmlFor="dog">🐕 개</label>
-                </div>
-                <div className={`radio-item ${formData.species === 'cat' ? 'active' : ''}`}>
-                  <input
-                    type="radio"
-                    id="cat"
-                    name="species"
-                    value="cat"
-                    checked={formData.species === 'cat'}
-                    onChange={(e) => handleSpeciesChange(e.target.value)}
-                  />
-                  <label htmlFor="cat">🐈 고양이</label>
-                </div>
+              <div className="species-grid">
+                {SPECIES_OPTIONS.map(option => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`species-btn ${formData.species === option.id ? 'active' : ''}`}
+                    onClick={() => handleSpeciesChange(option.id)}
+                  >
+                    <span className="species-emoji">{option.emoji}</span>
+                    <span className="species-label">{option.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
-            
-            <div className="form-group">
-              <label>품종</label>
-              <input
-                type="text"
-                placeholder="예: 푸들"
-                value={formData.breed}
-                onChange={(e) => setFormData({...formData, breed: e.target.value})}
-              />
-            </div>
+
+            {/* 개/고양이인 경우에만 품종 선택 표시 */}
+            {(formData.species === 'dog' || formData.species === 'cat') && (
+              <div className="form-group">
+                <label>품종</label>
+                <select
+                  value={formData.breed}
+                  onChange={(e) => setFormData({...formData, breed: e.target.value})}
+                  className="breed-select"
+                >
+                  <option value="">품종을 선택하세요</option>
+                  {(formData.species === 'dog' ? DOG_BREEDS : CAT_BREEDS).map(breed => (
+                    <option key={breed} value={breed}>{breed}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div className="form-group">
               <label>생년월일 *</label>
