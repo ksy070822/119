@@ -28,6 +28,7 @@ import { getApiKey, API_KEY_TYPES } from './src/services/apiKeyManager'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
 import { OCRUpload } from './src/components/OCRUpload'
 import { ClinicAdmin } from './src/components/ClinicAdmin'
+import { getFAQContext } from './src/data/faqData'
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -828,9 +829,10 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-white px-4 py-6 border-b border-slate-100">
-        <h1 className="text-xl font-bold text-slate-900">환영합니다!</h1>
-        <p className="text-sm text-slate-500 mt-1">반려동물을 등록하고 AI 건강 관리를 시작하세요</p>
+      <div className="bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-6">
+        <p className="text-sky-100 text-xs font-medium mb-1">🐾 PetMedical.AI</p>
+        <h1 className="text-xl font-bold text-white">PetMedical.AI에 오신 것을 환영합니다</h1>
+        <p className="text-sm text-sky-100 mt-1">AI 기반 반려동물 건강 관리 서비스</p>
       </div>
 
       <div className="px-4 pt-4 pb-24">
@@ -1884,17 +1886,18 @@ ${monitoringGuide.length > 0 ? monitoringGuide.map((a, i) => `${i + 1}. ${a}`).j
 - 병원 방문 조건: ${followUpGuide.condition_for_hospital || '증상 악화 시'}
 
 ${careGuide ? `[케어 가이드]\n${careGuide}` : ''}
+${getFAQContext(userQuestion, petData.species)}
 
 [보호자 질문]
 ${userQuestion}
 
 위 질문에 대해 다음을 포함하여 답변해주세요:
-1. 질문에 대한 구체적이고 실용적인 답변
+1. 질문에 대한 구체적이고 실용적인 답변 (참고 FAQ가 있다면 해당 내용을 기반으로)
 2. 현재 진단 결과와 연관된 조언
 3. 구체적인 실행 방법 (예: 음식 추천, 케어 방법, 주의사항)
 4. 필요시에만 병원 방문 시점 안내 (경미한 경우 홈케어 우선)
 
-답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다.`;
+답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다. 2-3문장으로 핵심만 간결하게 답변하세요.`;
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -2441,37 +2444,44 @@ ${userQuestion}
               </div>
             )}
 
-            <div className="action-buttons">
-              <button className="action-btn primary" onClick={() => onComplete('treatment')}>
+            <div className="action-buttons" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', padding: '16px' }}>
+              <button
+                className="action-btn primary"
+                onClick={() => onComplete('treatment')}
+                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+              >
                 🏠 직접 치료하기
               </button>
-              <button className="action-btn secondary" onClick={async () => {
-                // 병원 패킷 생성
-                try {
-                  const packet = await generateHospitalPacket(petData, diagnosisResult, symptomData);
-                  // 패킷을 상태에 저장하거나 바로 표시
-                  alert('병원 진단 패킷이 생성되었습니다!\n\n병원 예약 화면에서 확인할 수 있습니다.');
-                  onComplete('hospital');
-                } catch (err) {
-                  console.error('패킷 생성 오류:', err);
-                  onComplete('hospital');
-                }
-              }}>
+              <button
+                className="action-btn secondary"
+                onClick={() => onComplete('hospital')}
+                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+              >
                 🏥 병원 예약하기
               </button>
-              <button className="action-btn highlight" onClick={() => setShowDiagnosisReport(true)}>
+              <button
+                className="action-btn highlight"
+                onClick={() => setShowDiagnosisReport(true)}
+                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+              >
                 📄 진단서 보기
               </button>
-              {chatMode && (
-                <button className="action-btn outline" onClick={() => {
-                  setChatMode(false);
-                  setShowResult(true);
-                }}>
-                  💬 대화 계속하기
-                </button>
-              )}
-              <button className="action-btn outline" onClick={() => onComplete('dashboard')}>
-                📋 대시보드로
+              <button
+                className="action-btn outline"
+                onClick={() => {
+                  setShowResult(false);
+                  setChatMode(true);
+                }}
+                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+              >
+                💬 대화 계속하기
+              </button>
+              <button
+                className="action-btn outline"
+                onClick={() => onComplete('home')}
+                style={{ flex: '1 1 100%', padding: '12px 16px', borderRadius: '12px', fontWeight: '500', background: '#f1f5f9', color: '#475569' }}
+              >
+                🏠 홈으로
               </button>
             </div>
           </div>
@@ -2517,17 +2527,26 @@ function DiagnosisResultView({ petData, diagnosisResult, symptomData, onGoToTrea
   const emergencyInfo = getEmergencyInfo(diagnosisResult?.emergency);
 
   return (
-    <div className="diagnosis-result-view">
-      <div className="result-view-header">
-        <button className="back-btn" onClick={onBack}>←</button>
-        <h1>📋 진단 결과</h1>
+    <div className="diagnosis-result-view" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+      {/* PetMedical.AI 브랜드 헤더 */}
+      <div style={{ background: 'linear-gradient(135deg, #0ea5e9, #3b82f6)', padding: '16px 20px', color: 'white' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '8px 12px', color: 'white', cursor: 'pointer' }}>
+            ← 뒤로
+          </button>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: '10px', opacity: 0.9, margin: 0 }}>🐾 PetMedical.AI</p>
+            <h1 style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0 0' }}>AI 진단 결과</h1>
+          </div>
+          <div style={{ width: '60px' }}></div>
+        </div>
       </div>
 
-      <div className="result-view-content">
-        <div className="result-card-summary">
-          <div className="pet-info-mini">
-            <span className="pet-avatar">{petData?.species === 'cat' ? '🐱' : '🐕'}</span>
-            <span className="pet-name">{petData?.name || '반려동물'}</span>
+      <div className="result-view-content" style={{ padding: '16px' }}>
+        <div className="result-card-summary" style={{ background: 'white', borderRadius: '16px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <div className="pet-info-mini" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <span className="pet-avatar" style={{ fontSize: '32px' }}>{petData?.species === 'cat' ? '🐱' : '🐕'}</span>
+            <span className="pet-name" style={{ fontWeight: 'bold', fontSize: '18px' }}>{petData?.name || petData?.petName || '반려동물'}</span>
           </div>
 
           <div className="diagnosis-main-box">
@@ -2564,18 +2583,34 @@ function DiagnosisResultView({ petData, diagnosisResult, symptomData, onGoToTrea
           </div>
         </div>
 
-        <div className="result-view-actions">
-          <button className="action-btn highlight" onClick={() => setShowDiagnosisReport(true)}>
-            📄 진단서 보기
-          </button>
-          <button className="action-btn primary" onClick={onGoToTreatment}>
+        <div className="result-view-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', padding: '16px' }}>
+          <button
+            className="action-btn primary"
+            onClick={onGoToTreatment}
+            style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none' }}
+          >
             🏠 직접 치료하기
           </button>
-          <button className="action-btn secondary" onClick={onGoToHospital}>
+          <button
+            className="action-btn secondary"
+            onClick={onGoToHospital}
+            style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', border: 'none' }}
+          >
             🏥 병원 예약하기
           </button>
-          <button className="action-btn outline" onClick={onBack}>
-            📋 대시보드로
+          <button
+            className="action-btn highlight"
+            onClick={() => setShowDiagnosisReport(true)}
+            style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none' }}
+          >
+            📄 진단서 보기
+          </button>
+          <button
+            className="action-btn outline"
+            onClick={onBack}
+            style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600', background: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }}
+          >
+            🏠 홈으로
           </button>
         </div>
       </div>
@@ -3395,10 +3430,17 @@ function App() {
         <div className="main-content" style={{ paddingBottom: '80px' }}>
           {/* 내 동물 돌보기 탭 */}
           {currentTab === 'care' && petData && (
-            <Dashboard 
-              petData={petData} 
+            <Dashboard
+              petData={petData}
               pets={pets}
-              onNavigate={(view) => setCurrentView(view)}
+              onNavigate={(view) => {
+                // 'hospital', 'records'는 탭으로 이동
+                if (view === 'hospital' || view === 'records') {
+                  setCurrentTab(view);
+                } else {
+                  setCurrentView(view);
+                }
+              }}
               onSelectPet={handleSelectPet}
             />
           )}
