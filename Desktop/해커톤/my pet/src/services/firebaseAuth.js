@@ -131,56 +131,15 @@ export const authService = {
         };
       }
 
-      // 모바일에서는 redirect 방식 사용
-      if (isMobile()) {
-        sessionStorage.setItem('pendingUserMode', userMode);
-        await signInWithRedirect(auth, googleProvider);
-        return { success: false, redirecting: true };
-      }
-
-      // 데스크톱에서는 popup 방식 사용
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Firestore에서 기존 사용자 정보 확인
-      let userData = {};
-      try {
-        const existingUser = await userService.getUser(user.uid);
-        userData = existingUser.data || {};
-        if (!existingUser.data) {
-          await userService.saveUser(user.uid, {
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            userMode,
-            createdAt: new Date().toISOString()
-          });
-        }
-      } catch (firestoreError) {
-        console.warn('Firestore 접근 실패:', firestoreError);
-      }
-
-      return {
-        success: true,
-        user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          userMode: userData.userMode || userMode
-        }
-      };
+      // 모든 환경에서 redirect 방식 사용 (COOP 정책 문제 해결)
+      sessionStorage.setItem('pendingUserMode', userMode);
+      sessionStorage.setItem('pendingGoogleLogin', 'true');
+      console.log('구글 로그인 리다이렉트 시작');
+      await signInWithRedirect(auth, googleProvider);
+      return { success: false, redirecting: true };
     } catch (error) {
       console.error('구글 로그인 오류:', error);
-      let message = '구글 로그인에 실패했습니다.';
-      if (error.code === 'auth/popup-closed-by-user') {
-        message = '로그인이 취소되었습니다.';
-      } else if (error.code === 'auth/popup-blocked') {
-        message = '팝업이 차단되었습니다. 팝업 차단을 해제해주세요.';
-      } else if (error.code === 'auth/unauthorized-domain') {
-        message = '이 도메인에서는 구글 로그인이 허용되지 않습니다.';
-      }
-      return { success: false, error: message };
+      return { success: false, error: '구글 로그인에 실패했습니다: ' + error.message };
     }
   },
 

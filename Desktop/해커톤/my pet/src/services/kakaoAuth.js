@@ -116,6 +116,10 @@ export const initKakao = () => {
 export const loginWithKakao = (userMode = 'guardian') => {
   return new Promise(async (resolve, reject) => {
     try {
+      // 이전 로그인 시도 데이터 초기화
+      sessionStorage.removeItem('pendingKakaoLogin');
+      sessionStorage.removeItem('pendingUserMode');
+
       // 유저 모드 저장
       sessionStorage.setItem('pendingUserMode', userMode);
       sessionStorage.setItem('pendingKakaoLogin', 'true');
@@ -123,6 +127,9 @@ export const loginWithKakao = (userMode = 'guardian') => {
       // Authorization Code 방식 (response_type=code)
       const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&response_type=code`;
 
+      console.log('카카오 로그인 리다이렉트:', kakaoAuthUrl);
+
+      // 리다이렉트 실행
       window.location.href = kakaoAuthUrl;
 
       // 리다이렉트 되므로 여기서 반환
