@@ -2,7 +2,7 @@
 // Firestore에서 FAQ와 과거 진료기록을 가져와 프롬프트에 추가
 
 import { db } from '../../lib/firebase';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc } from 'firebase/firestore';
 
 /**
  * 보호자 FAQ 데이터 조회 (owner_faq 컬렉션)
@@ -66,18 +66,27 @@ export async function fetchPastDiagnoses(petId) {
 
   try {
     const diagnosesRef = collection(db, 'diagnoses');
+    // 복합 인덱스 필요 없이 단순 쿼리 후 클라이언트 정렬
     const q = query(
       diagnosesRef,
       where('petId', '==', petId),
-      orderBy('createdAt', 'desc'),
-      limit(5)
+      limit(10)
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const diagnoses = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // 클라이언트 측에서 날짜순 정렬
+    return diagnoses
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.created_at || 0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.created_at || 0);
+        return dateB - dateA;
+      })
+      .slice(0, 5);
   } catch (error) {
     console.error('과거 진단 기록 조회 오류:', error);
     return [];
@@ -131,22 +140,95 @@ export async function fetchSimilarCases(species, symptomKeywords) {
 }
 
 /**
+ * 반려동물의 최근 케어 로그 조회 (서브컬렉션)
+ * @param {string} petId - 반려동물 ID
+ * @param {number} days - 최근 며칠간의 로그 (기본 7일)
+ * @returns {Array} 케어 로그 목록
+ */
+export async function fetchRecentCareLogs(petId, days = 7) {
+  if (!petId) return [];
+
+  try {
+    // 서브컬렉션 경로: pets/{petId}/careLogs
+    const careLogsRef = collection(db, 'pets', petId, 'careLogs');
+    const q = query(
+      careLogsRef,
+      orderBy('date', 'desc'),
+      limit(days)
+    );
+
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('케어 로그 조회 오류:', error);
+    return [];
+  }
+}
+
+/**
  * AI 프롬프트용 컨텍스트 문자열 생성
  * @param {Object} petData - 반려동물 정보
  * @param {Object} symptomData - 증상 정보
  * @returns {string} 프롬프트에 추가할 컨텍스트
  */
+/**
+ * 최근 7일 케어 로그 요약 텍스트 생성
+ * @param {Array} careLogs - 케어 로그 배열
+ * @returns {string} 요약 텍스트
+ */
+export function summarizeLast7DaysCare(careLogs) {
+  if (!careLogs || careLogs.length === 0) return '';
+
+  // date DESC 정렬
+  const logs = [...careLogs].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 7);
+
+  let lines = ['[최근 7일 일일 케어 요약]'];
+  let weights = [];
+
+  for (const log of logs) {
+    const moodText = {
+      happy: '좋음',
+      normal: '보통',
+      tired: '피곤함',
+      anxious: '불안함'
+    }[log.mood] || log.mood;
+
+    const line = `- ${log.date}: 식사 ${log.mealCount ?? '-'}회, 물 ${log.waterCount ?? '-'}회, 산책 ${log.walkCount ?? '-'}회, 배변 ${log.poopCount ?? '-'}회, 체중 ${log.weightKg ?? '미입력'}kg, 기분 ${moodText}`;
+    lines.push(line);
+    if (typeof log.weightKg === 'number') weights.push(log.weightKg);
+  }
+
+  if (weights.length >= 2) {
+    const first = weights[weights.length - 1]; // 가장 오래된
+    const last = weights[0];                   // 가장 최근
+    const diff = +(last - first).toFixed(1);
+    const trend =
+      diff > 0.3 ? '체중이 다소 증가했습니다.'
+      : diff < -0.3 ? '체중이 다소 감소했습니다.'
+      : '체중 변화는 크지 않습니다.';
+    lines.push(
+      `※ 체중 변화: ${first}kg → ${last}kg (${diff > 0 ? '+' : ''}${diff}kg). ${trend}`
+    );
+  }
+
+  return lines.join('\n');
+}
+
 export async function buildAIContext(petData, symptomData) {
   const species = petData?.species || 'dog';
   const symptomText = symptomData?.symptomText || symptomData?.description || '';
   const selectedSymptoms = (symptomData?.selectedSymptoms || []).join(', ');
   const keywords = `${symptomText} ${selectedSymptoms}`;
 
-  // 병렬로 데이터 조회
-  const [faqs, pastDiagnoses, similarCases] = await Promise.all([
+  // 병렬로 데이터 조회 (케어 로그 포함)
+  const [faqs, pastDiagnoses, similarCases, careLogs] = await Promise.all([
     fetchRelatedFAQs(species, keywords),
     fetchPastDiagnoses(petData?.id),
-    fetchSimilarCases(species, keywords)
+    fetchSimilarCases(species, keywords),
+    fetchRecentCareLogs(petData?.id, 7)
   ]);
 
   let context = '';
@@ -182,6 +264,12 @@ export async function buildAIContext(petData, symptomData) {
     });
   }
 
+  // 최근 7일 케어 로그 요약 추가
+  const careSummary = summarizeLast7DaysCare(careLogs);
+  if (careSummary) {
+    context += '\n\n' + careSummary;
+  }
+
   return context;
 }
 
@@ -189,5 +277,7 @@ export default {
   fetchRelatedFAQs,
   fetchPastDiagnoses,
   fetchSimilarCases,
+  fetchRecentCareLogs,
+  summarizeLast7DaysCare,
   buildAIContext
 };

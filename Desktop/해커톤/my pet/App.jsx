@@ -28,6 +28,7 @@ import { getApiKey, API_KEY_TYPES } from './src/services/apiKeyManager'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
 import { OCRUpload } from './src/components/OCRUpload'
 import { ClinicAdmin } from './src/components/ClinicAdmin'
+import { AICareConsultation } from './src/components/AICareConsultation'
 import { getFAQContext } from './src/data/faqData'
 import { diagnosisService, bookingService, petService } from './src/services/firestore'
 
@@ -875,7 +876,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
       {/* Header */}
       <div className="bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-6">
         <p className="text-sky-100 text-xs font-medium mb-1">🐾 PetMedical.AI</p>
-        <h1 className="text-xl font-bold text-white">PetMedical.AI에 오신 것을 환영합니다</h1>
+        <h1 className="text-xl font-bold text-white">{petData?.petName || petData?.name || '보호자'}님 입장하셨습니다</h1>
         <p className="text-sm text-sky-100 mt-1">AI 기반 반려동물 건강 관리 서비스</p>
       </div>
 
@@ -3364,17 +3365,28 @@ function App() {
                 <p className="text-slate-600 text-sm mb-4">
                   AI 진단 결과를 바탕으로 가까운 동물병원에 예약하세요. 진단서가 자동으로 전송됩니다.
                 </p>
-                <button
-                  onClick={() => {
-                    setSymptomData({ symptomText: lastDiagnosis.symptom || lastDiagnosis.description });
-                    setCurrentTab('hospital');
-                    setCurrentView(null);
-                  }}
-                  className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
-                >
-                  <span className="material-symbols-outlined">local_hospital</span>
-                  병원 예약하기
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSymptomData({ symptomText: lastDiagnosis.symptom || lastDiagnosis.description });
+                      setCurrentTab('hospital');
+                      setCurrentView(null);
+                    }}
+                    className="flex-1 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+                  >
+                    <span className="material-symbols-outlined">local_hospital</span>
+                    병원 예약
+                  </button>
+                  <a
+                    href="https://service.kakaomobility.com/launch/kakaot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 bg-[#1E1B4B] text-white font-bold rounded-lg hover:bg-[#2d2a5a] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span className="text-[#FACC15] font-black text-lg">T</span>
+                    펫택시
+                  </a>
+                </div>
               </div>
             )}
           </div>
@@ -3403,6 +3415,18 @@ function App() {
             console.log('의료 기록 저장됨:', record);
             // 필요시 상태 업데이트
           }}
+        />
+      )}
+
+      {/* AI 케어 문진 화면 */}
+      {currentView === 'ai-consultation' && petData && (
+        <AICareConsultation
+          petData={petData}
+          onBack={() => {
+            setCurrentView(null);
+            setCurrentTab('care');
+          }}
+          onHome={handleGoHome}
         />
       )}
 
