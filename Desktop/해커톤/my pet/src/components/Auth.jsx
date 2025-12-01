@@ -29,6 +29,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
   const [userMode, setUserMode] = useState('guardian'); // 'guardian' or 'clinic'
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false); // 이메일 로그인 폼 표시 여부
 
   // 페이지 로드 시 리다이렉트 결과 확인 (모바일 구글/카카오 로그인)
   useEffect(() => {
@@ -208,22 +209,70 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
         </div>
       </div>
 
-      {/* 이메일 로그인 버튼 */}
+      {/* 이메일 로그인 */}
       <div className="w-full max-w-sm">
-        <button
-          onClick={onGoToRegister}
-          disabled={loading}
-          className="w-full py-4 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
-        >
-          {loading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              로딩 중...
-            </>
-          ) : (
-            '이메일로 시작하기'
-          )}
-        </button>
+        {!showEmailForm ? (
+          /* 이메일로 시작하기 버튼 */
+          <button
+            onClick={() => setShowEmailForm(true)}
+            disabled={loading}
+            className="w-full py-4 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                로딩 중...
+              </>
+            ) : (
+              '이메일로 시작하기'
+            )}
+          </button>
+        ) : (
+          /* 이메일 로그인 폼 */
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <input
+                type="email"
+                placeholder="이메일"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                placeholder="비밀번호"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  로그인 중...
+                </>
+              ) : (
+                '로그인'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(false)}
+              className="w-full py-2 text-slate-500 text-sm hover:text-slate-700"
+            >
+              ← 뒤로
+            </button>
+          </form>
+        )}
 
         {error && (
           <div className="mt-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-start gap-2">
@@ -233,38 +282,40 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
         )}
 
         {/* 소셜 로그인 */}
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300"></div>
+        {!showEmailForm && (
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-gradient-to-b from-sky-100 to-blue-50 text-slate-500">또는</span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-gradient-to-b from-sky-100 to-blue-50 text-slate-500">또는</span>
+
+            <div className="mt-4 flex gap-3">
+              {/* 카카오 로그인 */}
+              <button
+                onClick={handleKakaoLogin}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#FEE500] hover:bg-[#FDD835] transition-colors disabled:opacity-50 font-medium"
+              >
+                <span className="text-lg">●</span>
+                <span className="text-slate-900 font-bold">카카오</span>
+              </button>
+
+              {/* 구글 로그인 버튼 */}
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+              >
+                <span className="text-lg font-bold text-blue-500">G</span>
+                <span className="font-bold text-slate-700">구글</span>
+              </button>
             </div>
           </div>
-
-          <div className="mt-4 flex gap-3">
-            {/* 카카오 로그인 */}
-            <button
-              onClick={handleKakaoLogin}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#FEE500] hover:bg-[#FDD835] transition-colors disabled:opacity-50 font-medium"
-            >
-              <span className="text-lg">●</span>
-              <span className="text-slate-900 font-bold">카카오</span>
-            </button>
-
-            {/* 구글 로그인 버튼 */}
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 border border-slate-300 rounded-xl bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              <span className="text-lg font-bold text-blue-500">G</span>
-              <span className="font-bold text-slate-700">구글</span>
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* 회원가입 링크 */}
         <div className="mt-8 text-center">

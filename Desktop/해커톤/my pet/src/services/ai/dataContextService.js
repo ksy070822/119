@@ -66,18 +66,27 @@ export async function fetchPastDiagnoses(petId) {
 
   try {
     const diagnosesRef = collection(db, 'diagnoses');
+    // 복합 인덱스 필요 없이 단순 쿼리 후 클라이언트 정렬
     const q = query(
       diagnosesRef,
       where('petId', '==', petId),
-      orderBy('createdAt', 'desc'),
-      limit(5)
+      limit(10)
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const diagnoses = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
+
+    // 클라이언트 측에서 날짜순 정렬
+    return diagnoses
+      .sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(a.created_at || 0);
+        const dateB = b.createdAt?.toDate?.() || new Date(b.created_at || 0);
+        return dateB - dateA;
+      })
+      .slice(0, 5);
   } catch (error) {
     console.error('과거 진단 기록 조회 오류:', error);
     return [];

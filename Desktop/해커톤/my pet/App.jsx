@@ -3365,17 +3365,32 @@ function App() {
                 <p className="text-slate-600 text-sm mb-4">
                   AI 진단 결과를 바탕으로 가까운 동물병원에 예약하세요. 진단서가 자동으로 전송됩니다.
                 </p>
-                <button
-                  onClick={() => {
-                    setSymptomData({ symptomText: lastDiagnosis.symptom || lastDiagnosis.description });
-                    setCurrentTab('hospital');
-                    setCurrentView(null);
-                  }}
-                  className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
-                >
-                  <span className="material-symbols-outlined">local_hospital</span>
-                  병원 예약하기
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSymptomData({ symptomText: lastDiagnosis.symptom || lastDiagnosis.description });
+                      setCurrentTab('hospital');
+                      setCurrentView(null);
+                    }}
+                    className="flex-1 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+                  >
+                    <span className="material-symbols-outlined">local_hospital</span>
+                    병원 예약
+                  </button>
+                  <a
+                    href="https://service.kakaomobility.com/launch/kakaot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 bg-[#1E1B4B] text-white font-bold rounded-lg hover:bg-[#2d2a5a] transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <rect width="24" height="24" rx="4" fill="#1E1B4B"/>
+                      <path d="M4 7H20V9H4V7Z" fill="#FACC15"/>
+                      <path d="M10 9H14V20H10V9Z" fill="#FACC15"/>
+                    </svg>
+                    펫택시
+                  </a>
+                </div>
               </div>
             )}
           </div>
