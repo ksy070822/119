@@ -6,6 +6,7 @@ import { callOpsAgent } from './opsAgent';
 import { callCareAgent } from './careAgent';
 import { calculateTriageScore } from './triageEngine';
 import { convertHealthFlagsFormat } from '../../utils/healthFlagsMapper';
+import { buildAIContext } from './dataContextService';
 
 export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived) => {
   const logs = [];
@@ -80,7 +81,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       role: '증상 사전 상담실',
       icon: '💉',
       type: 'info',
-      content: '네, 접수 확인했습니다. 보호자님, 증상에 대해 자세히 여쭤볼게요.',
+      content: '네, 접수 확인했습니다. 증상 정보를 분석 중입니다.',
       timestamp: Date.now()
     });
 
@@ -124,7 +125,18 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
 
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    medicalResult = await callMedicalAgent(normalizedPetData, normalizedSymptomData, csResult.json, infoResult.json);
+    // Firestore에서 FAQ와 과거 진료기록 컨텍스트 조회
+    let dataContext = '';
+    try {
+      dataContext = await buildAIContext(normalizedPetData, normalizedSymptomData);
+      if (dataContext) {
+        console.log('AI 컨텍스트 로드 완료:', dataContext.length, '자');
+      }
+    } catch (contextError) {
+      console.warn('AI 컨텍스트 로드 실패 (진단은 계속 진행):', contextError);
+    }
+
+    medicalResult = await callMedicalAgent(normalizedPetData, normalizedSymptomData, csResult.json, infoResult.json, dataContext);
 
     logs.push({
       agent: 'Veterinarian Agent',

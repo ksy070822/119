@@ -29,6 +29,7 @@ import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from '.
 import { OCRUpload } from './src/components/OCRUpload'
 import { ClinicAdmin } from './src/components/ClinicAdmin'
 import { getFAQContext } from './src/data/faqData'
+import { diagnosisService, bookingService, petService } from './src/services/firestore'
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -50,10 +51,32 @@ const getPetsForUser = (userId) => {
 };
 
 // 사용자별 반려동물 데이터 저장
-const savePetsForUser = (userId, pets) => {
+const savePetsForUser = async (userId, pets, newPetData = null) => {
   if (!userId) return;
   try {
     localStorage.setItem(getUserPetsKey(userId), JSON.stringify(pets));
+
+    // 새로운 반려동물이 추가된 경우 Firestore에도 저장
+    if (newPetData) {
+      try {
+        const result = await petService.addPet(userId, {
+          petName: newPetData.petName || newPetData.name,
+          species: newPetData.species || 'dog',
+          breed: newPetData.breed || '',
+          sex: newPetData.sex || '',
+          birthDate: newPetData.birthDate || null,
+          weight: newPetData.weight || null,
+          neutered: newPetData.neutered || false,
+          character: newPetData.character || null,
+          profileImage: newPetData.profileImage || null
+        });
+        if (result.success) {
+          console.log('반려동물 Firestore 저장 완료:', result.id);
+        }
+      } catch (firestoreError) {
+        console.warn('반려동물 Firestore 저장 실패 (로컬 저장은 완료):', firestoreError);
+      }
+    }
   } catch (error) {
     console.error('Failed to save pets:', error);
   }
@@ -77,21 +100,42 @@ const savePetsToStorage = (pets) => {
   }
 };
 
-const saveDiagnosisToStorage = (diagnosis) => {
+const saveDiagnosisToStorage = async (diagnosis, userId = null) => {
   try {
     // healthFlags가 없으면 계산해서 추가
     let diagnosisWithFlags = { ...diagnosis };
     if (!diagnosisWithFlags.healthFlags) {
       diagnosisWithFlags.healthFlags = mapDiagnosisToHealthFlags(diagnosis);
     }
-    
+
+    const diagnosisData = {
+      ...diagnosisWithFlags,
+      id: diagnosisWithFlags.id || Date.now().toString(),
+      date: new Date().toISOString()
+    };
+
+    // localStorage에도 저장 (오프라인 지원)
     const diagnoses = JSON.parse(localStorage.getItem(DIAGNOSIS_KEY) || '[]');
-    diagnoses.unshift({ 
-      ...diagnosisWithFlags, 
-      id: diagnosisWithFlags.id || Date.now().toString(), 
-      date: new Date().toISOString() 
-    });
+    diagnoses.unshift(diagnosisData);
     localStorage.setItem(DIAGNOSIS_KEY, JSON.stringify(diagnoses));
+
+    // Firestore에 저장 (userId가 있으면)
+    try {
+      const firestoreData = {
+        ...diagnosisData,
+        userId: userId || diagnosisData.userId || null,
+        petId: diagnosisData.petId || null,
+        symptom: diagnosisData.symptom || diagnosisData.description || '',
+        species: diagnosisData.species || 'dog',
+        created_at: new Date().toISOString()
+      };
+      const result = await diagnosisService.saveDiagnosis(firestoreData);
+      if (result.success) {
+        console.log('진단 결과 Firestore 저장 완료:', result.id);
+      }
+    } catch (firestoreError) {
+      console.warn('Firestore 저장 실패 (로컬 저장은 완료):', firestoreError);
+    }
   } catch (error) {
     console.error('Failed to save diagnosis:', error);
   }
@@ -287,7 +331,7 @@ function ProfileRegistration({ onComplete, userId }) {
       if (userId) {
         const pets = getPetsForUser(userId);
         pets.push(newPet);
-        savePetsForUser(userId, pets);
+        savePetsForUser(userId, pets, newPet); // newPet을 Firestore에도 저장
       } else {
         // 호환성 유지
         const pets = getPetsFromStorage();
@@ -2327,43 +2371,6 @@ ${userQuestion}
         )}
       </div>
 
-        {chatMode && (
-          <div className="chat-input-container">
-            <div className="chat-input-wrapper">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (waitingForAnswer) {
-                      handleUserMessage();
-                    } else {
-                      handleUserQuestion();
-                    }
-                  }
-                }}
-                placeholder={waitingForAnswer ? "AI 의사의 질문에 답변해주세요..." : "궁금한 점을 물어보세요..."}
-                className="chat-input"
-                disabled={isProcessing}
-              />
-              <button
-                onClick={waitingForAnswer ? handleUserMessage : handleUserQuestion}
-                disabled={!userInput.trim() || isProcessing}
-                className="chat-send-btn"
-              >
-                {waitingForAnswer ? '답변하기' : '질문하기'}
-              </button>
-            </div>
-            {!waitingForAnswer && (
-              <div className="chat-hint">
-                💡 AI 의사에게 질문하거나, 추가 증상을 설명할 수 있습니다
-              </div>
-            )}
-          </div>
-        )}
-
       {showResult && diagnosisResult && (
         <div className="diagnosis-result">
           <div className="result-header">
@@ -2462,19 +2469,9 @@ ${userQuestion}
               <button
                 className="action-btn highlight"
                 onClick={() => setShowDiagnosisReport(true)}
-                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
+                style={{ flex: '1 1 100%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
               >
                 📄 진단서 보기
-              </button>
-              <button
-                className="action-btn outline"
-                onClick={() => {
-                  setShowResult(false);
-                  setChatMode(true);
-                }}
-                style={{ flex: '1 1 45%', minWidth: '140px', padding: '14px 16px', borderRadius: '12px', fontWeight: '600' }}
-              >
-                💬 대화 계속하기
               </button>
               <button
                 className="action-btn outline"
@@ -2971,7 +2968,7 @@ function App() {
         createdAt: new Date().toISOString()
       };
 
-      savePetsForUser(guestUser.uid, [defaultPet]);
+      savePetsForUser(guestUser.uid, [defaultPet], defaultPet); // Firestore에도 저장
       setPets([defaultPet]);
       setPetData(defaultPet);
     }
