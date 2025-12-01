@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { generateHospitalPacket } from '../services/ai/hospitalPacket';
 import { getCurrentPosition, searchAnimalHospitals, initKakaoMap, addMarker, loadKakao } from '../services/kakaoMap';
 import { getApiKey, API_KEY_TYPES } from '../services/apiKeyManager';
+import { getNearbyHospitalsFromFirestore, searchHospitalsByRegion, searchHospitals } from '../lib/firestoreHospitals';
 
 // 나이 계산 함수
 const calculateAge = (birthDate) => {
@@ -23,6 +24,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
   const [locationError, setLocationError] = useState(null); // 위치 오류 메시지
   const [reviewSummaries, setReviewSummaries] = useState({}); // 병원별 후기 요약
   const [loadingReviews, setLoadingReviews] = useState({}); // 후기 로딩 상태
+  const [dataSource, setDataSource] = useState('firestore'); // 'firestore' | 'kakao'
+  const [searchMode, setSearchMode] = useState('nearby'); // 'nearby' | 'region'
+  const [isSearching, setIsSearching] = useState(false); // 검색 중 상태
   const mapRef = useRef(null);
   const mapContainerRef = useRef(null);
 
@@ -53,7 +57,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         }
         if (isMounted) setLoading(false);
 
-        // 위치 및 병원 검색 (항상 수행)
+        // 위치 및 병원 검색 (Firestore 우선 사용)
         try {
           const position = await getCurrentPosition();
           if (isMounted) {
@@ -64,19 +68,54 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
             }
           }
 
+          // Firestore에서 병원 검색 (우선)
+          try {
+            console.log('[HospitalBooking] Firestore에서 병원 검색 시작');
+            const firestoreHospitals = await getNearbyHospitalsFromFirestore(
+              position.lat,
+              position.lng,
+              5 // 반경 5km
+            );
+
+            if (isMounted && firestoreHospitals.length > 0) {
+              console.log('[HospitalBooking] Firestore 병원 데이터:', firestoreHospitals.length, '개');
+              setHospitals(firestoreHospitals);
+              setDataSource('firestore');
+              setMapLoading(false);
+              return; // Firestore 성공 시 여기서 종료
+            }
+          } catch (firestoreErr) {
+            console.warn('[HospitalBooking] Firestore 검색 실패, Kakao로 fallback:', firestoreErr);
+          }
+
+          // Firestore 실패 시 Kakao Map API로 fallback
           const hospitalList = await searchAnimalHospitals(position.lat, position.lng);
           if (isMounted) {
             setHospitals(hospitalList);
+            setDataSource('kakao');
             setMapLoading(false);
           }
         } catch (err) {
           console.error('위치/병원 검색 오류:', err);
-          // 기본 위치(강남역)로 fallback
+          // 기본 위치(강남역)로 Firestore 검색 시도
           if (isMounted) {
             const defaultLat = 37.4979;
             const defaultLng = 127.0276;
             setUserLocation({ lat: defaultLat, lng: defaultLng });
-            // 실제 동물병원 데이터 사용
+
+            try {
+              const firestoreHospitals = await getNearbyHospitalsFromFirestore(defaultLat, defaultLng, 5);
+              if (firestoreHospitals.length > 0) {
+                setHospitals(firestoreHospitals);
+                setDataSource('firestore');
+                setMapLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.warn('[HospitalBooking] Firestore fallback 실패:', e);
+            }
+
+            // 최종 fallback: 하드코딩 데이터
             const fallbackHospitals = [
               {
                 id: 'h1',
@@ -107,21 +146,6 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                 rating: '4.8',
                 reviewCount: 312,
                 businessHours: '24시간 운영',
-              },
-              {
-                id: 'h3',
-                name: '청담우리동물병원',
-                address: '서울특별시 강남구 청담동 118-17',
-                roadAddress: '서울특별시 강남구 도산대로 317',
-                phone: '02-511-7522',
-                distance: 2800,
-                lat: 37.5245,
-                lng: 127.0472,
-                category: '동물병원',
-                is24Hours: false,
-                rating: '4.6',
-                reviewCount: 186,
-                businessHours: '09:00 - 21:00',
               }
             ];
             setHospitals(fallbackHospitals);
@@ -390,6 +414,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
   };
 
   const formatDistance = (meters) => {
+    if (!meters && meters !== 0) return ''; // null/undefined 처리
     if (meters < 1000) {
       return `${meters}m`;
     }
@@ -474,6 +499,46 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 지역/병원명 검색 핸들러 (Firestore 사용)
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      // 검색어 없으면 내 위치 기반으로 복귀
+      if (userLocation) {
+        setIsSearching(true);
+        try {
+          const results = await getNearbyHospitalsFromFirestore(userLocation.lat, userLocation.lng, 5);
+          setHospitals(results);
+          setSearchMode('nearby');
+        } catch (err) {
+          console.error('위치 기반 검색 실패:', err);
+        }
+        setIsSearching(false);
+      }
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      console.log('[HospitalBooking] 지역/병원명 검색:', searchQuery);
+      const results = await searchHospitalsByRegion(searchQuery, 50);
+      console.log('[HospitalBooking] 검색 결과:', results.length, '개');
+      setHospitals(results);
+      setSearchMode('region');
+      setDataSource('firestore');
+    } catch (err) {
+      console.error('검색 오류:', err);
+      alert('검색 중 오류가 발생했습니다.');
+    }
+    setIsSearching(false);
+  };
+
+  // 엔터키 검색
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   if (!petData) {
     return (
@@ -666,33 +731,68 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
           </div>
         )}
 
-        {/* 내 위치 기반 추천 섹션 */}
+        {/* 검색 섹션 */}
         <div className="flex justify-between items-center">
-          <h3 className="font-bold text-slate-900">내 위치 기반 추천</h3>
-          <button className="text-sm text-sky-500 font-medium flex items-center gap-1">
-            📍 거리순
-          </button>
+          <h3 className="font-bold text-slate-900">
+            {searchMode === 'nearby' ? '📍 내 주변 동물병원' : `🔍 "${searchQuery}" 검색 결과`}
+          </h3>
+          {searchMode === 'region' && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                handleSearch();
+              }}
+              className="text-sm text-sky-500 font-medium"
+            >
+              내 위치로
+            </button>
+          )}
+        </div>
+
+        {/* 데이터 소스 표시 */}
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <span>📊 {dataSource === 'firestore' ? '공공데이터 (행안부)' : '카카오맵'}</span>
+          <span>•</span>
+          <span>{hospitals.length}개 병원</span>
         </div>
 
         {/* 검색창 */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="병원명, 지역으로 검색"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 pl-10 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-          />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="지역명 검색 (예: 부산, 해운대, 강남)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="w-full px-4 py-3 pl-10 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+          </div>
+          <button
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="px-4 py-3 bg-sky-500 text-white font-bold rounded-xl hover:bg-sky-600 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {isSearching ? '검색중...' : '검색'}
+          </button>
         </div>
 
         {/* 병원 리스트 */}
         <div className="space-y-4">
-          {filteredHospitals.length === 0 && !mapLoading ? (
+          {isSearching && (
             <div className="text-center py-8 text-gray-500 bg-white rounded-2xl border border-slate-100">
-              주변에 동물병원을 찾을 수 없습니다.
+              <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              병원을 검색하고 있습니다...
             </div>
-          ) : (
+          )}
+          {!isSearching && filteredHospitals.length === 0 && !mapLoading ? (
+            <div className="text-center py-8 text-gray-500 bg-white rounded-2xl border border-slate-100">
+              {searchMode === 'region'
+                ? `"${searchQuery}" 지역에서 동물병원을 찾을 수 없습니다.`
+                : '주변에 동물병원을 찾을 수 없습니다.'}
+            </div>
+          ) : !isSearching && (
             filteredHospitals.map(hospital => (
               <div key={hospital.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                 {/* 병원명과 거리 */}
@@ -704,8 +804,8 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                   <span className="text-sm text-slate-500">{formatDistance(hospital.distance)}</span>
                 </div>
 
-                {/* 평점 및 후기 */}
-                {hospital.rating && (
+                {/* 평점 및 후기 또는 영업상태 */}
+                {hospital.rating ? (
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-yellow-500">⭐</span>
                     <span className="font-bold text-slate-900">{hospital.rating}</span>
@@ -713,11 +813,26 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                       <span className="text-xs text-slate-500">({hospital.reviewCount.toLocaleString()}개 후기)</span>
                     )}
                   </div>
+                ) : hospital.businessStatus && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${
+                      hospital.businessStatus === '영업중' || hospital.businessStatus === '영업/정상'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {hospital.businessStatus}
+                    </span>
+                  </div>
                 )}
 
                 {/* 영업시간 */}
                 {hospital.businessHours && (
                   <p className="text-xs text-slate-500 mb-2">🕐 {hospital.businessHours}</p>
+                )}
+
+                {/* 전화번호 표시 */}
+                {hospital.phone && (
+                  <p className="text-xs text-slate-500 mb-2">📞 {hospital.phone}</p>
                 )}
 
                 {/* 태그 */}
