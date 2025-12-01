@@ -364,7 +364,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
           displayName: formData.name,
           phone: formData.phone || null,
           gender: formData.gender || null,
-          birthYear: formData.birthYear ? parseInt(formData.birthYear) : null,
+          ageGroup: formData.birthYear || null, // 연령대 (10대, 20대, ...)
           userMode: 'guardian', // 기본값
           agreeMarketing: formData.agreeMarketing,
           createdAt: new Date().toISOString()
@@ -494,16 +494,20 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">출생연도</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">연령대</label>
                   <select
                     value={formData.birthYear}
                     onChange={(e) => setFormData({ ...formData, birthYear: e.target.value })}
                     className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-white"
                   >
                     <option value="">선택안함</option>
-                    {Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>{year}년</option>
-                    ))}
+                    <option value="10대">10대</option>
+                    <option value="20대">20대</option>
+                    <option value="30대">30대</option>
+                    <option value="40대">40대</option>
+                    <option value="50대">50대</option>
+                    <option value="60대">60대</option>
+                    <option value="70대 이상">70대 이상</option>
                   </select>
                 </div>
               </div>
