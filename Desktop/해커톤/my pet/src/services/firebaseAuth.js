@@ -131,51 +131,12 @@ export const authService = {
         };
       }
 
-      let result;
-
-      // 모바일에서는 redirect 방식 사용 (popup이 차단될 수 있음)
-      if (isMobile()) {
-        // 리다이렉트 전에 userMode 저장
-        sessionStorage.setItem('pendingUserMode', userMode);
-        await signInWithRedirect(auth, googleProvider);
-        // 이 코드는 리다이렉트 후에는 실행되지 않음
-        return { success: false, redirecting: true };
-      }
-
-      // 데스크톱에서는 popup 방식 사용
-      result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Firestore에서 기존 사용자 정보 확인 (실패해도 로그인은 진행)
-      let userData = {};
-      try {
-        const existingUser = await userService.getUser(user.uid);
-        userData = existingUser.data || {};
-
-        if (!existingUser.data) {
-          // 신규 사용자면 Firestore에 저장 시도
-          await userService.saveUser(user.uid, {
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            userMode,
-            createdAt: new Date().toISOString()
-          });
-        }
-      } catch (firestoreError) {
-        console.warn('Firestore 접근 실패 (로그인은 계속 진행):', firestoreError);
-      }
-
-      return {
-        success: true,
-        user: {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          userMode: userData.userMode || userMode
-        }
-      };
+      // 항상 redirect 방식 사용 (COOP 정책 문제 해결)
+      // 리다이렉트 전에 userMode 저장
+      sessionStorage.setItem('pendingUserMode', userMode);
+      await signInWithRedirect(auth, googleProvider);
+      // 이 코드는 리다이렉트 후에는 실행되지 않음
+      return { success: false, redirecting: true };
     } catch (error) {
       console.error('구글 로그인 오류:', error);
       let message = '구글 로그인에 실패했습니다.';
