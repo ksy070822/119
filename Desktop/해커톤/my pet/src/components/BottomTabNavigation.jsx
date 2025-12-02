@@ -10,8 +10,8 @@ export function BottomTabNavigation({ currentTab, onTabChange, onModeSwitch, sho
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-50">
-      <div className="flex items-center h-16 px-0.5 max-w-lg mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-[430px] md:bottom-2 md:rounded-b-[2.5rem] bg-white/95 backdrop-blur-sm border-t border-slate-200 z-50 overflow-hidden">
+      <div className="flex items-center h-16 px-0.5">
         {tabs.map(tab => (
           <button
             key={tab.id}
