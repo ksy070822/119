@@ -34,6 +34,9 @@ import { getFAQContext } from './src/data/faqData'
 import { diagnosisService, bookingService, petService } from './src/services/firestore'
 import { getUserClinics } from './src/services/clinicService'
 
+// 테스트 데이터 시드 유틸리티 (브라우저 콘솔에서 window.seedGuardianData, window.seedClinicData 사용 가능)
+import './src/utils/seedTestData'
+
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
 const DIAGNOSIS_KEY = 'petMedical_diagnoses';
