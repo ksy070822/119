@@ -165,14 +165,14 @@ const PET_CHARACTERS = {
 
 // 동물 종류 옵션
 const SPECIES_OPTIONS = [
-  { id: 'dog', label: '강아지', emoji: '🐕' },
-  { id: 'cat', label: '고양이', emoji: '🐈' },
-  { id: 'rabbit', label: '토끼', emoji: '🐰' },
-  { id: 'hamster', label: '햄스터', emoji: '🐹' },
-  { id: 'bird', label: '새', emoji: '🦜' },
-  { id: 'hedgehog', label: '고슴도치', emoji: '🦔' },
-  { id: 'reptile', label: '파충류', emoji: '🦎' },
-  { id: 'other', label: '기타', emoji: '🐾' },
+  { id: 'dog', label: '강아지', emoji: '🐕', icon: '/icon/dog.png' },
+  { id: 'cat', label: '고양이', emoji: '🐈', icon: '/icon/cat.png' },
+  { id: 'rabbit', label: '토끼', emoji: '🐰', icon: '/icon/rabbit.png' },
+  { id: 'hamster', label: '햄스터', emoji: '🐹', icon: '/icon/hamster.png' },
+  { id: 'bird', label: '새', emoji: '🦜', icon: '/icon/bird.png' },
+  { id: 'hedgehog', label: '고슴도치', emoji: '🦔', icon: '/icon/hedgehog.png' },
+  { id: 'reptile', label: '파충류', emoji: '🦎', icon: '/icon/reptile.png' },
+  { id: 'other', label: '기타', emoji: '🐾', icon: '/icon/etc.png' },
 ];
 
 // 개/고양이 대표 품종 목록
@@ -324,7 +324,17 @@ function ProfileRegistration({ onComplete, userId }) {
                     className={`species-btn ${formData.species === option.id ? 'active' : ''}`}
                     onClick={() => handleSpeciesChange(option.id)}
                   >
-                    <span className="species-emoji">{option.emoji}</span>
+                    <img 
+                      src={option.icon} 
+                      alt={option.label}
+                      className="species-icon"
+                      onError={(e) => {
+                        // 이미지 로드 실패 시 이모지로 대체
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'inline';
+                      }}
+                    />
+                    <span className="species-emoji" style={{ display: 'none' }}>{option.emoji}</span>
                     <span className="species-label">{option.label}</span>
                   </button>
                 ))}

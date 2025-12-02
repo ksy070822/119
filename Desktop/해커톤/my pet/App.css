@@ -302,6 +302,13 @@ body {
   font-size: 28px;
 }
 
+.species-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+}
+
 .species-label {
   font-size: 11px;
   color: #64748b;
