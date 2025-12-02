@@ -49,7 +49,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     csResult = await callCSAgent(normalizedPetData, normalizedSymptomData);
     logs.push({
@@ -62,7 +62,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 접수센터 → 증상 상담실 이관
     onLogReceived({
@@ -74,7 +74,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 2. Information Agent - 증상 사전 상담실
     onLogReceived({
@@ -86,7 +86,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     infoResult = await callInformationAgent(normalizedPetData, normalizedSymptomData, csResult.json);
 
@@ -100,7 +100,60 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 보호자에게 추가 정보 질문
+    onLogReceived({
+      agent: 'Information Agent',
+      role: '증상 사전 상담실',
+      icon: '💉',
+      type: 'info',
+      content: '정확한 진단을 위해 몇 가지 추가 정보가 필요합니다. 보호자님께 질문 드릴게요:',
+      timestamp: Date.now()
+    });
+
     await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 필수 질문들 생성
+    const questions = [
+      {
+        question: '언제부터 증상이 시작되었나요?',
+        options: ['오늘', '어제', '2-3일 전', '일주일 이상'],
+        type: 'single'
+      },
+      {
+        question: '식욕은 어떤가요?',
+        options: ['평소와 같음', '약간 감소', '거의 안 먹음', '전혀 안 먹음'],
+        type: 'single'
+      },
+      {
+        question: '활동량은 평소와 비교해 어떤가요?',
+        options: ['평소와 같음', '약간 감소', '많이 감소', '거의 움직이지 않음'],
+        type: 'single'
+      },
+      {
+        question: '다른 동반 증상이 있나요? (복수 선택 가능)',
+        options: ['구토', '설사', '기침', '재채기', '호흡곤란', '발열', '없음'],
+        type: 'multiple'
+      }
+    ];
+
+    // 각 질문을 순차적으로 전송
+    for (const q of questions) {
+      onLogReceived({
+        agent: 'Information Agent',
+        role: '증상 사전 상담실',
+        icon: '💉',
+        type: 'info',
+        content: q.question,
+        isQuestion: true,
+        questionData: q,
+        timestamp: Date.now()
+      });
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 증상 상담실 → 전문 진료실 이관
     onLogReceived({
@@ -112,7 +165,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 3. Medical Agent (GPT-4o) - 전문 진료실
     onLogReceived({
@@ -124,7 +177,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     // Firestore에서 FAQ와 과거 진료기록 컨텍스트 조회
     let dataContext = '';
@@ -149,7 +202,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 전문 진료실 → 응급도 판정실 요청
     onLogReceived({
@@ -161,7 +214,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 4. Triage Engine (Claude Sonnet) - 응급도 판정실
     onLogReceived({
@@ -173,7 +226,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     try {
       triageResult = await calculateTriageScore(normalizedPetData, normalizedSymptomData, medicalResult.json, csResult.json);
@@ -190,7 +243,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       console.error('Triage 계산 오류:', err);
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 4.5 협진 시스템 (Collaborative Diagnosis) - 다중 모델 교차 검증
     onLogReceived({
@@ -274,7 +327,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     opsResult = await callOpsAgent(
       normalizedPetData,
@@ -295,7 +348,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 치료 계획실 → 처방 관리실 이관
     onLogReceived({
@@ -307,7 +360,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 6. Care Agent - 처방 · 약물 관리실
     onLogReceived({
@@ -319,7 +372,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     careResult = await callCareAgent(
       normalizedPetData,
@@ -338,7 +391,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
     });
     onLogReceived(logs[logs.length - 1]);
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 처방실 → 진료요약실 이관
     onLogReceived({
@@ -350,7 +403,7 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       timestamp: Date.now()
     });
 
-    await new Promise(resolve => setTimeout(resolve, 600));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // 7. Summary - 진료 요약 관리실
     onLogReceived({
