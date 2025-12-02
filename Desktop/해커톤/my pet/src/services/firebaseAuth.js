@@ -102,14 +102,20 @@ export const authService = {
         }
       };
     } catch (error) {
-      console.error('로그인 오류:', error);
+      console.error('로그인 오류:', error.code, error.message);
       let message = '로그인에 실패했습니다.';
       if (error.code === 'auth/user-not-found') {
-        message = '등록되지 않은 이메일입니다.';
+        message = '등록되지 않은 이메일입니다. 회원가입을 먼저 해주세요.';
       } else if (error.code === 'auth/wrong-password') {
         message = '비밀번호가 일치하지 않습니다.';
       } else if (error.code === 'auth/invalid-credential') {
-        message = '이메일 또는 비밀번호가 올바르지 않습니다.';
+        message = '이메일 또는 비밀번호가 올바르지 않습니다.\n등록되지 않은 계정이거나 비밀번호가 틀렸습니다.';
+      } else if (error.code === 'auth/invalid-email') {
+        message = '유효하지 않은 이메일 형식입니다.';
+      } else if (error.code === 'auth/user-disabled') {
+        message = '비활성화된 계정입니다. 관리자에게 문의하세요.';
+      } else if (error.code === 'auth/too-many-requests') {
+        message = '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.';
       }
       return { success: false, error: message };
     }
