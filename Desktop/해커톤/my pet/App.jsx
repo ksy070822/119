@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { runMultiAgentDiagnosis } from './src/services/ai/agentOrchestrator'
 import { MyPage } from './src/components/MyPage'
@@ -1647,7 +1647,15 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
   const [waitingForAnswer, setWaitingForAnswer] = useState(false); // AI 질문 대기 중
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showDiagnosisReport, setShowDiagnosisReport] = useState(false); // 진단서 표시 여부
-  
+  const messagesEndRef = useRef(null); // 자동 스크롤을 위한 ref
+
+  // 자동 스크롤: 메시지가 추가될 때마다 맨 아래로 스크롤
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
   useEffect(() => {
     let isMounted = true; // 컴포넌트 마운트 상태 추적
     
@@ -2028,7 +2036,46 @@ ${userQuestion}
       setIsProcessing(false);
     }
   };
-  
+
+  // 사용자 메시지 전송 핸들러
+  const handleSendMessage = async () => {
+    if (!userInput.trim()) return;
+
+    // 진단이 완료된 경우 기존 handleUserQuestion 사용
+    if (diagnosisResult && !isProcessing) {
+      handleUserQuestion();
+      return;
+    }
+
+    // 진단 진행 중일 때는 메시지만 추가
+    const userMessage = userInput.trim();
+    setMessages(prev => [...prev, {
+      agent: '사용자',
+      role: '보호자',
+      icon: '👤',
+      type: 'user',
+      content: userMessage,
+      isUser: true,
+      timestamp: Date.now()
+    }]);
+
+    setUserInput('');
+
+    // 진단 진행 중이면 간단한 안내 메시지 추가
+    if (isProcessing) {
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          agent: 'CS Agent',
+          role: '접수 · 예약 센터',
+          icon: '🏥',
+          type: 'cs',
+          content: '네, 보호자님. 증상 정보 감사합니다. AI 의료진이 모든 정보를 종합하여 정밀 진단을 진행하고 있습니다. 조금만 기다려주세요!',
+          timestamp: Date.now()
+        }]);
+      }, 500);
+    }
+  };
+
   // 에이전트 룸 정의 (카드 형태 UI용) - 병원 분위기 반영
   const agentRooms = [
     { id: 'cs', name: '접수 · 예약 센터', icon: '🏥', role: 'Front Desk', agentKey: 'CS Agent', description: '진료 접수 및 안내' },
@@ -2092,14 +2139,17 @@ ${userQuestion}
         <p>AI 의료진이 {petData.petName}를 진료합니다</p>
       </div>
 
-      {/* 에이전트 룸 카드 UI */}
-      <div className="agent-rooms-container" style={{
+      {/* 채팅창 UI */}
+      <div className="chat-messages-container" style={{
         padding: '16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        maxHeight: 'calc(100vh - 300px)',
-        overflowY: 'auto'
+        maxHeight: 'calc(100vh - 400px)',
+        overflowY: 'auto',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        margin: '0 16px'
       }}>
         {messages.length === 0 && isProcessing && (
           <div className="initial-loading" style={{
@@ -2116,264 +2166,272 @@ ${userQuestion}
           </div>
         )}
 
-        {messages.length > 0 && agentRooms.map((room, index) => {
-          const status = getAgentRoomStatus(room);
-          const roomMessages = getAgentRoomMessages(room);
-          const isActive = status === 'processing' || status === 'completed';
+        {/* 채팅 메시지 리스트 */}
+        {messages.map((msg, index) => {
+          const isUserMessage = msg.agent === '사용자' || msg.isUser;
+          const isSystemMessage = msg.type === 'system';
 
-          // 아직 시작 안된 룸은 숨김
-          if (status === 'pending' && index > 0) {
-            const prevRoom = agentRooms[index - 1];
-            const prevStatus = getAgentRoomStatus(prevRoom);
-            if (prevStatus === 'pending') return null;
+          // 시스템 메시지 (에이전트 간 전환 메시지 등)
+          if (isSystemMessage) {
+            return (
+              <div key={index} style={{
+                textAlign: 'center',
+                padding: '8px 16px',
+                margin: '4px 0',
+                fontSize: '12px',
+                color: '#64748b',
+                fontWeight: '500'
+              }}>
+                {msg.content}
+              </div>
+            );
           }
 
           return (
             <div
-              key={room.id}
-              className={`agent-room-card ${status}`}
+              key={index}
               style={{
-                background: status === 'completed' ? 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)' :
-                           status === 'processing' ? 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)' :
-                           '#f8fafc',
-                borderRadius: '12px',
-                padding: '12px',
-                border: status === 'completed' ? '1px solid #a7f3d0' :
-                        status === 'processing' ? '1px solid #c7d2fe' :
-                        '1px solid #e2e8f0',
-                boxShadow: status === 'processing' ? '0 4px 12px rgba(99, 102, 241, 0.12)' :
-                          status === 'completed' ? '0 2px 8px rgba(16, 185, 129, 0.08)' :
-                          '0 1px 2px rgba(0,0,0,0.04)',
-                transition: 'all 0.3s ease',
-                opacity: status === 'pending' ? 0.6 : 1
+                display: 'flex',
+                flexDirection: isUserMessage ? 'row-reverse' : 'row',
+                gap: '8px',
+                alignItems: 'flex-start',
+                marginBottom: '8px'
               }}
             >
-              {/* 카드 헤더 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '10px',
-                marginBottom: isActive && roomMessages.length > 0 ? '12px' : '0'
-              }}>
-                {/* 아이콘 */}
+              {/* 에이전트 아이콘 */}
+              {!isUserMessage && (
                 <div style={{
-                  width: '40px',
-                  height: '40px',
-                  minWidth: '40px',
-                  borderRadius: '10px',
-                  background: status === 'completed' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
-                             status === 'processing' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' :
-                             '#cbd5e1',
+                  width: '36px',
+                  height: '36px',
+                  minWidth: '36px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '20px',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                  fontSize: '18px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                 }}>
-                  {room.icon}
-                </div>
-
-                {/* 텍스트 */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    color: '#1e293b',
-                    marginBottom: '2px',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {room.name}
-                  </div>
-                  <div style={{
-                    fontSize: '11px',
-                    color: status === 'completed' ? '#059669' : status === 'processing' ? '#4f46e5' : '#64748b',
-                    fontWeight: '500'
-                  }}>
-                    {room.role}
-                  </div>
-                </div>
-
-                {/* 상태 표시 */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  flexShrink: 0
-                }}>
-                  {status === 'completed' && (
-                    <>
-                      <button
-                        onClick={() => setExpandedRooms(prev => ({
-                          ...prev,
-                          [room.id]: !prev[room.id]
-                        }))}
-                        style={{
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          border: 'none',
-                          color: '#059669',
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {expandedRooms[room.id] ? '▲' : '▼'}
-                      </button>
-                      <div style={{
-                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                        color: 'white',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                        boxShadow: '0 2px 4px rgba(16, 185, 129, 0.2)'
-                      }}>
-                        ✓ 완료
-                      </div>
-                    </>
-                  )}
-                  {status === 'processing' && (
-                    <div style={{
-                      background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                      color: 'white',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      boxShadow: '0 2px 4px rgba(99, 102, 241, 0.2)'
-                    }}>
-                      <div className="typing-dots" style={{ display: 'flex', gap: '2px' }}>
-                        <div style={{
-                          width: '4px',
-                          height: '4px',
-                          borderRadius: '50%',
-                          background: 'white',
-                          animation: 'pulse 1s infinite',
-                          animationDelay: '0s'
-                        }}></div>
-                        <div style={{
-                          width: '4px',
-                          height: '4px',
-                          borderRadius: '50%',
-                          background: 'white',
-                          animation: 'pulse 1s infinite',
-                          animationDelay: '0.2s'
-                        }}></div>
-                        <div style={{
-                          width: '4px',
-                          height: '4px',
-                          borderRadius: '50%',
-                          background: 'white',
-                          animation: 'pulse 1s infinite',
-                          animationDelay: '0.4s'
-                        }}></div>
-                      </div>
-                      진행중
-                    </div>
-                  )}
-                  {status === 'pending' && (
-                    <div style={{
-                      background: '#f1f5f9',
-                      color: '#94a3b8',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      fontWeight: '600'
-                    }}>
-                      대기
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 대화 내용 - 진행중이거나 펼친 상태일 때 표시 */}
-              {isActive && roomMessages.length > 0 && (status === 'processing' || expandedRooms[room.id]) && (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  marginTop: '10px',
-                  paddingTop: '10px',
-                  borderTop: '1px solid rgba(0,0,0,0.06)'
-                }}>
-                  {roomMessages.map((msg, msgIdx) => {
-                    const isUserMessage = msg.agent === '사용자';
-                    return (
-                      <div
-                        key={msgIdx}
-                        style={{
-                          background: isUserMessage ? 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)' : 'rgba(255,255,255,0.9)',
-                          borderRadius: '10px',
-                          padding: '8px 12px',
-                          fontSize: '13px',
-                          color: '#334155',
-                          lineHeight: '1.5',
-                          borderLeft: isUserMessage ? '3px solid #0ea5e9' : '3px solid #10b981',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        {isUserMessage && (
-                          <div style={{
-                            fontSize: '10px',
-                            color: '#0369a1',
-                            fontWeight: '600',
-                            marginBottom: '3px'
-                          }}>
-                            보호자
-                          </div>
-                        )}
-                        {msg.content.split('\n').map((line, lineIdx) => (
-                          <div key={lineIdx} style={{ marginBottom: line ? '3px' : '0' }}>{line}</div>
-                        ))}
-                      </div>
-                    );
-                  })}
+                  {msg.icon || '🏥'}
                 </div>
               )}
 
-              {/* 완료된 룸 - 접힌 상태일 때 요약 메시지 표시 */}
-              {status === 'completed' && roomMessages.length > 0 && !expandedRooms[room.id] && (
+              {/* 메시지 말풍선 */}
+              <div style={{
+                maxWidth: '70%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+              }}>
+                {/* 에이전트 이름 / 역할 */}
+                {!isUserMessage && (
+                  <div style={{
+                    fontSize: '11px',
+                    color: '#64748b',
+                    fontWeight: '600',
+                    paddingLeft: '12px'
+                  }}>
+                    {msg.role || msg.agent}
+                  </div>
+                )}
+
+                {/* 메시지 내용 */}
                 <div style={{
-                  marginTop: '8px',
-                  padding: '6px 10px',
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  color: '#059669',
-                  fontWeight: '500'
+                  background: isUserMessage
+                    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                    : 'white',
+                  color: isUserMessage ? 'white' : '#1e293b',
+                  borderRadius: isUserMessage ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  lineHeight: '1.6',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  wordBreak: 'break-word'
                 }}>
-                  {roomMessages.length}개의 대화 내용이 있어요
+                  {msg.content.split('\n').map((line, lineIdx) => (
+                    <div key={lineIdx} style={{
+                      marginBottom: line ? '4px' : '0',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+
+                {/* 타임스탬프 */}
+                <div style={{
+                  fontSize: '10px',
+                  color: '#94a3b8',
+                  paddingLeft: isUserMessage ? '0' : '12px',
+                  paddingRight: isUserMessage ? '12px' : '0',
+                  textAlign: isUserMessage ? 'right' : 'left'
+                }}>
+                  {new Date(msg.timestamp || Date.now()).toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+
+              {/* 사용자 아이콘 */}
+              {isUserMessage && (
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  minWidth: '36px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '18px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                }}>
+                  👤
                 </div>
               )}
             </div>
           );
         })}
 
-        {/* 진행 중 표시 */}
+        {/* 타이핑 인디케이터 */}
         {isProcessing && messages.length > 0 && (
           <div style={{
-            textAlign: 'center',
-            padding: '12px',
-            color: '#64748b',
-            fontSize: '14px'
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'flex-start',
+            marginBottom: '8px'
           }}>
-            <span>AI 에이전트들이 협업하여 진료 중입니다...</span>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              minWidth: '36px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '18px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+            }}>
+              💭
+            </div>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px 16px 16px 4px',
+              padding: '16px 20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            }}>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#6366f1',
+                  animation: 'pulse 1.4s infinite',
+                  animationDelay: '0s'
+                }}></div>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#6366f1',
+                  animation: 'pulse 1.4s infinite',
+                  animationDelay: '0.2s'
+                }}></div>
+                <div style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#6366f1',
+                  animation: 'pulse 1.4s infinite',
+                  animationDelay: '0.4s'
+                }}></div>
+              </div>
+            </div>
           </div>
         )}
+
+        {/* 자동 스크롤을 위한 참조 지점 */}
+        <div ref={messagesEndRef} />
       </div>
+
+      {/* 메시지 입력창 */}
+      {!showResult && (
+        <div style={{
+          padding: '16px',
+          borderTop: '1px solid #e2e8f0',
+          background: 'white',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 10
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            maxWidth: '100%',
+            margin: '0 auto'
+          }}>
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && userInput.trim()) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder={isProcessing ? "AI가 진단 중입니다..." : "추가 질문이나 증상을 입력하세요..."}
+              disabled={isProcessing}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                borderRadius: '24px',
+                border: '2px solid #e2e8f0',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'border-color 0.2s',
+                background: isProcessing ? '#f1f5f9' : 'white'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#6366f1'}
+              onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={isProcessing || !userInput.trim()}
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '50%',
+                border: 'none',
+                background: (isProcessing || !userInput.trim())
+                  ? '#cbd5e1'
+                  : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                color: 'white',
+                fontSize: '18px',
+                cursor: (isProcessing || !userInput.trim()) ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: (isProcessing || !userInput.trim()) ? 'none' : '0 2px 8px rgba(99, 102, 241, 0.3)',
+                transition: 'all 0.2s'
+              }}
+            >
+              ➤
+            </button>
+          </div>
+          <div style={{
+            fontSize: '11px',
+            color: '#94a3b8',
+            marginTop: '8px',
+            textAlign: 'center'
+          }}>
+            궁금한 점이 있으시면 언제든 질문해주세요
+          </div>
+        </div>
+      )}
 
       {showResult && diagnosisResult && (
         <div className="diagnosis-result">

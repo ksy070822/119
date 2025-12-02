@@ -3735,3 +3735,92 @@ body {
 .material-symbols-outlined.text-base { font-size: 1rem; }
 .material-symbols-outlined.text-3xl { font-size: 1.875rem; }
 .material-symbols-outlined.text-6xl { font-size: 3.75rem; }
+
+/* ========== 채팅 UI 스타일 ========== */
+.chat-messages-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+.chat-messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 채팅 메시지 애니메이션 */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-messages-container > div {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+/* 타이핑 애니메이션 (pulse) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* 메시지 입력창 포커스 효과 */
+.chat-messages-container input:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* 전송 버튼 호버 효과 */
+.chat-messages-container button:not(:disabled):hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+.chat-messages-container button:not(:disabled):active {
+  transform: scale(0.95);
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* 스크롤 자동 이동 효과 */
+.chat-messages-container {
+  scroll-behavior: smooth;
+}
+
+/* 시스템 메시지 스타일 */
+.system-message {
+  font-style: italic;
+  opacity: 0.8;
+}
