@@ -4072,7 +4072,11 @@ function App() {
           currentTab={currentTab}
           onTabChange={handleTabChange}
           onModeSwitch={() => handleModeSwitch('clinic')}
-          showModeSwitch={currentUser && (currentUser.userMode === 'both' || (currentUser.roles && currentUser.roles.length > 0))}
+          showModeSwitch={currentUser && (
+            currentUser.userMode === 'both' ||
+            currentUser.userMode === 'clinic' ||
+            (currentUser.roles && currentUser.roles.length > 0)
+          )}
         />
       )}
         </>
