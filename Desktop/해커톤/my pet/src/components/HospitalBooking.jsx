@@ -836,46 +836,6 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                   <span className="text-sm text-slate-500">{formatDistance(hospital.distance)}</span>
                 </div>
 
-                {/* 영업상태 + 영업시간 (한 줄) */}
-                <div className="flex items-center gap-2 mb-2 text-xs">
-                  {hospital.businessStatus && (
-                    <span className={`font-medium px-2 py-0.5 rounded ${
-                      hospital.businessStatus === '영업중' || hospital.businessStatus === '영업/정상'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {hospital.businessStatus}
-                    </span>
-                  )}
-                  {hospital.is24Hours ? (
-                    <span className="text-red-600 font-medium">영업시간: 24시간</span>
-                  ) : (
-                    <span className="text-slate-400">
-                      영업시간 -
-                      <a
-                        href={hospital.url || `https://map.kakao.com/link/search/${encodeURIComponent(hospital.name)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sky-500 hover:underline ml-1"
-                      >
-                        카카오맵에서 확인
-                      </a>
-                    </span>
-                  )}
-                  <span className="text-slate-300">|</span>
-                  <span className="text-yellow-500">⭐</span>
-                  <span className="text-slate-500">
-                    후기 평점 -
-                    <a
-                      href={hospital.url || `https://map.kakao.com/link/search/${encodeURIComponent(hospital.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sky-500 hover:underline ml-1"
-                    >
-                      카카오맵에서 확인
-                    </a>
-                  </span>
-                </div>
 
 
                 {/* AI 병원 특징 요약 */}
@@ -928,8 +888,8 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                     rel="noopener noreferrer"
                     className="flex-1 py-2.5 text-center bg-[#1E1B4B] rounded-xl text-sm font-bold hover:bg-[#2d2a5a] transition-colors flex items-center justify-center gap-1"
                   >
-                    <span className="text-[#FACC15] font-black">T</span>
-                    <span className="text-white">펫택시 예약</span>
+                    <span className="text-[#FACC15] font-black text-lg">T</span>
+                    <span className="text-white">펫택시</span>
                   </a>
                 </div>
               </div>

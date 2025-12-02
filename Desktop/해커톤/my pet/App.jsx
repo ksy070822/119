@@ -921,17 +921,33 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
     return MAIN_CHARACTER_IMAGES[species] || MAIN_CHARACTER_IMAGES.other;
   };
 
+  // 동물 분류 표시 (강아지/고양이는 품종, 나머지는 대분류)
+  const getSpeciesDisplay = () => {
+    if (!petData) return '';
+    if (petData.species === 'dog' || petData.species === 'cat') {
+      return petData.breed || (petData.species === 'dog' ? '강아지' : '고양이');
+    }
+    const speciesOption = SPECIES_OPTIONS.find(s => s.id === petData.species);
+    return speciesOption?.label || '기타';
+  };
+
+  // 성별 표시
+  const getSexDisplay = () => {
+    if (!petData?.sex) return null;
+    return petData.sex === 'M' ? '♂' : '♀';
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white pb-20">
-      {/* Header */}
+    <div className="min-h-screen bg-gradient-to-b from-sky-50 to-white pb-20 max-w-lg mx-auto">
+      {/* Header - 회사명 가운데 정렬 */}
       <header className="bg-gradient-to-r from-sky-500 to-blue-600 text-white px-4 py-4 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
-            <span className="text-2xl">🐾</span>
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+            <span className="text-lg">🐾</span>
           </div>
-          <div className="flex-1">
+          <div className="text-center">
             <h1 className="text-lg font-bold tracking-tight">PetMedical.AI</h1>
-            <p className="text-sky-100 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
+            <p className="text-sky-100 text-[10px] font-medium">AI 기반 반려동물 건강 관리 서비스</p>
           </div>
         </div>
       </header>
@@ -952,18 +968,18 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         ) : (
           <>
             {/* Pet Profile Banner - 캐릭터 이미지 포함 */}
-            <div className="bg-gradient-to-br from-sky-100 via-blue-50 to-sky-100 rounded-2xl p-5 shadow-lg border border-sky-200/50 relative overflow-hidden mb-4">
+            <div className="bg-gradient-to-br from-sky-100 via-blue-50 to-sky-100 rounded-2xl p-4 shadow-lg border border-sky-200/50 relative overflow-hidden mb-4">
               {/* 배경 장식 */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-sky-200/30 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-200/20 rounded-full blur-2xl"></div>
 
-              <div className="relative flex items-start gap-4">
-                {/* 캐릭터 이미지 - 증명사진 스타일 */}
-                <div className="flex-shrink-0 w-28 h-28 bg-white/60 rounded-2xl shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
+              <div className="relative flex items-stretch gap-3">
+                {/* 캐릭터 이미지 - 세로로 길게, 가로 좁게 */}
+                <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
                   <img
                     src={getMainCharacterImage()}
                     alt="Pet Character"
-                    className="w-24 h-24 object-contain"
+                    className="w-full h-full object-cover object-top"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.parentElement.innerHTML = `<span class="text-5xl">${petData.species === 'dog' ? '🐕' : petData.species === 'cat' ? '🐈' : '🐾'}</span>`;
@@ -971,30 +987,35 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   />
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-bold text-gray-800 leading-tight mb-1">
-                    AI 전문 의료진이,<br />24시간 {petData.petName}를 지켜줄게요
-                  </h2>
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  <div>
+                    <p className="text-sm font-bold text-gray-800 whitespace-nowrap">AI 전문 의료진이,</p>
+                    <p className="text-sm font-bold text-gray-800 whitespace-nowrap">24시간 {petData.petName}를 지켜줄게요 ❤️</p>
+                    <p className="text-xs text-sky-700 font-semibold mt-1 whitespace-nowrap">
+                      오늘도 든든한 {petData.petName} 케어 시작!
+                    </p>
+                  </div>
 
-                  <p className="text-sm text-sky-700 font-semibold mb-2">
-                    오늘도 든든한 {petData.petName} 케어 시작!
-                  </p>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-gray-600 font-medium bg-white/70 px-2 py-1 rounded-full">
-                      {petData.breed || '품종 미등록'}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                    <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                      {getSpeciesDisplay()}
                     </span>
-                    <span className="text-xs text-gray-600 font-medium bg-white/70 px-2 py-1 rounded-full">
+                    {getSexDisplay() && (
+                      <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                        {getSexDisplay()}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
                       {calculateAge(petData.birthDate)}
                     </span>
-                    {petData.weight && (
-                      <span className="text-xs text-gray-600 font-medium bg-white/70 px-2 py-1 rounded-full">
-                        {petData.weight}kg
+                    {todayWeight && (
+                      <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                        {todayWeight}kg
                       </span>
                     )}
                     <button
                       onClick={() => onNavigate('profile-list')}
-                      className="px-2 py-1 bg-white text-sky-600 text-xs font-semibold rounded-full shadow-sm border border-sky-200 hover:bg-sky-50 transition-colors"
+                      className="px-3 py-1 bg-sky-500 text-white text-[11px] font-bold rounded-full shadow-md hover:bg-sky-600 transition-colors"
                     >
                       변경
                     </button>
@@ -1004,36 +1025,43 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
               <button
                 onClick={() => onNavigate('symptom-input')}
-                className="w-full mt-4 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm py-3 rounded-xl shadow-md hover:shadow-lg transition-all font-bold"
+                className="w-full mt-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white py-3 rounded-xl shadow-md hover:shadow-lg transition-all"
               >
-                PetMedical.AI 종합 의료센터 &gt; 입장하기
+                <span className="text-xs font-medium">PetMedical.AI 종합 의료센터 &gt;</span>
+                <span className="text-sm font-bold ml-1">입장하기</span>
               </button>
             </div>
 
-            {/* AI 건강 문진 카드 */}
+            {/* AI 건강 문진 카드 - 가운데 정렬 */}
             <div className="bg-amber-50 rounded-2xl p-5 shadow-lg border-2 border-amber-200 relative overflow-hidden mb-4">
-              <div className="relative flex items-center gap-4">
-                <div className="w-16 h-16 flex items-center justify-center flex-shrink-0">
-                  <span className="text-5xl">🤖</span>
+              <div className="relative flex flex-col items-center text-center">
+                <div className="w-14 h-14 flex items-center justify-center mb-2">
+                  <span className="text-4xl">🤖</span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-gray-800 font-bold text-base mb-1">AI 건강 문진</h3>
-                  <p className="text-gray-600 text-xs">{petData.petName}의 7일 케어기록을 분석합니다.</p>
-                </div>
+                <h3 className="text-gray-800 font-bold text-base mb-1">AI 건강 문진</h3>
+                <p className="text-gray-600 text-xs">{petData.petName}의 7일 케어기록을 분석합니다.</p>
               </div>
               <button
                 onClick={() => onNavigate('ai-consultation')}
                 className="w-full mt-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-gray-900 font-bold text-sm py-3 rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
               >
-                케어 기록으로 AI 문진하기 &gt;
+                7일 케어기록으로 AI 문진하기 &gt;
               </button>
             </div>
 
-            {/* 건강 알림 섹션 */}
+            {/* 케어 주요 알림 섹션 */}
             <div className="mb-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">🔔</span>
-                <h3 className="text-base font-bold text-gray-800">건강 알림</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔔</span>
+                  <h3 className="text-base font-bold text-gray-800">{petData.petName} 케어 주요알림</h3>
+                </div>
+                <button
+                  onClick={() => onNavigate('records')}
+                  className="text-xs text-sky-600 font-semibold"
+                >
+                  전체보기 &gt;
+                </button>
               </div>
 
               <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-200">
@@ -1075,30 +1103,6 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
               </div>
             </div>
 
-            {/* 케어 주요 알림 */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-bold text-gray-800">{petData.petName} 케어 주요 알림</h3>
-                <button
-                  onClick={() => onNavigate('records')}
-                  className="text-xs text-sky-600 font-semibold flex items-center gap-1"
-                >
-                  전체보기 &gt;
-                </button>
-              </div>
-
-              <div className="bg-white rounded-xl p-3 shadow-md border border-gray-200">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-sky-500 rounded-full flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-800">정기 건강검진 예정</p>
-                  </div>
-                  <p className="text-xs text-gray-500">2025년 12월 15일</p>
-                  <span className="text-gray-400">&gt;</span>
-                </div>
-              </div>
-            </div>
-
             {/* 오늘의 기록 - 원형 아이콘 */}
             <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-200 mb-4">
               <div className="flex items-center justify-between mb-4">
@@ -1109,7 +1113,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <div className="flex flex-col items-center">
                   <button
-                    className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all"
+                    className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all shadow-sm"
                     onClick={() => {
                       setCareActions(prev => ({ ...prev, meal: prev.meal + 1 }));
                       setHealthPoints(prev => {
@@ -1119,15 +1123,15 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       });
                     }}
                   >
-                    <span className="text-2xl">🍽️</span>
+                    <span className="text-2xl">🍚</span>
                   </button>
-                  <span className="text-xs font-semibold text-gray-700">식사</span>
-                  <span className="text-sm font-bold text-gray-800">{careActions.meal}회</span>
+                  <span className="text-xs font-semibold text-gray-500 mt-1">식사</span>
+                  <span className="text-sm font-bold text-sky-600">{careActions.meal}회</span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <button
-                    className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all"
+                    className="w-14 h-14 bg-sky-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all shadow-sm"
                     onClick={() => {
                       setCareActions(prev => ({ ...prev, water: prev.water + 1 }));
                       setHealthPoints(prev => {
@@ -1139,13 +1143,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   >
                     <span className="text-2xl">💧</span>
                   </button>
-                  <span className="text-xs font-semibold text-gray-700">물</span>
-                  <span className="text-sm font-bold text-gray-800">{careActions.water}회</span>
+                  <span className="text-xs font-semibold text-gray-500 mt-1">물</span>
+                  <span className="text-sm font-bold text-sky-600">{careActions.water}회</span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <button
-                    className="w-14 h-14 bg-green-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all"
+                    className="w-14 h-14 bg-yellow-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all shadow-sm"
                     onClick={() => {
                       setCareActions(prev => ({ ...prev, walk: prev.walk + 1 }));
                       setHealthPoints(prev => {
@@ -1155,15 +1159,15 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       });
                     }}
                   >
-                    <span className="text-2xl">🚶</span>
+                    <span className="text-2xl">🩴</span>
                   </button>
-                  <span className="text-xs font-semibold text-gray-700">산책</span>
-                  <span className="text-sm font-bold text-gray-800">{careActions.walk}회</span>
+                  <span className="text-xs font-semibold text-gray-500 mt-1">산책</span>
+                  <span className="text-sm font-bold text-sky-600">{careActions.walk}회</span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <button
-                    className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all"
+                    className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-1 hover:scale-105 active:scale-95 transition-all shadow-sm"
                     onClick={() => {
                       setCareActions(prev => ({ ...prev, grooming: prev.grooming + 1 }));
                       setHealthPoints(prev => {
@@ -1173,10 +1177,10 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       });
                     }}
                   >
-                    <span className="text-2xl">💩</span>
+                    <span className="text-2xl">🗑️</span>
                   </button>
-                  <span className="text-xs font-semibold text-gray-700">배변</span>
-                  <span className="text-sm font-bold text-gray-800">{careActions.grooming}회</span>
+                  <span className="text-xs font-semibold text-gray-500 mt-1">배변</span>
+                  <span className="text-sm font-bold text-sky-600">{careActions.grooming}회</span>
                 </div>
               </div>
 
