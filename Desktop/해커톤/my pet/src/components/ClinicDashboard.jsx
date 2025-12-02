@@ -12,6 +12,7 @@ import {
 import { userService, bookingService } from '../services/firestore';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, getDoc, doc } from 'firebase/firestore';
+import { getPetImage } from '../utils/imagePaths';
 
 export function ClinicDashboard({ currentUser, onBack }) {
   const [loading, setLoading] = useState(true);
@@ -541,8 +542,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     </div>
 
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-purple-400 flex items-center justify-center text-2xl">
-                        {booking.pet?.species === 'cat' ? '🐈' : '🐕'}
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-purple-400 overflow-hidden">
+                        <img
+                          src={getPetImage(booking.pet || { species: booking.pet?.species || 'dog' }, false)}
+                          alt={booking.pet?.name || '반려동물'}
+                          className="w-full h-full object-cover"
+                          style={{ objectPosition: 'center', display: 'block' }}
+                        />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-base font-semibold text-gray-900">
@@ -730,7 +736,14 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{booking.pet?.species === 'cat' ? '🐈' : '🐕'}</span>
+                          <div className="w-8 h-8 rounded-full overflow-hidden">
+                            <img
+                              src={getPetImage(booking.pet || { species: booking.pet?.species || 'dog' }, false)}
+                              alt={booking.pet?.name || '반려동물'}
+                              className="w-full h-full object-cover"
+                              style={{ objectPosition: 'center', display: 'block' }}
+                            />
+                          </div>
                           <div className="text-sm">
                             <span className="font-semibold text-gray-900">{booking.pet?.name || '미등록'}</span>
                             <span className="text-gray-600"> · {booking.pet?.breed || '품종 미상'}</span>
@@ -772,8 +785,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 {patients.map((patient, index) => (
                   <div key={patient.id || index} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-purple-400 flex items-center justify-center text-2xl">
-                        {patient.species === 'cat' ? '🐈' : '🐕'}
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-purple-400 overflow-hidden">
+                        <img
+                          src={getPetImage(patient || { species: patient.species || 'dog' }, false)}
+                          alt={patient.petName || patient.name || '반려동물'}
+                          className="w-full h-full object-cover"
+                          style={{ objectPosition: 'center', display: 'block' }}
+                        />
                       </div>
                       <div className="flex-1">
                         <h3 className="text-base font-semibold text-gray-900">

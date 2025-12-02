@@ -363,6 +363,31 @@ export const clinicResultService = {
         ...resultData,
         createdAt: serverTimestamp()
       });
+      
+      // 보호자에게 푸시 알림 전송
+      if (resultData.userId) {
+        try {
+          const { sendNotificationToGuardian } = await import('./pushNotificationService');
+          const clinicName = resultData.clinicName || resultData.hospitalName || '병원';
+          await sendNotificationToGuardian(
+            resultData.userId,
+            `${clinicName}에서 진료한 결과가 전송되었습니다`,
+            `${resultData.petName || '반려동물'}의 진료 결과를 확인해주세요.`,
+            {
+              type: 'treatment_completed',
+              resultId: docRef.id,
+              bookingId: resultData.bookingId,
+              petName: resultData.petName,
+              clinicName: clinicName,
+              url: '/records'
+            }
+          );
+          console.log('✅ 보호자 푸시 알림 전송 완료');
+        } catch (pushError) {
+          console.warn('푸시 알림 전송 실패 (진료 결과는 저장됨):', pushError);
+        }
+      }
+      
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('진료 결과 저장 오류:', error);

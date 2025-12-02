@@ -34,6 +34,7 @@ import { ClinicDashboard } from './src/components/ClinicDashboard'
 import { AICareConsultation } from './src/components/AICareConsultation'
 import { getFAQContext } from './src/data/faqData'
 import { diagnosisService, bookingService, petService } from './src/services/firestore'
+import { requestPushPermission, setupForegroundMessageHandler } from './src/services/pushNotificationService'
 import { getUserClinics } from './src/services/clinicService'
 import { getSpeciesDisplayName } from './src/services/ai/commonContext'
 
@@ -226,17 +227,8 @@ const SPECIES_OPTIONS = [
   { id: 'other', label: '기타', emoji: '🐾', icon: '/icon/no-bg/etc.png' },
 ];
 
-// 동물 종류별 메인 캐릭터 이미지 (프로필 배너용)
-const MAIN_CHARACTER_IMAGES = {
-  dog: '/icon/main-image/dog_main-removebg-preview.png',
-  cat: '/icon/main-image/Cat_main-removebg-preview.png',
-  rabbit: '/icon/main-image/rabbit_main-removebg-preview.png',
-  hamster: '/icon/main-image/hamster_main-removebg-preview.png',
-  bird: '/icon/main-image/bird_main-removebg-preview.png',
-  hedgehog: '/icon/main-image/hedgehog_main-removebg-preview.png',
-  reptile: '/icon/main-image/reptile_main-removebg-preview.png',
-  other: '/icon/main-image/etc_main-removebg-preview.png'
-};
+// 동물 이미지 경로 유틸리티 import
+import { getMainCharacterImage, getPetImage } from './src/utils/imagePaths';
 
 // 개/고양이 대표 품종 목록
 const DOG_BREEDS = [
@@ -657,8 +649,12 @@ function ProfileList({ pets, onSelectPet, onAddNew, onNavigate }) {
                 className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md hover:border-teal-200 transition-all cursor-pointer"
                 onClick={() => onSelectPet(pet)}
               >
-                <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center text-3xl">
-                  {pet.species === 'dog' ? '🐕' : '🐈'}
+                <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={getPetImage(pet, false)}
+                    alt={pet.petName || pet.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900 text-lg">{pet.petName}</h3>
@@ -918,9 +914,8 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
   }
 
   // 현재 반려동물의 메인 캐릭터 이미지 가져오기
-  const getMainCharacterImage = () => {
-    const species = petData?.species || 'other';
-    return MAIN_CHARACTER_IMAGES[species] || MAIN_CHARACTER_IMAGES.other;
+  const getMainCharacterImagePath = () => {
+    return getPetImage(petData, true); // 메인 화면이므로 true
   };
 
   // 동물 분류 표시 (강아지/고양이는 품종, 나머지는 대분류)
@@ -985,15 +980,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-200/20 rounded-full blur-2xl"></div>
 
                       <div className="relative flex items-stretch gap-3">
-                        <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
+                        <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white">
                           <img
-                            src={getMainCharacterImage()}
+                            src={getMainCharacterImagePath()}
                             alt="Pet Character"
-                            className="w-full h-full object-cover object-top"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.parentElement.innerHTML = `<span class="text-5xl">${petData.species === 'dog' ? '🐕' : petData.species === 'cat' ? '🐈' : '🐾'}</span>`;
-                            }}
+                            className="w-full h-full object-cover"
+                            style={{ objectPosition: 'center', display: 'block' }}
                           />
                         </div>
 
@@ -1364,15 +1356,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
               <div className="relative flex items-stretch gap-3">
                 {/* 캐릭터 이미지 - 세로로 길게, 가로 좁게 */}
-                <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md flex items-center justify-center overflow-hidden border-2 border-white">
+                <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white">
                   <img
-                    src={getMainCharacterImage()}
+                    src={getMainCharacterImagePath()}
                     alt="Pet Character"
-                    className="w-full h-full object-cover object-top"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = `<span class="text-5xl">${petData.species === 'dog' ? '🐕' : petData.species === 'cat' ? '🐈' : '🐾'}</span>`;
-                    }}
+                    className="w-full h-full object-cover"
+                    style={{ objectPosition: 'center', display: 'block' }}
                   />
                 </div>
 
@@ -3965,6 +3954,28 @@ function App() {
     } else {
       setPetData(null);
     }
+
+    // 푸시 알림 권한 요청 및 토큰 저장
+    try {
+      await requestPushPermission(user.uid);
+      console.log('✅ 푸시 알림 설정 완료');
+    } catch (error) {
+      console.warn('푸시 알림 설정 실패:', error);
+    }
+
+    // 포그라운드 메시지 핸들러 설정
+    setupForegroundMessageHandler((payload) => {
+      console.log('포그라운드 푸시 알림 수신:', payload);
+      // 브라우저 알림 표시
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(payload.notification?.title || payload.data?.title || '알림', {
+          body: payload.notification?.body || payload.data?.body || '',
+          icon: '/icon/dog.png',
+          tag: payload.data?.type || 'notification',
+          data: payload.data || {}
+        });
+      }
+    });
   };
 
   // 회원가입 성공 핸들러

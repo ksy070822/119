@@ -1,23 +1,11 @@
 import React, { useState, useRef } from 'react';
 import './DiagnosisReport.css';
+import { getPetImage } from '../utils/imagePaths';
 
 function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoToHospital, onGoToTreatment }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const reportRef = useRef(null);
-
-  // 반려동물 정보 매핑 (다양한 필드명 지원)
-  // 동물 종류별 메인 캐릭터 이미지 매핑
-  const ANIMAL_CHARACTER_IMAGES = {
-    dog: '/icon/main-image/dog_main-removebg-preview.png',
-    cat: '/icon/main-image/Cat_main-removebg-preview.png',
-    rabbit: '/icon/main-image/rabbit_main-removebg-preview.png',
-    hamster: '/icon/main-image/hamster_main-removebg-preview.png',
-    bird: '/icon/main-image/bird_main-removebg-preview.png',
-    hedgehog: '/icon/main-image/hedgehog_main-removebg-preview.png',
-    reptile: '/icon/main-image/reptile_main-removebg-preview.png',
-    etc: '/icon/main-image/etc_main-removebg-preview.png'
-  };
 
   const getPetInfo = () => {
     if (!petData) return { name: '미등록', age: '미상', weight: '미상', breed: '미상', species: 'dog' };
@@ -56,7 +44,7 @@ function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoT
     const gender = petData.sex || petData.gender;
 
     // 프로필 이미지 (사용자 등록 이미지 또는 동물 종류별 기본 이미지)
-    const profileImage = petData.profileImage || ANIMAL_CHARACTER_IMAGES[species] || ANIMAL_CHARACTER_IMAGES.etc;
+    const profileImage = getPetImage(petData, false); // 프로필 영역이므로 false
     const character = petData.character || null;
 
     return { name, age, weight, breed, species, gender, profileImage, character };
@@ -206,7 +194,7 @@ ${diagnosisResult?.hospitalVisit ? `
                 <img
                   src={petInfo.profileImage}
                   alt={petInfo.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
                 />
               </div>
               <div className="patient-details" style={{ flex: 1 }}>

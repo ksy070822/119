@@ -1,16 +1,7 @@
 import { useState } from 'react';
 
-// 동물 종류별 메인 캐릭터 이미지 매핑
-const ANIMAL_CHARACTER_IMAGES = {
-  dog: '/icon/main-image/dog_main-removebg-preview.png',
-  cat: '/icon/main-image/Cat_main-removebg-preview.png',
-  rabbit: '/icon/main-image/rabbit_main-removebg-preview.png',
-  hamster: '/icon/main-image/hamster_main-removebg-preview.png',
-  bird: '/icon/main-image/bird_main-removebg-preview.png',
-  hedgehog: '/icon/main-image/hedgehog_main-removebg-preview.png',
-  reptile: '/icon/main-image/reptile_main-removebg-preview.png',
-  etc: '/icon/main-image/etc_main-removebg-preview.png'
-};
+// 동물 이미지 경로 유틸리티 import
+import { getPetImage } from '../utils/imagePaths';
 
 export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPacket, onBack, onEdit, onSend, onSave }) {
   const [requestNote, setRequestNote] = useState('');
@@ -18,8 +9,7 @@ export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPac
 
   // 동물 종류에 맞는 캐릭터 이미지 가져오기
   const getAnimalImage = () => {
-    const species = petData?.species || 'dog';
-    return petData?.profileImage || ANIMAL_CHARACTER_IMAGES[species] || ANIMAL_CHARACTER_IMAGES.etc;
+    return getPetImage(petData, false); // 프로필 영역이므로 false
   };
 
   // 보호자 요청사항을 패킷에 추가하는 함수
@@ -97,11 +87,12 @@ export function HospitalPacketReview({ petData, diagnosis, hospital, hospitalPac
       <div className="px-4 pt-6 pb-40">
         {/* Welcome Message */}
         <div className="flex items-center gap-3 px-1 pt-2 pb-6">
-          <div className="w-14 h-14 rounded-full bg-sky-100 flex items-center justify-center overflow-hidden border-2 border-sky-200">
+          <div className="w-14 h-14 rounded-full bg-sky-100 overflow-hidden border-2 border-sky-200">
             <img
               src={getAnimalImage()}
               alt={petData.petName || '반려동물'}
               className="w-full h-full object-cover"
+              style={{ objectPosition: 'center', display: 'block' }}
             />
           </div>
           <div className="flex-1 min-w-0">

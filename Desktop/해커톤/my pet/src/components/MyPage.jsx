@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getPetImage } from '../utils/imagePaths';
 
 const DIAGNOSIS_KEY = 'petMedical_diagnoses';
 const STORAGE_KEY = 'petMedical_pets';
@@ -427,16 +428,13 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                     // 보기 모드
                     <>
                       <div className="flex items-center gap-4 mb-3">
-                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl overflow-hidden">
-                          {pet.profileImage ? (
-                            <img
-                              src={pet.profileImage}
-                              alt={pet.petName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            pet.species === 'dog' ? '🐕' : '🐈'
-                          )}
+                        <div className="w-16 h-16 rounded-full bg-primary/20 overflow-hidden">
+                          <img
+                            src={getPetImage(pet, false)}
+                            alt={pet.petName}
+                            className="w-full h-full object-cover"
+                            style={{ objectPosition: 'center', display: 'block' }}
+                          />
                         </div>
                         <div className="flex-1">
                           <h3 className="text-slate-900 font-bold text-lg mb-1 font-display">{pet.petName}</h3>

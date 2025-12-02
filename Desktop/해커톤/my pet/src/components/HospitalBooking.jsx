@@ -6,18 +6,10 @@ import { getNearbyHospitalsFromFirestore, searchHospitalsByRegion, searchHospita
 import { bookingService } from '../services/firestore';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { sendNotificationToClinicStaff } from '../services/pushNotificationService';
 
-// 동물 종류별 메인 캐릭터 이미지 매핑
-const ANIMAL_CHARACTER_IMAGES = {
-  dog: '/icon/main-image/dog_main-removebg-preview.png',
-  cat: '/icon/main-image/Cat_main-removebg-preview.png',
-  rabbit: '/icon/main-image/rabbit_main-removebg-preview.png',
-  hamster: '/icon/main-image/hamster_main-removebg-preview.png',
-  bird: '/icon/main-image/bird_main-removebg-preview.png',
-  hedgehog: '/icon/main-image/hedgehog_main-removebg-preview.png',
-  reptile: '/icon/main-image/reptile_main-removebg-preview.png',
-  etc: '/icon/main-image/etc_main-removebg-preview.png'
-};
+// 동물 이미지 경로 유틸리티 import
+import { getPetImage } from '../utils/imagePaths';
 
 // 🧪 테스트용 병원 - 행복동물병원 (clinic@happyvet.com과 연동)
 // Firestore에서 실제 clinicId를 동적으로 가져오는 함수
@@ -477,6 +469,29 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
           time: bookingTime,
           petName: petData?.petName
         });
+        
+        // 병원 스태프에게 푸시 알림 전송
+        if (actualClinicId) {
+          try {
+            await sendNotificationToClinicStaff(
+              actualClinicId,
+              '예약 신청이 접수되었습니다',
+              `${petData?.petName || '반려동물'}의 예약이 접수되었습니다. (${bookingDate} ${bookingTime})`,
+              {
+                type: 'booking_created',
+                bookingId: result.id,
+                clinicId: actualClinicId,
+                petName: petData?.petName,
+                date: bookingDate,
+                time: bookingTime,
+                url: '/clinic-dashboard'
+              }
+            );
+            console.log('✅ 병원 스태프 푸시 알림 전송 완료');
+          } catch (pushError) {
+            console.warn('푸시 알림 전송 실패 (예약은 저장됨):', pushError);
+          }
+        }
       } else {
         console.error('❌ 예약 Firestore 저장 실패:', result.error);
         alert('예약 저장에 실패했습니다. 다시 시도해주세요.');
@@ -776,15 +791,12 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
               <div className="p-4 space-y-4">
                 {/* 반려동물 정보 */}
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-white shadow flex items-center justify-center overflow-hidden">
+                  <div className="w-14 h-14 rounded-full bg-white shadow overflow-hidden">
                     <img
-                      src={petData?.profileImage || ANIMAL_CHARACTER_IMAGES[petData?.species] || ANIMAL_CHARACTER_IMAGES.etc}
+                      src={getPetImage(petData, false)}
                       alt={petData?.petName || '반려동물'}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentElement.innerHTML = `<span class="text-2xl">${petData?.species === 'dog' ? '🐕' : petData?.species === 'cat' ? '🐈' : '🐾'}</span>`;
-                      }}
+                      style={{ objectPosition: 'center', display: 'block' }}
                     />
                   </div>
                   <div>

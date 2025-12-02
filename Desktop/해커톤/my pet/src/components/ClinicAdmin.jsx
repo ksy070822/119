@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getPetImage } from '../utils/imagePaths';
 
 // 로컬 스토리지 키
 const BOOKINGS_KEY = 'petMedical_bookings';
@@ -276,7 +277,6 @@ function TodayBookings({ bookings, allBookings, onSelectBooking, onUpdateStatus,
 function EnhancedBookingCard({ booking, onSelectBooking, onConfirm, onComplete }) {
   const statusInfo = getBookingStatusInfo(booking.status);
   const petProfile = booking.petProfile || {};
-  const petEmoji = petProfile.species === 'cat' ? '🐈' : '🐕';
 
   return (
     <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
@@ -290,8 +290,13 @@ function EnhancedBookingCard({ booking, onSelectBooking, onConfirm, onComplete }
 
       {/* 반려동물 정보 */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-violet-400 flex items-center justify-center text-2xl">
-          {petEmoji}
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-sky-400 to-violet-400 overflow-hidden">
+          <img
+            src={getPetImage(petProfile || { species: petProfile.species || 'dog' }, false)}
+            alt={booking.petName || '반려동물'}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: 'center', display: 'block' }}
+          />
         </div>
         <div className="flex-1">
           <h3 className="text-base font-semibold text-slate-900">
@@ -462,8 +467,6 @@ function WeeklySchedule({ bookings }) {
                     : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200';
                   const statusText = booking.status === 'confirmed' ? '확정' : '대기';
                   const statusColor = booking.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
-                  const petEmoji = (booking.petProfile?.species === 'cat') ? '🐈' : '🐕';
-
                   return (
                     <div key={booking.id} className="relative">
                       {/* Timeline Dot */}
@@ -480,8 +483,13 @@ function WeeklySchedule({ bookings }) {
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">
-                            {petEmoji}
+                          <div className="w-10 h-10 bg-white rounded-full overflow-hidden shadow-sm">
+                            <img
+                              src={getPetImage(booking.petProfile || { species: booking.petProfile?.species || 'dog' }, false)}
+                              alt={booking.petName || '반려동물'}
+                              className="w-full h-full object-cover"
+                              style={{ objectPosition: 'center', display: 'block' }}
+                            />
                           </div>
                           <div className="text-sm">
                             <span className="font-semibold text-slate-900">{booking.petName}</span>
@@ -645,7 +653,6 @@ function MonthlyCalendar({ bookings, selectedDay, onSelectDay, onSelectBooking, 
           <div className="space-y-3">
             {selectedDayBookings.map((booking) => {
               const statusInfo = getBookingStatusInfo(booking.status);
-              const petEmoji = (booking.petProfile?.species === 'cat') ? '🐈' : '🐕';
 
               return (
                 <div
@@ -664,8 +671,13 @@ function MonthlyCalendar({ bookings, selectedDay, onSelectDay, onSelectBooking, 
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl shadow-sm">
-                      {petEmoji}
+                    <div className="w-10 h-10 bg-white rounded-full overflow-hidden shadow-sm">
+                      <img
+                        src={getPetImage(booking.petProfile || { species: booking.petProfile?.species || 'dog' }, false)}
+                        alt={booking.petName || '반려동물'}
+                        className="w-full h-full object-cover"
+                        style={{ objectPosition: 'center', display: 'block' }}
+                      />
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold text-slate-900 text-sm">
@@ -998,8 +1010,13 @@ function BookingDetailModal({ booking, onClose, onUpdateStatus, onStartVisit }) 
           {/* 예약 정보 헤더 */}
           <div className="bg-sky-50 rounded-xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-3xl shadow-sm">
-                {petProfile.species === 'cat' ? '🐱' : '🐕'}
+              <div className="w-16 h-16 rounded-full bg-white overflow-hidden shadow-sm">
+                <img
+                  src={getPetImage(petProfile || { species: petProfile.species || 'dog' }, false)}
+                  alt={booking.petName || '반려동물'}
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: 'center', display: 'block' }}
+                />
               </div>
               <div className="flex-1">
                 <p className="font-bold text-lg text-sky-800">{booking.petName}</p>
@@ -1387,8 +1404,13 @@ function ClinicResultModal({ booking, onClose, onSave }) {
         <div className="p-4 space-y-4">
           {/* 환자 정보 */}
           <div className="bg-sky-50 rounded-xl p-3 flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl shadow-sm">
-              {petProfile.species === 'cat' ? '🐱' : '🐕'}
+            <div className="w-12 h-12 rounded-full bg-white overflow-hidden shadow-sm">
+              <img
+                src={getPetImage(petProfile || { species: petProfile.species || 'dog' }, false)}
+                alt={booking.petName || '반려동물'}
+                className="w-full h-full object-cover"
+                style={{ objectPosition: 'center', display: 'block' }}
+              />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sky-800">{booking.petName}</p>
