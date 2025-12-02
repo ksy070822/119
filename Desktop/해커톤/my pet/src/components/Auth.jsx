@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { authService } from '../services/firebaseAuth';
 import { loginWithKakao, handleKakaoRedirectResult } from '../services/kakaoAuth';
 import { userService } from '../services/firestore';
+import { setupClinicForNewUser } from '../services/clinicService';
 
 // Firebase 인증 상태 변경 리스너 export
 export const onAuthStateChange = authService.onAuthStateChange;
@@ -527,15 +528,24 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
           agreeMarketing: formData.agreeMarketing
         };
 
-        // 병원 모드일 경우 추가 정보 저장
+        // 병원 모드일 경우: clinics 및 clinicStaff 컬렉션에 데이터 생성
         if (formData.userMode === 'clinic') {
-          additionalData.clinicInfo = {
+          const clinicInfo = {
             name: formData.clinicName,
             address: formData.clinicAddress || null,
             phone: formData.clinicPhone || null,
-            licenseNumber: formData.licenseNumber || null,
-            verified: false // 병원 인증 상태 (추후 관리자 승인)
+            licenseNumber: formData.licenseNumber || null
           };
+
+          // 병원 생성 및 스태프 등록
+          const setupResult = await setupClinicForNewUser(result.user.uid, clinicInfo);
+
+          if (setupResult.success) {
+            additionalData.defaultClinicId = setupResult.clinicId;
+            additionalData.roles = [{ clinicId: setupResult.clinicId, role: 'director' }];
+          } else {
+            console.warn('병원 설정 실패:', setupResult.error);
+          }
         }
 
         // 추가 정보만 업데이트 (기본 정보는 authService.register에서 이미 저장됨)
