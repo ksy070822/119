@@ -3776,8 +3776,6 @@ function App() {
           }}
           onClinicMode={() => setCurrentView('clinic-admin')}
           userId={currentUser?.uid}
-          onClinicMode={() => setCurrentView('clinic-admin')}
-          userId={currentUser?.uid}
         />
       )}
 
