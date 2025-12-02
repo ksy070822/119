@@ -11,7 +11,7 @@ export function BottomTabNavigation({ currentTab, onTabChange, onModeSwitch, sho
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 z-50">
-      <div className="flex items-center justify-around h-16 px-1">
+      <div className="flex items-center h-16 px-0.5">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -22,12 +22,12 @@ export function BottomTabNavigation({ currentTab, onTabChange, onModeSwitch, sho
             }`}
             onClick={() => onTabChange(tab.id)}
           >
-            <span className={`material-symbols-outlined text-xl mb-0.5 ${
+            <span className={`material-symbols-outlined text-[18px] mb-0.5 ${
               currentTab === tab.id ? 'font-bold' : ''
             }`}>
               {tab.icon}
             </span>
-            <span className={`text-[10px] font-medium ${
+            <span className={`text-[9px] font-medium ${
               currentTab === tab.id ? 'text-sky-500' : 'text-slate-400'
             }`}>
               {tab.label}
@@ -35,16 +35,17 @@ export function BottomTabNavigation({ currentTab, onTabChange, onModeSwitch, sho
           </button>
         ))}
 
-        {/* 병원 모드 전환 버튼 */}
+        {/* 병원 모드 전환 버튼 - 항상 표시 */}
         {showModeSwitch && onModeSwitch && (
           <button
-            className="flex flex-col items-center justify-center flex-1 h-full transition-colors text-emerald-500"
+            className="flex flex-col items-center justify-center flex-1 h-full transition-colors text-emerald-500 hover:text-emerald-600"
             onClick={onModeSwitch}
+            title="병원 관리자 모드로 전환"
           >
-            <span className="material-symbols-outlined text-xl mb-0.5">
+            <span className="material-symbols-outlined text-[18px] mb-0.5">
               swap_horiz
             </span>
-            <span className="text-[10px] font-medium text-emerald-500">
+            <span className="text-[9px] font-medium text-emerald-500">
               병원모드
             </span>
           </button>
