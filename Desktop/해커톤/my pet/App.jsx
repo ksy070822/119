@@ -28,6 +28,8 @@ import { getApiKey, API_KEY_TYPES } from './src/services/apiKeyManager'
 import { LoginScreen, RegisterScreen, getAuthSession, clearAuthSession } from './src/components/Auth'
 import { OCRUpload } from './src/components/OCRUpload'
 import { ClinicAdmin } from './src/components/ClinicAdmin'
+import { seedGuardianData, seedClinicData } from './src/utils/seedTestDataUtils'
+import { auth } from './src/lib/firebase'
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -2747,6 +2749,7 @@ const getEmergencyColor = (emergency) => {
   }
 };
 
+// ============ 테스트 모드 체크 ============
 // ============ 메인 앱 ============
 function App() {
   // 인증 상태
@@ -2799,6 +2802,31 @@ function App() {
     }
     // 등록 화면 없이 바로 대시보드로 (등록은 마이페이지에서)
     setCurrentTab('care');
+
+    // 브라우저 콘솔용 테스트 데이터 시드 함수 등록
+    window.auth = auth;
+    window.seedGuardianData = async (uid, email) => {
+      try {
+        const result = await seedGuardianData(uid, email);
+        console.log('✅ 시드 완료:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ 시드 오류:', error);
+        throw error;
+      }
+    };
+    window.seedClinicData = async (uid, email) => {
+      try {
+        const result = await seedClinicData(uid, email);
+        console.log('✅ 시드 완료:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ 시드 오류:', error);
+        throw error;
+      }
+    };
+    console.log('💡 테스트 데이터 시드 함수가 등록되었습니다.');
+    console.log('   사용법: const user = window.auth.currentUser; await window.seedGuardianData(user.uid, user.email);');
   }, []);
 
   // 로그인 성공 핸들러
@@ -3133,6 +3161,8 @@ function App() {
           }}
           onClinicMode={() => setCurrentView('clinic-admin')}
           userId={currentUser?.uid}
+          onClinicMode={() => setCurrentView('clinic-admin')}
+          userId={currentUser?.uid}
         />
       )}
 
@@ -3302,6 +3332,7 @@ function App() {
           onHome={handleGoHome}
         />
       )}
+
 
       {/* 탭 기반 메인 화면 - 보호자 모드이고 currentView가 없을 때만 표시 */}
       {userMode === 'guardian' && !currentView && currentTab && (
