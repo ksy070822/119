@@ -112,11 +112,11 @@ const saveDiagnosisToStorage = async (diagnosis, userId = null) => {
     if (!diagnosisWithFlags.healthFlags) {
       diagnosisWithFlags.healthFlags = mapDiagnosisToHealthFlags(diagnosis);
     }
-
+    
     const diagnosisData = {
-      ...diagnosisWithFlags,
-      id: diagnosisWithFlags.id || Date.now().toString(),
-      date: new Date().toISOString()
+      ...diagnosisWithFlags, 
+      id: diagnosisWithFlags.id || Date.now().toString(), 
+      date: new Date().toISOString() 
     };
 
     // localStorage에도 저장 (오프라인 지원)
@@ -416,9 +416,27 @@ function ProfileRegistration({ onComplete, userId }) {
                       className="profile-preview character"
                       style={{ backgroundColor: PET_CHARACTERS[formData.species]?.find(c => c.id === formData.character)?.color + '40' }}
                     >
+                      {(() => {
+                        const selectedSpecies = SPECIES_OPTIONS.find(opt => opt.id === formData.species);
+                        const iconPath = selectedSpecies?.icon || null;
+                        return iconPath ? (
+                          <img 
+                            src={iconPath} 
+                            alt={selectedSpecies.label}
+                            className="profile-species-icon"
+                            onError={(e) => {
+                              // 이미지 로드 실패 시 이모지로 대체
+                              e.target.style.display = 'none';
+                              const emoji = PET_CHARACTERS[formData.species]?.find(c => c.id === formData.character)?.emoji || selectedSpecies?.emoji || '🐾';
+                              e.target.parentElement.innerHTML = `<span class="character-emoji">${emoji}</span>`;
+                            }}
+                          />
+                        ) : (
                       <span className="character-emoji">
-                        {PET_CHARACTERS[formData.species]?.find(c => c.id === formData.character)?.emoji}
+                            {PET_CHARACTERS[formData.species]?.find(c => c.id === formData.character)?.emoji || selectedSpecies?.emoji || '🐾'}
                       </span>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -472,11 +490,11 @@ function ProfileRegistration({ onComplete, userId }) {
 
             {/* 4. 품종 - 개/고양이인 경우에만 표시 */}
             {(formData.species === 'dog' || formData.species === 'cat') && (
-              <div className="form-group">
-                <label>품종</label>
+            <div className="form-group">
+              <label>품종</label>
                 <select
-                  value={formData.breed}
-                  onChange={(e) => setFormData({...formData, breed: e.target.value})}
+                value={formData.breed}
+                onChange={(e) => setFormData({...formData, breed: e.target.value})}
                   className="breed-select"
                 >
                   <option value="">품종을 선택하세요</option>
@@ -484,7 +502,7 @@ function ProfileRegistration({ onComplete, userId }) {
                     <option key={breed} value={breed}>{breed}</option>
                   ))}
                 </select>
-              </div>
+            </div>
             )}
             
             <div className="form-group">
@@ -900,7 +918,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
       <div className="px-4 pt-4 pb-24">
         {/* 기능 카드 3개 */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <button
+          <button 
             onClick={() => onNavigate('symptom-input')}
             className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
           >
@@ -918,13 +936,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
           >
             <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
               <span className="text-2xl">📅</span>
-            </div>
+        </div>
             <span className="text-xs font-bold text-slate-800">병원 예약</span>
             <span className="text-[10px] text-slate-500 text-center">근처 동물병원을 검색하고<br/>예약하세요</span>
             <span className="text-xs text-green-500 font-medium mt-1">병원 찾기 →</span>
           </button>
 
-          <button
+          <button 
             onClick={() => onNavigate('records')}
             className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col items-center gap-2 hover:shadow-md transition-shadow"
           >
@@ -935,8 +953,8 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
             <span className="text-[10px] text-slate-500 text-center">매일 먹은 및 건강 상태를<br/>기록하세요</span>
             <span className="text-xs text-orange-500 font-medium mt-1">기록 보기 →</span>
           </button>
-        </div>
-
+      </div>
+      
         {/* 반려동물 등록 카드 */}
         {!petData ? (
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
@@ -951,111 +969,111 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
           </div>
         ) : (
           <>
-            {/* Pet Info Card */}
+        {/* Pet Info Card */}
             <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-sky-100 flex items-center justify-center text-3xl overflow-hidden">
-                  {petData.profileImage ? (
-                    <img
-                      src={petData.profileImage}
-                      alt={petData.petName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    petData.species === 'dog' ? '🐕' : '🐈'
-                  )}
-                </div>
-                <div className="flex-1">
+            {petData.profileImage ? (
+              <img
+                src={petData.profileImage}
+                alt={petData.petName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              petData.species === 'dog' ? '🐕' : '🐈'
+            )}
+          </div>
+          <div className="flex-1">
                   <h2 className="font-bold text-slate-900 text-lg">{petData.petName}</h2>
-                  <p className="text-sm text-slate-500">{petData.breed || '품종 미등록'}, {calculateAge(petData.birthDate)}</p>
-                </div>
-                <button
+            <p className="text-sm text-slate-500">{petData.breed || '품종 미등록'}, {calculateAge(petData.birthDate)}</p>
+          </div>
+          <button
                   onClick={() => onNavigate('profile-list')}
                   className="text-sm font-medium text-sky-500"
                 >
                   변경
-                </button>
+          </button>
               </div>
-            </div>
+        </div>
 
             {/* 일일 기록 카드 */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-4">
-              <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-slate-800">일일 기록</h3>
                 <span className="text-xs text-slate-400">{new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '')}</span>
-              </div>
+          </div>
 
               {/* 케어 버튼들 */}
               <div className="grid grid-cols-4 gap-3">
-                <div className="flex flex-col items-center">
-                  <button
+            <div className="flex flex-col items-center">
+              <button
                     className="w-14 h-14 rounded-xl bg-slate-50 hover:bg-sky-50 flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95"
-                    onClick={() => {
-                      setCareActions(prev => ({ ...prev, meal: prev.meal + 1 }));
-                      setHealthPoints(prev => {
-                        const newPoints = Math.min(100, prev + 5);
-                        if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
-                        return newPoints;
-                      });
+                onClick={() => {
+                  setCareActions(prev => ({ ...prev, meal: prev.meal + 1 }));
+                  setHealthPoints(prev => {
+                    const newPoints = Math.min(100, prev + 5);
+                    if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
+                    return newPoints;
+                  });
                     }}
                   >
                     <span className="text-xl">🍚</span>
                     <span className="text-[10px] text-slate-600 mt-0.5">{careActions.meal}회</span>
                   </button>
                   <span className="text-xs text-slate-500 mt-1">식사</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
+            </div>
+            <div className="flex flex-col items-center">
+              <button
                     className="w-14 h-14 rounded-xl bg-slate-50 hover:bg-sky-50 flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95"
-                    onClick={() => {
-                      setCareActions(prev => ({ ...prev, water: prev.water + 1 }));
-                      setHealthPoints(prev => {
-                        const newPoints = Math.min(100, prev + 3);
-                        if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
-                        return newPoints;
-                      });
+                onClick={() => {
+                  setCareActions(prev => ({ ...prev, water: prev.water + 1 }));
+                  setHealthPoints(prev => {
+                    const newPoints = Math.min(100, prev + 3);
+                    if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
+                    return newPoints;
+                  });
                     }}
                   >
                     <span className="text-xl">💧</span>
                     <span className="text-[10px] text-slate-600 mt-0.5">{careActions.water}회</span>
                   </button>
                   <span className="text-xs text-slate-500 mt-1">물</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
+            </div>
+            <div className="flex flex-col items-center">
+              <button
                     className="w-14 h-14 rounded-xl bg-slate-50 hover:bg-sky-50 flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95"
-                    onClick={() => {
-                      setCareActions(prev => ({ ...prev, walk: prev.walk + 1 }));
-                      setHealthPoints(prev => {
-                        const newPoints = Math.min(100, prev + 10);
-                        if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
-                        return newPoints;
-                      });
+                onClick={() => {
+                  setCareActions(prev => ({ ...prev, walk: prev.walk + 1 }));
+                  setHealthPoints(prev => {
+                    const newPoints = Math.min(100, prev + 10);
+                    if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
+                    return newPoints;
+                  });
                     }}
                   >
                     <span className="text-xl">🚶</span>
                     <span className="text-[10px] text-slate-600 mt-0.5">{careActions.walk}회</span>
                   </button>
                   <span className="text-xs text-slate-500 mt-1">산책</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <button
+            </div>
+            <div className="flex flex-col items-center">
+              <button
                     className="w-14 h-14 rounded-xl bg-slate-50 hover:bg-sky-50 flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95"
-                    onClick={() => {
-                      setCareActions(prev => ({ ...prev, grooming: prev.grooming + 1 }));
-                      setHealthPoints(prev => {
-                        const newPoints = Math.min(100, prev + 7);
-                        if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
-                        return newPoints;
-                      });
-                    }}
+                onClick={() => {
+                  setCareActions(prev => ({ ...prev, grooming: prev.grooming + 1 }));
+                  setHealthPoints(prev => {
+                    const newPoints = Math.min(100, prev + 7);
+                    if (petData?.id) localStorage.setItem(`petMedical_healthPoints_${petData.id}`, newPoints.toString());
+                    return newPoints;
+                  });
+                }}
                   >
                     <span className="text-xl">💩</span>
                     <span className="text-[10px] text-slate-600 mt-0.5">{careActions.grooming}회</span>
                   </button>
                   <span className="text-xs text-slate-500 mt-1">배변</span>
-                </div>
-              </div>
+            </div>
+          </div>
 
               {/* 체중 입력 */}
               <div className="mt-4 pt-4 border-t border-slate-100">
@@ -1071,12 +1089,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       className="w-20 px-3 py-2 text-center border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                     />
                     <span className="text-sm text-slate-500">kg</span>
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
 
               {/* 오늘 케어 완료 버튼 */}
-              <button
+        <button
                 onClick={saveTodayCare}
                 className={`w-full mt-4 py-3 rounded-xl font-bold text-sm transition-all ${
                   careSaved
@@ -1085,7 +1103,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                 }`}
               >
                 {careSaved ? '✓ 저장 완료!' : '오늘 케어 완료'}
-              </button>
+        </button>
             </div>
 
             {/* AI 건강 문진 카드 */}
@@ -1093,7 +1111,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                   <span className="text-xl">🤖</span>
-                </div>
+                    </div>
                 <div>
                   <h3 className="font-bold text-white">AI 건강 문진</h3>
                   <p className="text-xs text-white/70">7일간의 케어 기록을 분석합니다</p>
@@ -1105,7 +1123,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
               >
                 7일 케어 기록으로 AI 문진하기 →
               </button>
-            </div>
+                  </div>
 
             {/* 병원 방문 기록 */}
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
@@ -1117,9 +1135,9 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                 >
                   전체보기 →
                 </button>
-              </div>
+                </div>
               <p className="text-sm text-slate-500">아직 병원 방문 기록이 없습니다</p>
-            </div>
+              </div>
           </>
         )}
       </div>
@@ -1303,7 +1321,7 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
       allSymptoms.push(symptomText.trim());
     }
     const combinedSymptomText = allSymptoms.join(', ');
-
+    
     // 증상 데이터를 진료 화면으로 전달
     setTimeout(() => {
       onComplete({
@@ -1373,7 +1391,7 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
                     <span className={`font-bold text-sm ${isSelected ? 'text-sky-700' : 'text-slate-800'}`}>
                       {dept}
                     </span>
-                  </div>
+          </div>
                   <p className={`text-xs ${isSelected ? 'text-sky-600' : 'text-slate-500'}`}>
                     {info.desc}
                   </p>
@@ -1453,14 +1471,14 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
                 className="hidden"
               />
             </label>
-          </div>
+              </div>
           <p className="text-xs text-slate-400 mt-2">피부, 눈, 귀 등 증상 부위 사진을 첨부하면 더 정확한 진단이 가능해요</p>
         </div>
       </div>
 
       {/* Bottom Button */}
       <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm p-4 border-t border-slate-100">
-        <button
+        <button 
           onClick={handleSubmit}
           disabled={loading || (selectedSymptoms.length === 0 && !symptomText.trim() && images.length === 0)}
           className="w-full bg-sky-500 text-white py-4 px-6 rounded-xl font-bold text-base disabled:opacity-50 disabled:cursor-not-allowed hover:bg-sky-600 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
@@ -1676,7 +1694,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
-
+  
   useEffect(() => {
     let isMounted = true; // 컴포넌트 마운트 상태 추적
     
@@ -1707,7 +1725,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
           symptomData,
           (log) => {
             if (!isMounted) return; // 컴포넌트가 언마운트되었으면 무시
-
+            
             // 질문 단계 메시지는 별도 처리 (UI에 표시하지 않음)
             if (log.isQuestionPhase) {
               return;
@@ -1920,7 +1938,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
       ...analysis
     };
     saveDiagnosisToStorage(savedDiagnosis, currentUser?.uid);
-
+    
     // 부모 컴포넌트에 진단 결과 전달
     if (onDiagnosisResult) {
       onDiagnosisResult(analysis);
@@ -2070,14 +2088,14 @@ ${userQuestion}
 답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다. 2-3문장으로 핵심만 간결하게 답변하세요.`;
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
+          method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({
+          body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1024,
           system: systemPrompt,
@@ -2094,17 +2112,17 @@ ${userQuestion}
       }
 
       const data = await response.json();
-
+      
       if (!data.content || !data.content[0] || !data.content[0].text) {
         throw new Error('API 응답 형식 오류');
       }
 
       const answer = data.content[0].text;
-
+      
       if (!answer || answer.trim().length === 0) {
         throw new Error('빈 답변을 받았습니다');
       }
-
+      
       setMessages(prev => [...prev, {
         agent: 'Veterinarian Agent',
         role: '전문 수의사',
@@ -2250,7 +2268,7 @@ ${userQuestion}
   const getAgentRoomMessages = (room) => {
     return messages.filter(m => m.agent === room.agentKey || m.type === room.id);
   };
-
+  
   const steps = [
     { label: '접수', icon: '1' },
     { label: '분석', icon: '2' },
@@ -2266,7 +2284,7 @@ ${userQuestion}
         <h1>👨‍⚕️ AI 온라인 진료실</h1>
         <p>AI 의료진이 {petData.petName}를 진료합니다</p>
       </div>
-
+      
       {/* 채팅창 UI */}
       <div className="chat-messages-container" style={{
         padding: '16px',
@@ -2279,7 +2297,7 @@ ${userQuestion}
         borderRadius: '12px',
         margin: '0 16px'
       }}>
-        {messages.length === 0 && isProcessing && (
+          {messages.length === 0 && isProcessing && (
           <div className="initial-loading" style={{
             display: 'flex',
             flexDirection: 'column',
@@ -2288,14 +2306,14 @@ ${userQuestion}
             padding: '40px',
             gap: '16px'
           }}>
-            <div className="loading-spinner"></div>
+              <div className="loading-spinner"></div>
             <p style={{ margin: 0, fontSize: '16px', color: '#333' }}>AI 진료실에 연결 중입니다...</p>
             <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>잠시만 기다려주세요</p>
-          </div>
-        )}
+            </div>
+          )}
 
         {/* 채팅 메시지 리스트 */}
-        {messages.map((msg, index) => {
+          {messages.map((msg, index) => {
           const isUserMessage = msg.agent === '사용자' || msg.isUser;
           const isSystemMessage = msg.type === 'system';
           const agentColors = getAgentColor(msg.type);
@@ -2312,7 +2330,7 @@ ${userQuestion}
                 fontWeight: '500'
               }}>
                 {msg.content}
-              </div>
+                  </div>
             );
           }
 
@@ -2361,8 +2379,8 @@ ${userQuestion}
                     paddingLeft: '12px'
                   }}>
                     {msg.role || msg.agent}
-                  </div>
-                )}
+                    </div>
+                  )}
 
                 {/* 메시지 내용 */}
                 <div style={{
@@ -2383,8 +2401,8 @@ ${userQuestion}
                       marginBottom: line ? '4px' : '0',
                       whiteSpace: 'pre-wrap'
                     }}>
-                      {line}
-                    </div>
+                          {line}
+                        </div>
                   ))}
 
                   {/* 질문 옵션 버튼 */}
@@ -2479,10 +2497,10 @@ ${userQuestion}
                   👤
                 </div>
               )}
-            </div>
-          );
-        })}
-
+              </div>
+            );
+          })}
+          
         {/* 타이핑 인디케이터 */}
         {isProcessing && messages.length > 0 && (
           <div style={{
@@ -2600,7 +2618,7 @@ ${userQuestion}
                       flexShrink: 0
                     }}>
                       {qIndex + 1}
-                    </span>
+              </span>
                     <div>
                       <p style={{
                         margin: 0,
@@ -2620,7 +2638,7 @@ ${userQuestion}
                           복수 선택 가능
                         </span>
                       )}
-                    </div>
+              </div>
                   </div>
 
                   <div style={{
@@ -2726,12 +2744,12 @@ ${userQuestion}
               <span>답변 제출하고 진료 계속하기</span>
               <span style={{ fontSize: '18px' }}>→</span>
             </button>
-          </div>
-        )}
+            </div>
+          )}
 
         {/* 자동 스크롤을 위한 참조 지점 */}
         <div ref={messagesEndRef} />
-      </div>
+        </div>
 
       {/* 메시지 입력창 */}
       {!showResult && !isWaitingForGuardian && (
@@ -2750,18 +2768,18 @@ ${userQuestion}
             maxWidth: '100%',
             margin: '0 auto'
           }}>
-            <input
-              type="text"
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyPress={(e) => {
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyPress={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey && userInput.trim()) {
-                  e.preventDefault();
+                    e.preventDefault();
                   handleSendMessage();
                 }
               }}
               placeholder={isProcessing ? "AI가 진단 중입니다..." : "추가 질문이나 증상을 입력하세요..."}
-              disabled={isProcessing}
+                disabled={isProcessing}
               style={{
                 flex: 1,
                 padding: '12px 16px',
@@ -2774,8 +2792,8 @@ ${userQuestion}
               }}
               onFocus={(e) => e.target.style.borderColor = '#6366f1'}
               onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-            />
-            <button
+              />
+              <button
               onClick={handleSendMessage}
               disabled={isProcessing || !userInput.trim()}
               style={{
@@ -2797,8 +2815,8 @@ ${userQuestion}
               }}
             >
               ➤
-            </button>
-          </div>
+              </button>
+            </div>
           <div style={{
             fontSize: '11px',
             color: '#94a3b8',
@@ -2806,10 +2824,10 @@ ${userQuestion}
             textAlign: 'center'
           }}>
             궁금한 점이 있으시면 언제든 질문해주세요
+              </div>
           </div>
-        </div>
-      )}
-
+        )}
+      
       {showResult && diagnosisResult && (
         <div className="diagnosis-result">
           <div className="result-header">
@@ -3313,8 +3331,8 @@ function App() {
     // 기존 로그인 세션 확인
     const loadSession = async () => {
       const savedSession = await getAuthSession();
-      if (savedSession) {
-        setCurrentUser(savedSession);
+    if (savedSession) {
+      setCurrentUser(savedSession);
 
         // 실제 병원 데이터가 있는지 확인
         let mode = savedSession.userMode || 'guardian';
@@ -3348,13 +3366,13 @@ function App() {
           setUserMode(savedUserMode || mode);
         }
 
-        setAuthScreen(null);
+      setAuthScreen(null);
 
-        // 로그인된 사용자의 반려동물 데이터 로드
-        const userPets = getPetsForUser(savedSession.uid);
-        setPets(userPets);
-        if (userPets.length > 0) {
-          setPetData(userPets[0]);
+      // 로그인된 사용자의 반려동물 데이터 로드
+      const userPets = getPetsForUser(savedSession.uid);
+      setPets(userPets);
+      if (userPets.length > 0) {
+        setPetData(userPets[0]);
         }
       }
     }
@@ -3643,7 +3661,7 @@ function App() {
       )}
       
       {currentView === 'diagnosis' && petData && symptomData && (
-        <MultiAgentDiagnosis
+        <MultiAgentDiagnosis 
           petData={petData}
           symptomData={symptomData}
           currentUser={currentUser}
@@ -3999,8 +4017,8 @@ function App() {
         <div className="main-content" style={{ paddingBottom: '80px' }}>
           {/* 내 동물 돌보기 탭 */}
           {currentTab === 'care' && petData && (
-            <Dashboard
-              petData={petData}
+            <Dashboard 
+              petData={petData} 
               pets={pets}
               onNavigate={(view) => {
                 // 'hospital', 'records'는 탭으로 이동
