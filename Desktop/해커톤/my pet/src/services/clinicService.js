@@ -585,6 +585,47 @@ export async function setupClinicForNewUser(userId, clinicInfo) {
   }
 }
 
+/**
+ * 기존 병원 사용자 마이그레이션
+ * - userMode가 'clinic'인데 clinicStaff 데이터가 없는 경우
+ * - users 컬렉션의 clinicInfo 또는 displayName을 사용하여 병원 생성
+ * @param {string} userId - 사용자 ID
+ * @param {Object} userData - 사용자 데이터 (userMode, clinicInfo 등)
+ * @returns {Promise<Object>} 마이그레이션 결과
+ */
+export async function migrateExistingClinicUser(userId, userData) {
+  try {
+    // 이미 clinicStaff 데이터가 있는지 확인
+    const existingClinics = await getUserClinics(userId);
+    if (existingClinics.length > 0) {
+      console.log('이미 clinicStaff 데이터 존재:', existingClinics.length);
+      return { success: true, alreadyMigrated: true, clinics: existingClinics };
+    }
+
+    // clinicInfo가 users 컬렉션에 있는지 확인
+    const clinicInfo = userData.clinicInfo || {
+      name: userData.displayName ? `${userData.displayName}의 병원` : '내 병원',
+      address: null,
+      phone: null,
+      licenseNumber: null
+    };
+
+    console.log('기존 병원 사용자 마이그레이션 시작:', userId, clinicInfo);
+
+    // setupClinicForNewUser 호출하여 데이터 생성
+    const result = await setupClinicForNewUser(userId, clinicInfo);
+
+    if (result.success) {
+      console.log('마이그레이션 완료:', result.clinicId);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('기존 병원 사용자 마이그레이션 실패:', error);
+    return { success: false, error };
+  }
+}
+
 export default {
   getUserClinics,
   getClinicInfo,
@@ -599,5 +640,6 @@ export default {
   getClinicStats,
   createClinic,
   addClinicStaff,
-  setupClinicForNewUser
+  setupClinicForNewUser,
+  migrateExistingClinicUser
 };

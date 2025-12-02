@@ -6,8 +6,10 @@ import {
   getTodayBookings,
   getMonthlyBookings,
   getClinicPatients,
-  getClinicStats
+  getClinicStats,
+  migrateExistingClinicUser
 } from '../services/clinicService';
+import { userService } from '../services/firestore';
 
 export function ClinicDashboard({ currentUser, onBack }) {
   const [loading, setLoading] = useState(true);
@@ -40,7 +42,30 @@ export function ClinicDashboard({ currentUser, onBack }) {
       setLoading(true);
 
       // 사용자가 속한 병원 목록 조회
-      const userClinics = await getUserClinics(currentUser.uid);
+      let userClinics = await getUserClinics(currentUser.uid);
+
+      // clinicStaff 데이터가 없으면 마이그레이션 시도
+      if (userClinics.length === 0) {
+        console.log('clinicStaff 데이터 없음, 마이그레이션 시도...');
+
+        // users 컬렉션에서 사용자 정보 조회
+        const userDoc = await userService.getUser(currentUser.uid);
+        const userData = userDoc.data || {};
+
+        // 마이그레이션 실행
+        const migrationResult = await migrateExistingClinicUser(currentUser.uid, {
+          ...userData,
+          displayName: currentUser.displayName || userData.displayName
+        });
+
+        if (migrationResult.success) {
+          // 마이그레이션 성공 후 다시 조회
+          userClinics = await getUserClinics(currentUser.uid);
+          console.log('마이그레이션 후 병원 목록:', userClinics.length);
+        } else {
+          console.error('마이그레이션 실패:', migrationResult.error);
+        }
+      }
 
       if (userClinics.length === 0) {
         alert('병원 정보를 찾을 수 없습니다. 관리자에게 문의하세요.');
