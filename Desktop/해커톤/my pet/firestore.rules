@@ -2,226 +2,105 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ============ 헬퍼 함수 ============
-
-    // 로그인 여부 확인
+    // 공통
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // 현재 로그인한 유저 문서 가져오기
+    // 병원 직원 여부 (나중을 위해 남겨둠)
     function userDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // 특정 clinicId에 대한 병원 직원인지 체크
     function isClinicStaff(clinicId) {
       return isSignedIn()
-        && userDoc().data.userMode == "clinic"
+        && clinicId != null
         && userDoc().data.defaultClinicId == clinicId;
     }
 
-    // 본인 여부 확인
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    // ============ 사용자 컬렉션 ============
+    // ============ users ============
+    // 지금은 병원에서 보호자 정보/토큰을 읽어야 해서
+    // 로그인한 누구나 read 허용
     match /users/{userId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId);
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // ============ 반려동물 컬렉션 ============
-    match /pets/{petId} {
-      allow read: if isSignedIn();  // 🔥 병원 직원도 펫 정보 조회 가능하도록 완화
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
-    }
-
-    // ============ 병원 컬렉션 ============
+    // ============ clinics ============
     match /clinics/{clinicId} {
-      allow read: if isSignedIn();  // 모든 로그인 사용자가 병원 정보 조회 가능
-      allow update: if isClinicStaff(clinicId);
+      allow read: if isSignedIn();
+      allow create, update, delete: if isClinicStaff(clinicId);
     }
 
-    // ============ 병원 직원 컬렉션 (최상위) ============
-    // 🔥 clinics/{clinicId}/staff에서 clinicStaff로 변경
+    // ============ clinicStaff ============
+    // 병원 스태프 목록도 일단 로그인 시 read 허용
     match /clinicStaff/{staffId} {
-      allow read: if isSignedIn() && (
-        resource.data.userId == request.auth.uid ||
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId))
-      );
-      allow write: if isSignedIn() && (
-        request.resource.data.userId == request.auth.uid ||
-        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId))
-      );
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
-    // ============ 환자 기록 컬렉션 ============
-    match /clinicPatients/{patientId} {
-      allow read: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerUserId)
-      );
-      allow write: if isSignedIn() && (
-        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
-      );
-    }
-
-    // ============ 예약 컬렉션 ============
+    // ============ bookings (예약) ============
+    // 병원 직원 + 예약자 본인 모두 read/update 가능
     match /bookings/{bookingId} {
-      // 읽기: 병원 직원 또는 예약한 보호자
-      allow read: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.userId)
+      allow read, update: if isSignedIn() && (
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        (resource.data.userId != null && resource.data.userId == request.auth.uid)
       );
-
-      // 생성: 보호자 (자신의 userId로 예약)
-      allow create: if isSignedIn() && (
-        isOwner(request.resource.data.userId) ||
-        isClinicStaff(request.resource.data.clinicId)
-      );
-
-      // 수정: 병원 직원 (상태 업데이트 등)
-      allow update: if isSignedIn() && isClinicStaff(resource.data.clinicId);
-
-      // 삭제: 병원 직원 또는 예약한 보호자
-      allow delete: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.userId)
-      );
+      allow create: if isSignedIn();
     }
 
-    // ============ 진단서 컬렉션 ============
+    // ============ diagnoses (AI 진단) ============
+    // 당장은 권한 이슈 없게 전체 read/write 허용
     match /diagnoses/{diagId} {
-      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자 (ownerId 기준)
-      // 병원 모드에서 petId만으로 조회할 때도 권한 부여
-      allow read: if isSignedIn() && (
-        // 병원 직원: clinicId가 있으면 확인
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        // 보호자: ownerId 또는 userId가 본인이면 허용
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
-
-      // 생성: 병원 직원 또는 보호자 (본인)
-      allow create: if isSignedIn() && (
-        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)) ||
-        isOwner(request.resource.data.ownerId) ||
-        (request.resource.data.userId != null && isOwner(request.resource.data.userId))
-      );
-
-      // 수정: 병원 직원 또는 소유자
-      allow update: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
-
-      // 삭제: 소유자만
-      allow delete: if isSignedIn() && (
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ 사전 문진 컬렉션 ============
+    // ============ preQuestionnaires (사전 문진) ============
     match /preQuestionnaires/{qId} {
-      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자
-      allow read: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
-
-      // 생성: 병원 직원 또는 보호자 (본인)
-      allow create: if isSignedIn() && (
-        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)) ||
-        isOwner(request.resource.data.ownerId) ||
-        (request.resource.data.userId != null && isOwner(request.resource.data.userId))
-      );
-
-      // 수정: 병원 직원 또는 소유자
-      allow update: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
-
-      // 삭제: 소유자만
-      allow delete: if isSignedIn() && (
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ 환자 기록 (진료 기록) 컬렉션 ============
+    // ============ medicalRecords (환자 기록) ============
     match /medicalRecords/{mrId} {
-      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자
-      allow read: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
-
-      // 생성: 병원 직원만
-      allow create: if isSignedIn() && (
-        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
-      );
-
-      // 수정: 병원 직원만
-      allow update: if isSignedIn() && (
-        resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)
-      );
-
-      // 삭제: 병원 직원 또는 소유자
-      allow delete: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId) ||
-        (resource.data.userId != null && isOwner(resource.data.userId))
-      );
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ 진료 결과 컬렉션 ============
+    // ============ clinicResults (진료 결과) ============
+    // 병원/보호자 양쪽에서 다 써야 하니 일단 로그인만 되면 허용
     match /clinicResults/{resultId} {
-      // 🔥 읽기: 병원 직원 또는 보호자 (userId와 ownerId 둘 다 지원)
-      allow read: if isSignedIn() && (
-        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.userId) ||
-        isOwner(resource.data.ownerId)
-      );
-
-      // 생성/수정: 병원 직원만
-      allow create, update: if isSignedIn() && (
-        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
-      );
-
-      // 삭제: 병원 직원만
-      allow delete: if isSignedIn() && (
-        resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)
-      );
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ 일일 케어 로그 컬렉션 ============
+    // ============ clinicPatients (환자 집계) ============
+    match /clinicPatients/{patientId} {
+      allow read, create, update: if isSignedIn();
+    }
+
+    // ============ vaccinations (예방접종) ============
+    match /vaccinations/{vaccinationId} {
+      allow read, create, update: if isSignedIn();
+    }
+
+    // ============ dailyLogs ============
     match /dailyLogs/{logId} {
-      allow read, write: if isSignedIn();  // 본인 데이터만 읽고 쓸 수 있도록 필터링은 클라이언트에서
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ OCR 문서 컬렉션 ============
+    // ============ records (OCR 기록) ============
     match /records/{recordId} {
-      allow read, write: if isSignedIn();  // 본인 데이터만 읽고 쓸 수 있도록 필터링은 클라이언트에서
+      allow read, create, update: if isSignedIn();
     }
 
-    // ============ 통계 컬렉션 ============
+    // ============ notificationQueue (푸시 큐) ============
+    // Functions에서 꺼내 쓰는 큐. 프론트에서 addDoc 할 수 있어야 함.
+    match /notificationQueue/{docId} {
+      allow read, create, update: if isSignedIn();
+    }
+
+    // ============ clinicStats ============
+    // 지금은 실제로는 안 쓰이지만, 혹시라도 쿼리하면 에러 안 나게 열어둠
     match /clinicStats/{clinicId} {
-      allow read: if isClinicStaff(clinicId);
-      allow write: if false;  // 통계는 Cloud Functions에서만 업데이트
-    }
-
-    // ============ 기본 거부 ============
-    match /{document=**} {
-      allow read, write: if false;
+      allow read, create, update: if isSignedIn();
     }
   }
 }
