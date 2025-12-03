@@ -29,6 +29,8 @@ const COLLECTIONS = {
   CLINIC_RESULTS: 'clinicResults',
   DAILY_LOGS: 'dailyLogs',
   RECORDS: 'records', // OCR 스캔 문서
+  PRE_QUESTIONNAIRES: 'preQuestionnaires',  // 🔥 사전 문진
+  MEDICAL_RECORDS: 'medicalRecords',  // 🔥 환자 기록 (진료 기록)
 };
 
 // ============ 사용자 관련 ============
@@ -147,10 +149,24 @@ export const diagnosisService = {
   // 진단 기록 저장
   async saveDiagnosis(diagnosisData) {
     try {
-      const docRef = await addDoc(collection(db, COLLECTIONS.DIAGNOSES), {
+      // 🔥 필수 필드 검증
+      if (!diagnosisData.petId) {
+        throw new Error('petId는 필수 필드입니다.');
+      }
+      if (!diagnosisData.ownerId && !diagnosisData.userId) {
+        throw new Error('ownerId 또는 userId는 필수 필드입니다.');
+      }
+
+      // 🔥 저장 데이터 구조화 (clinicId, ownerId, petId 보장)
+      const docData = {
         ...diagnosisData,
+        clinicId: diagnosisData.clinicId ?? null,  // 병원 ID (예약 시 설정)
+        ownerId: diagnosisData.ownerId || diagnosisData.userId,  // 보호자 UID
+        petId: diagnosisData.petId,  // 펫 ID
         createdAt: serverTimestamp()
-      });
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.DIAGNOSES), docData);
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('진단 저장 오류:', error);
@@ -194,6 +210,28 @@ export const diagnosisService = {
       return { success: true, data: diagnoses };
     } catch (error) {
       console.error('진단 기록 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  },
+
+  // 🔥 병원 모드: 특정 환자의 진단 기록 조회 (clinicId 기준)
+  async getDiagnosesByClinicAndPatient(clinicId, ownerId, petId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.DIAGNOSES),
+        where('clinicId', '==', clinicId),
+        where('ownerId', '==', ownerId),
+        where('petId', '==', petId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const diagnoses = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: diagnoses };
+    } catch (error) {
+      console.error('병원 진단 기록 조회 오류:', error);
       return { success: false, error, data: [] };
     }
   },
@@ -596,6 +634,178 @@ export const recordService = {
   }
 };
 
+// ============ 사전 문진 관련 ============
+export const preQuestionnaireService = {
+  // 사전 문진 저장
+  async saveQuestionnaire(questionnaireData) {
+    try {
+      // 🔥 필수 필드 검증
+      if (!questionnaireData.petId) {
+        throw new Error('petId는 필수 필드입니다.');
+      }
+      if (!questionnaireData.ownerId && !questionnaireData.userId) {
+        throw new Error('ownerId 또는 userId는 필수 필드입니다.');
+      }
+      if (!questionnaireData.clinicId) {
+        throw new Error('clinicId는 필수 필드입니다.');
+      }
+
+      // 🔥 저장 데이터 구조화
+      const docData = {
+        ...questionnaireData,
+        clinicId: questionnaireData.clinicId,  // 병원 ID
+        ownerId: questionnaireData.ownerId || questionnaireData.userId,  // 보호자 UID
+        petId: questionnaireData.petId,  // 펫 ID
+        createdAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.PRE_QUESTIONNAIRES), docData);
+      return { success: true, id: docRef.id };
+    } catch (error) {
+      console.error('사전 문진 저장 오류:', error);
+      return { success: false, error };
+    }
+  },
+
+  // 🔥 병원 모드: 특정 환자의 사전 문진 조회
+  async getQuestionnairesByClinicAndPatient(clinicId, ownerId, petId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.PRE_QUESTIONNAIRES),
+        where('clinicId', '==', clinicId),
+        where('ownerId', '==', ownerId),
+        where('petId', '==', petId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const questionnaires = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: questionnaires };
+    } catch (error) {
+      console.error('사전 문진 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  },
+
+  // 보호자 모드: 내 사전 문진 목록
+  async getQuestionnairesByOwner(ownerId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.PRE_QUESTIONNAIRES),
+        where('ownerId', '==', ownerId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const questionnaires = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: questionnaires };
+    } catch (error) {
+      console.error('사전 문진 목록 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  }
+};
+
+// ============ 환자 기록 (진료 기록) 관련 ============
+export const medicalRecordService = {
+  // 환자 기록 저장
+  async saveRecord(recordData) {
+    try {
+      // 🔥 필수 필드 검증
+      if (!recordData.petId) {
+        throw new Error('petId는 필수 필드입니다.');
+      }
+      if (!recordData.ownerId && !recordData.userId) {
+        throw new Error('ownerId 또는 userId는 필수 필드입니다.');
+      }
+      if (!recordData.clinicId) {
+        throw new Error('clinicId는 필수 필드입니다.');
+      }
+
+      // 🔥 저장 데이터 구조화
+      const docData = {
+        ...recordData,
+        clinicId: recordData.clinicId,  // 병원 ID
+        ownerId: recordData.ownerId || recordData.userId,  // 보호자 UID
+        petId: recordData.petId,  // 펫 ID
+        createdAt: serverTimestamp()
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.MEDICAL_RECORDS), docData);
+      return { success: true, id: docRef.id };
+    } catch (error) {
+      console.error('환자 기록 저장 오류:', error);
+      return { success: false, error };
+    }
+  },
+
+  // 🔥 병원 모드: 특정 환자의 환자 기록 조회
+  async getRecordsByClinicAndPatient(clinicId, ownerId, petId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.MEDICAL_RECORDS),
+        where('clinicId', '==', clinicId),
+        where('ownerId', '==', ownerId),
+        where('petId', '==', petId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: records };
+    } catch (error) {
+      console.error('환자 기록 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  },
+
+  // 보호자 모드: 내 환자 기록 목록
+  async getRecordsByOwner(ownerId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.MEDICAL_RECORDS),
+        where('ownerId', '==', ownerId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: records };
+    } catch (error) {
+      console.error('환자 기록 목록 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  },
+
+  // 반려동물의 환자 기록 조회
+  async getRecordsByPet(petId) {
+    try {
+      const q = query(
+        collection(db, COLLECTIONS.MEDICAL_RECORDS),
+        where('petId', '==', petId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const records = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      return { success: true, data: records };
+    } catch (error) {
+      console.error('환자 기록 조회 오류:', error);
+      return { success: false, error, data: [] };
+    }
+  }
+};
+
 // ============ 유틸리티 ============
 // localStorage에서 Firestore로 데이터 마이그레이션 헬퍼
 export const migrationHelper = {
@@ -636,5 +846,7 @@ export default {
   clinicResultService,
   dailyLogService,
   recordService,
+  preQuestionnaireService,  // 🔥 사전 문진 서비스
+  medicalRecordService,  // 🔥 환자 기록 서비스
   migrationHelper
 };
