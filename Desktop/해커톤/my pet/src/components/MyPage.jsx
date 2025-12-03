@@ -158,6 +158,11 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
   const [editingPet, setEditingPet] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
 
+  // 페이지 진입 시 스크롤을 맨 위로
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     // 사용자별 데이터 로드
     if (userId) {
