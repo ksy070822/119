@@ -22,7 +22,31 @@ export function PacketSentSummary({ petData, hospital, bookingTime, bookingDate,
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setRegistrationCode(code);
 
-    // 예약 접수 시간 포맷팅
+    // 예약 접수 시간 포맷팅 (날짜 + 시간)
+    let formattedDate = '';
+    let formattedTime = '';
+
+    // 날짜 포맷팅
+    if (bookingDate) {
+      try {
+        const date = new Date(bookingDate);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+          const weekday = weekdays[date.getDay()];
+          formattedDate = `${year}. ${month}. ${day}. (${weekday})`;
+        } else {
+          // ISO 형식이 아닌 경우 그대로 사용
+          formattedDate = bookingDate;
+        }
+      } catch (e) {
+        formattedDate = bookingDate;
+      }
+    }
+
+    // 시간 포맷팅
     if (bookingTime && bookingTime.includes(':')) {
       const parts = bookingTime.split(':');
       const hour = parseInt(parts[0], 10);
@@ -32,16 +56,27 @@ export function PacketSentSummary({ petData, hospital, bookingTime, bookingDate,
         const ampm = hour >= 12 ? '오후' : '오전';
         let displayHours = hour % 12;
         if (displayHours === 0) displayHours = 12;
-        setReservationTime(`${ampm} ${displayHours}시 ${minute.toString().padStart(2, '0')}분`);
+        formattedTime = `${ampm} ${displayHours}시 ${minute.toString().padStart(2, '0')}분`;
       } else {
-        setReservationTime(bookingTime);
+        formattedTime = bookingTime;
       }
     } else if (bookingTime) {
-      setReservationTime(bookingTime);
+      formattedTime = bookingTime;
+    } else {
+      formattedTime = '시간 미지정';
+    }
+
+    // 날짜와 시간 결합
+    if (formattedDate && formattedTime) {
+      setReservationTime(`${formattedDate} ${formattedTime}`);
+    } else if (formattedDate) {
+      setReservationTime(formattedDate);
+    } else if (formattedTime) {
+      setReservationTime(formattedTime);
     } else {
       setReservationTime('시간 미지정');
     }
-  }, [bookingTime]);
+  }, [bookingDate, bookingTime]);
 
   // 반려동물 정보 포맷팅 (대분류/품종[이름])
   const formatPetInfo = () => {

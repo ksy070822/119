@@ -5203,6 +5203,8 @@ function App() {
         <PacketSentSummary
           petData={petData}
           hospital={selectedHospital}
+          bookingDate={selectedHospital.bookingDate}
+          bookingTime={selectedHospital.bookingTime}
           onBack={() => {
             setCurrentView(null);
             setCurrentTab('care');
