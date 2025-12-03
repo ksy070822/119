@@ -744,7 +744,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => handleConfirmBooking(booking)}  {/* 🔥 booking 객체 전체를 넘김 */}
+                        onClick={() => handleConfirmBooking(booking)}
                         className={`py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5
                           ${booking.status === 'confirmed'
                             ? 'bg-gray-100 text-gray-700 cursor-default'
