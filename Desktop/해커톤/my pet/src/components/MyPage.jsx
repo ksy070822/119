@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getPetImage } from '../utils/imagePaths';
+import { clinicResultService } from '../services/firestore';
 
 // 동물 종류 한글 매핑
 const SPECIES_LABELS = {
@@ -17,6 +18,7 @@ const SPECIES_LABELS = {
 const DIAGNOSIS_KEY = 'petMedical_diagnoses';
 const STORAGE_KEY = 'petMedical_pets';
 const BOOKINGS_KEY = 'petMedical_bookings';
+const CLINIC_RESULTS_KEY = 'petMedical_clinicResults';
 
 // 사용자별 키 생성
 const getUserPetsKey = (userId) => `petMedical_pets_${userId}`;
@@ -116,6 +118,16 @@ const saveBookingsToStorage = (bookings) => {
   }
 };
 
+// 병원 진료 기록 가져오기
+const getClinicResultsFromStorage = () => {
+  try {
+    const data = localStorage.getItem(CLINIC_RESULTS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+};
+
 export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome, userId }) {
   // localStorage에서 초기 탭 확인
   const getInitialTab = () => {
@@ -141,9 +153,15 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
   }, []);
   const [pets, setPets] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
+  const [clinicResults, setClinicResults] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [editingPet, setEditingPet] = useState(null);
   const [editFormData, setEditFormData] = useState(null);
+
+  // 페이지 진입 시 스크롤을 맨 위로
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     // 사용자별 데이터 로드
@@ -156,7 +174,40 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
       setDiagnoses(getDiagnosesFromStorage());
       setBookings(getBookingsFromStorage());
     }
+
   }, [userId]);
+
+  // 병원 진료 기록 로드 (pets가 로드된 후)
+  useEffect(() => {
+    const loadClinicResults = async () => {
+      if (pets.length === 0) return;
+
+      try {
+        // 모든 반려동물의 진료 기록 로드
+        const allResults = [];
+        for (const pet of pets) {
+          if (pet.id) {
+            const resultRes = await clinicResultService.getResultsByPet(pet.id);
+            if (resultRes.success && resultRes.data.length > 0) {
+              allResults.push(...resultRes.data);
+            }
+          }
+        }
+
+        if (allResults.length > 0) {
+          setClinicResults(allResults);
+          return;
+        }
+      } catch (error) {
+        console.warn('Firestore 진료 결과 로드 오류:', error);
+      }
+
+      // Firestore 실패 시 localStorage 폴백
+      setClinicResults(getClinicResultsFromStorage());
+    };
+
+    loadClinicResults();
+  }, [pets]);
 
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('ko-KR', {
@@ -655,64 +706,131 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
         </div>
       )}
 
-      {activeTab === 'records' && (
-        <div className="px-4 pt-4 pb-40">
-          {diagnoses.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4">📋</div>
-              <p className="text-slate-500 mb-2">아직 진료 기록이 없습니다</p>
-              <p className="text-slate-400 text-sm">AI 진료를 받으면 기록이 저장됩니다</p>
+      {activeTab === 'records' && (() => {
+        // AI 진단 기록과 병원 진료 기록 합치기
+        const aiRecords = diagnoses.map(d => ({
+          ...d,
+          source: 'ai'
+        }));
+
+        const hospitalRecords = clinicResults.map(result => ({
+          id: result.id,
+          date: result.visitDate || result.createdAt,
+          created_at: result.visitDate || result.createdAt,
+          hospitalName: result.hospitalName,
+          diagnosis: result.finalDiagnosis || result.diagnosis,
+          petName: result.petName,
+          riskLevel: result.triageScore <= 2 ? 'low' : result.triageScore <= 3 ? 'medium' : 'high',
+          treatment: result.treatment,
+          medications: result.medications,
+          totalCost: result.totalCost,
+          doctorNote: result.doctorNote,
+          source: 'clinic'
+        }));
+
+        const allRecords = [...aiRecords, ...hospitalRecords].sort((a, b) =>
+          new Date(b.date || b.created_at) - new Date(a.date || a.created_at)
+        );
+
+        return (
+          <div className="px-4 pt-4 pb-40">
+            {/* 색상 안내 */}
+            <div className="flex items-center gap-4 mb-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-sky-200 border border-sky-300"></div>
+                <span className="text-slate-600">AI 진단</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-200 border border-red-300"></div>
+                <span className="text-slate-600">병원 진료</span>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {diagnoses.map(record => (
-                <div
-                  key={record.id}
-                  className="bg-surface-light rounded-lg p-4 shadow-soft cursor-pointer hover:shadow-md transition-all"
-                  onClick={() => onViewDiagnosis && onViewDiagnosis(record)}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="text-slate-500 text-sm mb-1">{formatDate(record.created_at || record.date)}</p>
-                      <h3 className="text-slate-900 font-bold text-base mb-1 font-display">
-                        {record.petName || '반려동물'}
-                      </h3>
-                    </div>
-                    <div
-                      className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                      style={{ backgroundColor: getRiskColor(record.riskLevel || record.emergency) }}
-                    >
-                      {getRiskLabel(record.riskLevel || record.emergency)}
-                    </div>
-                  </div>
-                  <div className="mb-2">
-                    <strong className="text-slate-700">진단:</strong>{' '}
-                    <span className="text-slate-600">
-                      {record.diagnosis || record.suspectedConditions?.[0]?.name || '일반 건강 이상'}
-                    </span>
-                  </div>
-                  {record.symptom && (
-                    <div className="mb-3">
-                      <strong className="text-slate-700">증상:</strong>{' '}
-                      <span className="text-slate-600">{record.symptom}</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewDiagnosis && onViewDiagnosis(record);
-                    }}
-                    className="text-primary text-sm font-medium flex items-center gap-1"
+
+            {allRecords.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-6xl mb-4">📋</div>
+                <p className="text-slate-500 mb-2">아직 진료 기록이 없습니다</p>
+                <p className="text-slate-400 text-sm">AI 진료를 받으면 기록이 저장됩니다</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {allRecords.map(record => (
+                  <div
+                    key={record.id}
+                    className={`rounded-lg p-4 shadow-soft cursor-pointer hover:shadow-md transition-all border-2 ${
+                      record.source === 'clinic'
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-sky-50 border-sky-200'
+                    }`}
+                    onClick={() => onViewDiagnosis && onViewDiagnosis(record)}
                   >
-                    상세 보기
-                    <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                            record.source === 'clinic'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-sky-100 text-sky-700'
+                          }`}>
+                            {record.source === 'clinic' ? '🏥 병원 진료' : '🤖 AI 진단'}
+                          </span>
+                        </div>
+                        <p className="text-slate-500 text-sm mb-1">{formatDate(record.created_at || record.date)}</p>
+                        <h3 className="text-slate-900 font-bold text-base mb-1 font-display">
+                          {record.petName || '반려동물'}
+                        </h3>
+                        {record.source === 'clinic' && record.hospitalName && (
+                          <p className="text-slate-500 text-xs">{record.hospitalName}</p>
+                        )}
+                      </div>
+                      <div
+                        className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                        style={{ backgroundColor: getRiskColor(record.riskLevel || record.emergency) }}
+                      >
+                        {getRiskLabel(record.riskLevel || record.emergency)}
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <strong className="text-slate-700">진단:</strong>{' '}
+                      <span className="text-slate-600">
+                        {record.diagnosis || record.suspectedConditions?.[0]?.name || '일반 건강 이상'}
+                      </span>
+                    </div>
+                    {record.symptom && (
+                      <div className="mb-2">
+                        <strong className="text-slate-700">증상:</strong>{' '}
+                        <span className="text-slate-600">{record.symptom}</span>
+                      </div>
+                    )}
+                    {record.source === 'clinic' && record.treatment && (
+                      <div className="mb-2">
+                        <strong className="text-slate-700">치료:</strong>{' '}
+                        <span className="text-slate-600">{record.treatment}</span>
+                      </div>
+                    )}
+                    {record.source === 'clinic' && record.totalCost && (
+                      <div className="mb-2">
+                        <strong className="text-slate-700">진료비:</strong>{' '}
+                        <span className="text-slate-600">{record.totalCost.toLocaleString()}원</span>
+                      </div>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDiagnosis && onViewDiagnosis(record);
+                      }}
+                      className="text-primary text-sm font-medium flex items-center gap-1 mt-2"
+                    >
+                      상세 보기
+                      <span className="material-symbols-outlined text-sm">arrow_forward_ios</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
     </div>
   );

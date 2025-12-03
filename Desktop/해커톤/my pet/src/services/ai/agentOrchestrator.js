@@ -421,17 +421,15 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       triageResult
     );
 
-    // 약물 안내 생성 (임시로 비활성화 - medicationService 파일 없음)
-    // const medicationGuidance = getMedicationGuidance(medicalResult.json, enrichedSymptomData);
-    // const medicationSummary = getShortMedicationSummary(medicationGuidance);
-    const medicationGuidance = null;
+    // 약물 안내 생성
+    const medicationGuidance = getMedicationGuidance(medicalResult.json, enrichedSymptomData);
 
     // 약물 안내가 있으면 포함
     let careMessage = careResult.message;
-    // if (medicationGuidance && medicationGuidance.hasMedicationGuidance) {
-    //   const primaryMed = medicationGuidance.medications[0]?.medications[0];
-    //   careMessage = `${normalizedPetData.petName}를 위한 케어 플랜!\n\n💊 ${medicationGuidance.message}\n\n${primaryMed ? `• 복용: ${primaryMed.usage}\n• 기간: ${primaryMed.duration}` : ''}\n\n${medicationGuidance.disclaimer}`;
-    // }
+    if (medicationGuidance && medicationGuidance.hasMedicationGuidance) {
+      const primaryMed = medicationGuidance.medications[0]?.medications[0];
+      careMessage = `${normalizedPetData.petName}를 위한 케어 플랜!\n\n💊 ${medicationGuidance.message}\n\n${primaryMed ? `• 복용: ${primaryMed.usage}\n• 기간: ${primaryMed.duration}` : ''}\n\n${medicationGuidance.disclaimer}`;
+    }
 
     logs.push({
       agent: 'Care Agent',
@@ -561,19 +559,19 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
       // FAQ 정보 (진단서 작성 전 조회된 보호자 예상 질문과 답변)
       faqAnswers: faqAnswers.length > 0 ? faqAnswers : null,
       recommendedFAQs: recommendedFAQs.length > 0 ? recommendedFAQs : null,
-      // 협진 정보
+      // 협진 정보 (undefined 값 방지를 위한 null 체크)
       collaboration: collaborationResult ? {
-        consensus_reached: collaborationResult.consensus.consensus_reached,
-        confidence_score: collaborationResult.consensus.confidence_score,
-        discrepancies_found: collaborationResult.discrepancy_analysis.discrepancy_count,
+        consensus_reached: collaborationResult.consensus?.consensus_reached ?? false,
+        confidence_score: collaborationResult.consensus?.confidence_score ?? 0,
+        discrepancies_found: collaborationResult.discrepancy_analysis?.discrepancy_count ?? 0,
         models_consulted: [
           'Claude Sonnet (Medical Agent)',
           'Claude Sonnet (Triage Engine)',
           'Claude Sonnet (Senior Reviewer)',
           collaborationResult.second_opinion ? 'GPT-4o (Second Opinion)' : null
         ].filter(Boolean),
-        final_recommendation: collaborationResult.consensus.collaborative_notes.reviewer_opinion,
-        resolution_notes: collaborationResult.consensus.discrepancy_resolution
+        final_recommendation: collaborationResult.consensus?.collaborative_notes?.reviewer_opinion || '협진 검토 결과를 가져올 수 없습니다.',
+        resolution_notes: collaborationResult.consensus?.discrepancy_resolution || null
       } : null
     };
 

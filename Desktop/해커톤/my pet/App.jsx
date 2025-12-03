@@ -709,6 +709,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
     grooming: 0,
     play: 0
   });
+  const [latestBooking, setLatestBooking] = useState(null);
 
   // 오늘 케어 기록 저장
   const saveTodayCare = () => {
@@ -802,6 +803,39 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         .catch(err => console.error('패턴 분석 오류:', err));
     }
   }, [petData]);
+
+  // 최신 예약 정보 불러오기
+  useEffect(() => {
+    const loadLatestBooking = async () => {
+      if (!petData?.userId) return;
+
+      try {
+        const bookings = await bookingService.getByUser(petData.userId);
+        if (bookings && bookings.length > 0) {
+          // 미래 예약만 필터링하고 가장 가까운 것 선택
+          const now = new Date();
+          const futureBookings = bookings.filter(b => {
+            const bookingDate = b.bookingDate ? new Date(b.bookingDate) : null;
+            return bookingDate && bookingDate >= now;
+          }).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate));
+
+          if (futureBookings.length > 0) {
+            setLatestBooking(futureBookings[0]);
+          } else if (bookings.length > 0) {
+            // 미래 예약이 없으면 가장 최근 예약 표시
+            const sortedBookings = [...bookings].sort((a, b) =>
+              new Date(b.bookingDate) - new Date(a.bookingDate)
+            );
+            setLatestBooking(sortedBookings[0]);
+          }
+        }
+      } catch (error) {
+        console.error('예약 정보 불러오기 오류:', error);
+      }
+    };
+
+    loadLatestBooking();
+  }, [petData?.userId]);
 
   const handleLogUpdate = async (newLog) => {
     if (!petData) return;
@@ -1134,7 +1168,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           </div>
                           <div className="flex-1 text-left">
                             <h4 className="text-sm font-bold text-gray-800 mb-0.5">병원 예약일</h4>
-                            <p className="text-xs text-gray-500">다음 진료: 2025년 12월 15일</p>
+                            <p className="text-xs text-gray-500">
+                              {latestBooking ? (
+                                <>다음 진료: {new Date(latestBooking.bookingDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} {latestBooking.bookingTime || ''}</>
+                              ) : (
+                                '예약된 진료가 없습니다'
+                              )}
+                            </p>
                           </div>
                           <span className="text-gray-400 text-lg">&gt;</span>
                         </button>
@@ -1276,7 +1316,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           <span className="text-2xl">📅</span>
                           <div className="flex-1">
                             <p className="font-medium text-gray-900">병원 예약일</p>
-                            <p className="text-sm text-gray-500">다음 진료: 2025년 12월 15일</p>
+                            <p className="text-sm text-gray-500">
+                              {latestBooking ? (
+                                <>다음 진료: {new Date(latestBooking.bookingDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} {latestBooking.bookingTime || ''}</>
+                              ) : (
+                                '예약된 진료가 없습니다'
+                              )}
+                            </p>
                           </div>
                           <span className="text-gray-400 text-lg">&gt;</span>
                         </button>
@@ -1412,7 +1458,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   <img
                     src={getMainCharacterImagePath()}
                     alt={petData?.petName || '반려동물'}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                     style={{ objectPosition: 'center', display: 'block' }}
                     onError={(e) => {
                       // 무한 루프 방지: 이미 한 번 시도했으면 더 이상 시도하지 않음
@@ -1460,7 +1506,11 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       {getSpeciesDisplay()}
                     </span>
                     {getSexDisplay() && (
-                      <span className="text-[10px] sm:text-[11px] text-sky-700 font-semibold bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
+                      <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                        petData?.sex === 'F'
+                          ? 'text-red-600 bg-red-100 border-red-200'
+                          : 'text-sky-700 bg-sky-100 border-sky-200'
+                      }`}>
                         {getSexDisplay()}
                       </span>
                     )}
@@ -1515,16 +1565,32 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
               <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-200">
                 {/* 병원 예약일 */}
-                <div className="flex items-center gap-3 py-3 border-b border-gray-100">
+                <button
+                  onClick={() => {
+                    onNavigate('mypage');
+                    localStorage.setItem('mypage_initialTab', 'bookings');
+                    setTimeout(() => {
+                      const event = new CustomEvent('mypage-set-tab', { detail: 'bookings' });
+                      window.dispatchEvent(event);
+                    }, 100);
+                  }}
+                  className="w-full flex items-center gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <span className="text-2xl">📅</span>
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 text-left">
                     <h4 className="text-sm font-bold text-gray-800 mb-0.5">병원 예약일</h4>
-                    <p className="text-xs text-gray-500">다음 진료: 2025년 12월 15일</p>
+                    <p className="text-xs text-gray-500">
+                      {latestBooking ? (
+                        <>다음 진료: {new Date(latestBooking.bookingDate).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} {latestBooking.bookingTime || ''}</>
+                      ) : (
+                        '예약된 진료가 없습니다'
+                      )}
+                    </p>
                   </div>
                   <span className="text-gray-400 text-lg">&gt;</span>
-                </div>
+                </button>
 
                 {/* 유의사항 */}
                 <div className="flex items-center gap-3 py-3">
@@ -2044,6 +2110,8 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
         </div>
       </div>
 
+<<<<<<< HEAD
+      {/* Bottom Button - 네비게이션바 위에 배치 */}
       {/* Bottom Button - 내비게이션바 위에 배치 */}
       <div className="fixed bottom-16 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-[430px] bg-white/95 backdrop-blur-sm border-t border-slate-100 p-4 z-40">
         <button 
@@ -3410,12 +3478,12 @@ ${userQuestion}
         {/* FAQ 선택 UI */}
         {isFAQPhase && faqUIData && (
           <div style={{
-            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+            background: 'linear-gradient(135deg, #FFF9DB 0%, #FEF3C7 100%)',
             borderRadius: '16px',
             padding: '20px',
             margin: '12px 0',
-            border: '2px solid #22c55e',
-            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)'
+            border: '2px solid #FCD34D',
+            boxShadow: '0 4px 12px rgba(252, 211, 77, 0.25)'
           }}>
             <div style={{
               display: 'flex',
@@ -3425,10 +3493,10 @@ ${userQuestion}
             }}>
               <span style={{ fontSize: '24px' }}>📚</span>
               <div>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#166534' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#92400E' }}>
                   {faqUIData.title}
                 </h3>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#15803d' }}>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#B45309' }}>
                   {faqUIData.subtitle}
                 </p>
               </div>
@@ -3446,15 +3514,15 @@ ${userQuestion}
                       width: '100%',
                       padding: '14px 16px',
                       borderRadius: '12px',
-                      border: isSelected ? '2px solid #22c55e' : '2px solid #e2e8f0',
-                      background: isSelected ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'white',
+                      border: isSelected ? '2px solid #F59E0B' : '2px solid #e2e8f0',
+                      background: isSelected ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' : 'white',
                       color: isSelected ? 'white' : '#1e293b',
                       fontSize: '14px',
                       fontWeight: isSelected ? '600' : '500',
                       cursor: 'pointer',
                       textAlign: 'left',
                       transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? '0 2px 8px rgba(34, 197, 94, 0.3)' : '0 1px 4px rgba(0,0,0,0.05)',
+                      boxShadow: isSelected ? '0 2px 8px rgba(245, 158, 11, 0.3)' : '0 1px 4px rgba(0,0,0,0.05)',
                       display: 'flex',
                       alignItems: 'flex-start',
                       gap: '10px'
@@ -3472,7 +3540,7 @@ ${userQuestion}
                       flexShrink: 0,
                       marginTop: '2px'
                     }}>
-                      {isSelected && <span style={{ color: '#22c55e', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
+                      {isSelected && <span style={{ color: '#F59E0B', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
                     </span>
                     <div>
                       <div style={{ marginBottom: '4px' }}>{faq.question}</div>
@@ -3481,8 +3549,8 @@ ${userQuestion}
                           fontSize: '11px',
                           padding: '2px 8px',
                           borderRadius: '10px',
-                          background: isSelected ? 'rgba(255,255,255,0.3)' : '#f1f5f9',
-                          color: isSelected ? 'white' : '#64748b'
+                          background: isSelected ? 'rgba(255,255,255,0.3)' : '#FEF3C7',
+                          color: isSelected ? 'white' : '#92400E'
                         }}>
                           {faq.category}
                         </span>
@@ -3521,14 +3589,14 @@ ${userQuestion}
                   borderRadius: '12px',
                   border: 'none',
                   background: selectedFAQs.length > 0
-                    ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                    ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
                     : '#e2e8f0',
                   color: selectedFAQs.length > 0 ? 'white' : '#94a3b8',
                   fontSize: '13px',
                   fontWeight: '700',
                   cursor: selectedFAQs.length > 0 ? 'pointer' : 'not-allowed',
                   transition: 'all 0.2s ease',
-                  boxShadow: selectedFAQs.length > 0 ? '0 4px 12px rgba(34, 197, 94, 0.3)' : 'none'
+                  boxShadow: selectedFAQs.length > 0 ? '0 4px 12px rgba(245, 158, 11, 0.3)' : 'none'
                 }}
               >
                 {selectedFAQs.length > 0

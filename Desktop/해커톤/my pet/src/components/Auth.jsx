@@ -628,8 +628,12 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
     <div className="min-h-screen bg-background-light flex flex-col items-center justify-center p-4 sm:p-6 pt-8 sm:pt-12">
       {/* 로고 */}
       <div className="text-center mb-4 sm:mb-6">
-        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl shadow-lg mx-auto mb-2 sm:mb-3 flex items-center justify-center">
-          <span className="text-2xl sm:text-3xl">🐾</span>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3">
+          <img
+            src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+            alt="PetMedical.AI"
+            className="w-full h-full object-contain"
+          />
         </div>
         <h1 className="text-lg sm:text-xl font-bold text-slate-900 font-display">회원가입</h1>
       </div>
@@ -673,7 +677,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, userMode: 'guardian' })}
-                className={`w-full p-3 sm:p-5 rounded-xl border-2 transition-all flex items-start gap-3 sm:gap-4 text-left ${
+                className={`w-full p-3 sm:p-5 rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 text-left ${
                   formData.userMode === 'guardian'
                     ? 'border-sky-500 bg-sky-50'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -710,7 +714,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, userMode: 'clinic' })}
-                className={`w-full p-3 sm:p-5 rounded-xl border-2 transition-all flex items-start gap-3 sm:gap-4 text-left ${
+                className={`w-full p-3 sm:p-5 rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 text-left ${
                   formData.userMode === 'clinic'
                     ? 'border-sky-500 bg-sky-50'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -765,7 +769,11 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
         {step === 2 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">{formData.userMode === 'guardian' ? '🐕' : '🏥'}</span>
+              <img
+                src={`${import.meta.env.BASE_URL}icon/login/${formData.userMode === 'guardian' ? 'main_friend' : 'main_hospital'}.png`}
+                alt={formData.userMode === 'guardian' ? '보호자' : '병원'}
+                className="w-8 h-8 object-contain"
+              />
               <span className="text-sm font-medium text-slate-500">
                 {formData.userMode === 'guardian' ? '보호자' : '병원'} 회원가입
               </span>
