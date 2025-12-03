@@ -37,6 +37,20 @@ import { diagnosisService, bookingService, petService } from './src/services/fir
 import { requestPushPermission, setupForegroundMessageHandler } from './src/services/pushNotificationService'
 import { getUserClinics } from './src/services/clinicService'
 import { getSpeciesDisplayName } from './src/services/ai/commonContext'
+import { getPetImage } from './src/utils/imagePaths'
+
+// 동물 종류 한글 매핑
+const SPECIES_LABELS_APP = {
+  dog: '강아지',
+  cat: '고양이',
+  rabbit: '토끼',
+  hamster: '햄스터',
+  bird: '조류',
+  hedgehog: '고슴도치',
+  reptile: '파충류',
+  etc: '기타',
+  other: '기타'
+};
 
 // ============ 로컬 스토리지 유틸리티 ============
 const STORAGE_KEY = 'petMedical_pets';
@@ -4431,17 +4445,17 @@ function App() {
                 반려동물 정보
               </h3>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-3xl">
-                  {petData.species === 'dog' ? '🐕' : '🐈'}
+                <div className="w-16 h-16 rounded-full bg-primary/20 overflow-hidden">
+                  <img
+                    src={getPetImage(petData, false)}
+                    alt={petData.petName || '반려동물'}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div className="flex-1 grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-slate-500">이름</span>
                     <p className="font-medium text-slate-900">{petData.petName || '미상'}</p>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">품종</span>
-                    <p className="font-medium text-slate-900">{petData.breed || '미상'}</p>
                   </div>
                   <div>
                     <span className="text-slate-500">나이</span>
@@ -4455,8 +4469,12 @@ function App() {
                     </p>
                   </div>
                   <div>
-                    <span className="text-slate-500">체중</span>
-                    <p className="font-medium text-slate-900">{petData.weight ? `${petData.weight}kg` : '미상'}</p>
+                    <span className="text-slate-500">대표동물종류</span>
+                    <p className="font-medium text-slate-900">{SPECIES_LABELS_APP[petData.species] || '기타'}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">세부동물종류</span>
+                    <p className="font-medium text-slate-900">{petData.breed || '미상'}</p>
                   </div>
                 </div>
               </div>
@@ -4468,18 +4486,20 @@ function App() {
                 <span className="material-symbols-outlined text-primary">diagnosis</span>
                 진단 결과
               </h3>
-              <p className="text-lg font-semibold text-slate-900 mb-2">
-                {lastDiagnosis.diagnosis || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상'}
-              </p>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? 'bg-red-100 text-red-600' :
-                lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-green-100 text-green-600'
-              }`}>
-                {lastDiagnosis.riskLevel === 'Low' || lastDiagnosis.emergency === 'low' ? '경미' :
-                 lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? '보통' :
-                 lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? '응급' : '보통'}
-              </span>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-lg font-semibold text-slate-900 flex-1">
+                  {lastDiagnosis.diagnosis || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상'}
+                </p>
+                <span className={`shrink-0 px-3 py-1 rounded-full text-sm font-bold ${
+                  lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? 'bg-red-100 text-red-600' :
+                  lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-green-100 text-green-600'
+                }`}>
+                  {lastDiagnosis.riskLevel === 'Low' || lastDiagnosis.emergency === 'low' ? '경미' :
+                   lastDiagnosis.riskLevel === 'Moderate' || lastDiagnosis.emergency === 'medium' ? '보통' :
+                   lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? '응급' : '보통'}
+                </span>
+              </div>
             </div>
 
             {/* 상세 설명 */}
