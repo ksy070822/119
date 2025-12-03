@@ -480,32 +480,36 @@ export const clinicResultService = {
 
       const docRef = await addDoc(collection(db, COLLECTIONS.CLINIC_RESULTS), docData);
 
-      console.log('✅ [saveResult] Firestore 저장 성공! docId:', docRef.id);
-      
-      // 보호자에게 푸시 알림 전송
-      if (resultData.userId) {
-        try {
-          const { sendNotificationToGuardian } = await import('./pushNotificationService');
-          const clinicName = resultData.clinicName || resultData.hospitalName || '병원';
-          await sendNotificationToGuardian(
-            resultData.userId,
-            `${clinicName}에서 진료한 결과가 전송되었습니다`,
-            `${resultData.petName || '반려동물'}의 진료 결과를 확인해주세요.`,
-            {
-              type: 'treatment_completed',
-              resultId: docRef.id,
-              bookingId: resultData.bookingId,
-              petName: resultData.petName,
-              clinicName: clinicName,
-              url: '/records'
-            }
+      console.log('[saveResult] 진료 결과 문서 저장 성공, docId:', docRef.id);
+
+      // 푸시 알림은 "부가 기능"으로 처리하고, 실패해도 전체 흐름은 성공으로 유지
+      try {
+        const { sendNotificationToGuardian } = await import('./pushNotificationService');
+
+        const notificationRes = await sendNotificationToGuardian(
+          resultData.userId,
+          '진료 결과가 도착했어요',
+          '병원에서 오늘 진료 결과를 등록했어요. 앱에서 내용을 확인해 주세요.',
+          {
+            clinicId: resultData.clinicId,
+            petId: resultData.petId,
+            bookingId: resultData.bookingId
+          }
+        );
+
+        if (!notificationRes?.success) {
+          console.warn(
+            '[saveResult] 보호자 푸시 알림 실패하지만 무시합니다:',
+            notificationRes?.error
           );
-          console.log('✅ 보호자 푸시 알림 전송 완료');
-        } catch (pushError) {
-          console.warn('푸시 알림 전송 실패 (진료 결과는 저장됨):', pushError);
+        } else {
+          console.log('[saveResult] 보호자 푸시 알림 성공');
         }
+      } catch (err) {
+        console.warn('[saveResult] 푸시 알림 중 에러 발생(무시):', err);
       }
-      
+
+      // 🔥 여기서는 절대 throw 하지 말고, 무조건 성공 리턴
       return { success: true, id: docRef.id };
     } catch (error) {
       console.error('진료 결과 저장 오류:', error);
