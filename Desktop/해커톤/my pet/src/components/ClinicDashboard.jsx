@@ -406,9 +406,19 @@ export function ClinicDashboard({ currentUser, onBack }) {
     setHistoryLoading(true);
 
     try {
+      // 🔥 병원 모드: clinicId + ownerId + petId로 조회 (권한 문제 해결)
+      const ownerId = booking.userId || booking.owner?.id;
+
+      const diagnosesPromise = ownerId
+        ? diagnosisService.getDiagnosesByClinicAndPatient(currentClinic.id, ownerId, booking.petId)
+        : diagnosisService.getDiagnosesByPet(booking.petId);
+
+      // clinicResults는 petId만으로 조회 가능 (병원 직원 권한)
+      const resultsPromise = clinicResultService.getResultsByPet(booking.petId);
+
       const [diagRes, resultRes] = await Promise.all([
-        diagnosisService.getDiagnosesByPet(booking.petId),
-        clinicResultService.getResultsByPet(booking.petId)
+        diagnosesPromise,
+        resultsPromise
       ]);
 
       setHistoryData({
