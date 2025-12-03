@@ -436,10 +436,28 @@ export const clinicResultService = {
   // 진료 결과 저장
   async saveResult(resultData) {
     try {
-      const docRef = await addDoc(collection(db, COLLECTIONS.CLINIC_RESULTS), {
+      // 🔥 필수 필드 검증
+      if (!resultData.clinicId) {
+        throw new Error('clinicId는 필수 필드입니다.');
+      }
+      if (!resultData.userId && !resultData.ownerId) {
+        console.warn('⚠️ userId 또는 ownerId가 없습니다. 보호자 정보를 확인하세요.');
+      }
+      if (!resultData.petId) {
+        console.warn('⚠️ petId가 없습니다. 펫 정보를 확인하세요.');
+      }
+
+      // 🔥 저장 데이터 구조화 (userId와 ownerId 둘 다 저장)
+      const docData = {
         ...resultData,
+        clinicId: resultData.clinicId,  // 병원 ID (필수)
+        userId: resultData.userId || resultData.ownerId,  // 보호자 UID (하위 호환)
+        ownerId: resultData.ownerId || resultData.userId,  // 보호자 UID (신규 필드)
+        petId: resultData.petId,  // 펫 ID
         createdAt: serverTimestamp()
-      });
+      };
+
+      const docRef = await addDoc(collection(db, COLLECTIONS.CLINIC_RESULTS), docData);
       
       // 보호자에게 푸시 알림 전송
       if (resultData.userId) {

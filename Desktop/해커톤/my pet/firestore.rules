@@ -34,11 +34,7 @@ service cloud.firestore {
 
     // ============ 반려동물 컬렉션 ============
     match /pets/{petId} {
-      allow read: if isSignedIn() && (
-        isOwner(resource.data.userId) ||
-        exists(/databases/$(database)/documents/bookings/{bookingId}) &&
-        get(/databases/$(database)/documents/bookings/{bookingId}).data.petId == petId
-      );
+      allow read: if isSignedIn();  // 🔥 병원 직원도 펫 정보 조회 가능하도록 완화
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
@@ -49,19 +45,28 @@ service cloud.firestore {
       allow update: if isClinicStaff(clinicId);
     }
 
-    // ============ 병원 직원 컬렉션 ============
-    match /clinics/{clinicId}/staff/{staffId} {
-      allow read: if isClinicStaff(clinicId);
-      allow write: if isClinicStaff(clinicId);
+    // ============ 병원 직원 컬렉션 (최상위) ============
+    // 🔥 clinics/{clinicId}/staff에서 clinicStaff로 변경
+    match /clinicStaff/{staffId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId))
+      );
+      allow write: if isSignedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId))
+      );
     }
 
     // ============ 환자 기록 컬렉션 ============
     match /clinicPatients/{patientId} {
       allow read: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
         isOwner(resource.data.ownerUserId)
       );
-      allow write: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+      allow write: if isSignedIn() && (
+        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
+      );
     }
 
     // ============ 예약 컬렉션 ============
@@ -90,86 +95,112 @@ service cloud.firestore {
 
     // ============ 진단서 컬렉션 ============
     match /diagnoses/{diagId} {
-      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자 (ownerId 기준)
+      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자 (ownerId 기준)
+      // 병원 모드에서 petId만으로 조회할 때도 권한 부여
       allow read: if isSignedIn() && (
+        // 병원 직원: clinicId가 있으면 확인
         (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId)
+        // 보호자: ownerId 또는 userId가 본인이면 허용
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
 
       // 생성: 병원 직원 또는 보호자 (본인)
       allow create: if isSignedIn() && (
         (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)) ||
-        isOwner(request.resource.data.ownerId)
+        isOwner(request.resource.data.ownerId) ||
+        (request.resource.data.userId != null && isOwner(request.resource.data.userId))
       );
 
       // 수정: 병원 직원 또는 소유자
       allow update: if isSignedIn() && (
         (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
-        isOwner(resource.data.ownerId)
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
 
       // 삭제: 소유자만
-      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
+      allow delete: if isSignedIn() && (
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
+      );
     }
 
     // ============ 사전 문진 컬렉션 ============
     match /preQuestionnaires/{qId} {
-      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자
+      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자
       allow read: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.ownerId)
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
 
       // 생성: 병원 직원 또는 보호자 (본인)
       allow create: if isSignedIn() && (
-        isClinicStaff(request.resource.data.clinicId) ||
-        isOwner(request.resource.data.ownerId)
+        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)) ||
+        isOwner(request.resource.data.ownerId) ||
+        (request.resource.data.userId != null && isOwner(request.resource.data.userId))
       );
 
       // 수정: 병원 직원 또는 소유자
       allow update: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.ownerId)
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
 
       // 삭제: 소유자만
-      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
+      allow delete: if isSignedIn() && (
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
+      );
     }
 
     // ============ 환자 기록 (진료 기록) 컬렉션 ============
     match /medicalRecords/{mrId} {
-      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자
+      // 🔥 읽기: 병원 직원 (clinicId 기준) 또는 소유자
       allow read: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.ownerId)
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
 
       // 생성: 병원 직원만
-      allow create: if isSignedIn() && isClinicStaff(request.resource.data.clinicId);
+      allow create: if isSignedIn() && (
+        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
+      );
 
       // 수정: 병원 직원만
-      allow update: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+      allow update: if isSignedIn() && (
+        resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)
+      );
 
       // 삭제: 병원 직원 또는 소유자
       allow delete: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.ownerId)
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId) ||
+        (resource.data.userId != null && isOwner(resource.data.userId))
       );
     }
 
     // ============ 진료 결과 컬렉션 ============
     match /clinicResults/{resultId} {
-      // 읽기: 병원 직원 또는 보호자
+      // 🔥 읽기: 병원 직원 또는 보호자 (userId와 ownerId 둘 다 지원)
       allow read: if isSignedIn() && (
-        isClinicStaff(resource.data.clinicId) ||
-        isOwner(resource.data.userId)
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.userId) ||
+        isOwner(resource.data.ownerId)
       );
 
       // 생성/수정: 병원 직원만
-      allow create, update: if isSignedIn() && isClinicStaff(request.resource.data.clinicId);
+      allow create, update: if isSignedIn() && (
+        request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)
+      );
 
       // 삭제: 병원 직원만
-      allow delete: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+      allow delete: if isSignedIn() && (
+        resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)
+      );
     }
 
     // ============ 일일 케어 로그 컬렉션 ============
