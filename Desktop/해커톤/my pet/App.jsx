@@ -1407,15 +1407,10 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         </main>
       </div>
 
-      {/* 메인 레이아웃 (모든 화면) */}
-      <div className="md:flex md:items-center md:justify-center md:p-8 md:min-h-screen">
-        {/* 모바일 프레임 (태블릿에서만 보임) */}
-        <div className="hidden md:block fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-slate-100"></div>
-        </div>
-
-        <div className="relative md:w-[430px] md:h-[932px] md:rounded-[3rem] md:shadow-2xl md:border-8 md:border-gray-800 overflow-hidden">
-          <div className="h-full overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
+      {/* 메인 레이아웃 (모든 화면) - 일반 화면 */}
+      <div className="min-h-screen">
+        <div className="relative overflow-hidden">
+          <div className="min-h-screen overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
       {/* Header - 회사 로고 가운데 배치 */}
       <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-4 pb-4 shadow-lg">
         <div className="flex items-center justify-center">
