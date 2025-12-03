@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getPetImage } from '../utils/imagePaths';
+import { getPetImage, getProfileImage } from '../utils/imagePaths';
 import { clinicResultService } from '../services/firestore';
 
 // 동물 종류 한글 매핑
@@ -430,16 +430,12 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">프로필 사진</label>
                         <div className="flex items-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-4xl overflow-hidden">
-                            {editFormData?.profileImage ? (
-                              <img
-                                src={editFormData.profileImage}
-                                alt="프로필"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              editFormData?.species === 'dog' ? '🐕' : '🐈'
-                            )}
+                          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
+                            <img
+                              src={editFormData?.profileImage || getProfileImage(editFormData?.species || 'dog')}
+                              alt="프로필"
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div className="flex-1">
                             <input
