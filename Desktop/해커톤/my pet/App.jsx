@@ -2264,6 +2264,12 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
   const [additionalComment, setAdditionalComment] = useState(''); // 추가 코멘트
   const guardianResolveRef = useRef(null); // Promise resolve 함수 저장
 
+  // FAQ 선택 관련 상태
+  const [isFAQPhase, setIsFAQPhase] = useState(false); // FAQ 선택 단계
+  const [faqUIData, setFaqUIData] = useState(null); // FAQ UI 데이터
+  const [selectedFAQs, setSelectedFAQs] = useState([]); // 선택된 FAQ IDs
+  const faqResolveRef = useRef(null); // FAQ Promise resolve 함수 저장
+
   // 자동 스크롤: 메시지가 추가될 때마다 맨 아래로 스크롤
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -2280,18 +2286,28 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
         setMessages([]);
         setCurrentStep(0);
 
-        // 보호자 응답 대기 콜백 함수
-        const handleWaitForGuardianResponse = (questions) => {
+        // 보호자 응답 대기 콜백 함수 (질문 단계 또는 FAQ 단계)
+        const handleWaitForGuardianResponse = (data, phaseType = 'questions') => {
           return new Promise((resolve) => {
             if (!isMounted) {
-              resolve({});
+              resolve(phaseType === 'faq' ? [] : {});
               return;
             }
-            setGuardianQuestions(questions);
-            setGuardianResponses({});
-            setIsWaitingForGuardian(true);
-            setAdditionalComment('');
-            guardianResolveRef.current = resolve;
+
+            if (phaseType === 'faq') {
+              // FAQ 선택 단계
+              setFaqUIData(data);
+              setSelectedFAQs([]);
+              setIsFAQPhase(true);
+              faqResolveRef.current = resolve;
+            } else {
+              // 일반 질문 단계
+              setGuardianQuestions(data);
+              setGuardianResponses({});
+              setIsWaitingForGuardian(true);
+              setAdditionalComment('');
+              guardianResolveRef.current = resolve;
+            }
           });
         };
 
@@ -2497,6 +2513,42 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
 
     setIsWaitingForGuardian(false);
     setGuardianQuestions([]);
+  };
+
+  // FAQ 선택 핸들러
+  const handleFAQSelect = (faqId) => {
+    setSelectedFAQs(prev => {
+      if (prev.includes(faqId)) {
+        // 이미 선택된 경우 제거
+        return prev.filter(id => id !== faqId);
+      } else {
+        // 새로 선택
+        return [...prev, faqId];
+      }
+    });
+  };
+
+  // FAQ 선택 완료 핸들러
+  const handleFAQSubmit = () => {
+    // 선택된 FAQ가 없어도 진행 가능 (skip처럼 동작)
+    if (faqResolveRef.current) {
+      faqResolveRef.current(selectedFAQs.length > 0 ? selectedFAQs : ['skip']);
+      faqResolveRef.current = null;
+    }
+    setIsFAQPhase(false);
+    setFaqUIData(null);
+    setSelectedFAQs([]);
+  };
+
+  // FAQ 스킵 핸들러
+  const handleFAQSkip = () => {
+    if (faqResolveRef.current) {
+      faqResolveRef.current(['skip']);
+      faqResolveRef.current = null;
+    }
+    setIsFAQPhase(false);
+    setFaqUIData(null);
+    setSelectedFAQs([]);
   };
 
   const showFinalDiagnosis = (analysis, symptomText, hasImages) => {
@@ -3342,12 +3394,144 @@ ${userQuestion}
             </div>
           )}
 
+        {/* FAQ 선택 UI */}
+        {isFAQPhase && faqUIData && (
+          <div style={{
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+            borderRadius: '16px',
+            padding: '20px',
+            margin: '12px 0',
+            border: '2px solid #22c55e',
+            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '16px'
+            }}>
+              <span style={{ fontSize: '24px' }}>📚</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#166534' }}>
+                  {faqUIData.title}
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#15803d' }}>
+                  {faqUIData.subtitle}
+                </p>
+              </div>
+            </div>
+
+            {/* FAQ 목록 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+              {faqUIData.faqs && faqUIData.faqs.map((faq) => {
+                const isSelected = selectedFAQs.includes(faq.id);
+                return (
+                  <button
+                    key={faq.id}
+                    onClick={() => handleFAQSelect(faq.id)}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      border: isSelected ? '2px solid #22c55e' : '2px solid #e2e8f0',
+                      background: isSelected ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'white',
+                      color: isSelected ? 'white' : '#1e293b',
+                      fontSize: '14px',
+                      fontWeight: isSelected ? '600' : '500',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? '0 2px 8px rgba(34, 197, 94, 0.3)' : '0 1px 4px rgba(0,0,0,0.05)',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px'
+                    }}
+                  >
+                    <span style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '4px',
+                      border: isSelected ? 'none' : '2px solid #cbd5e1',
+                      background: isSelected ? 'white' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      marginTop: '2px'
+                    }}>
+                      {isSelected && <span style={{ color: '#22c55e', fontSize: '14px', fontWeight: 'bold' }}>✓</span>}
+                    </span>
+                    <div>
+                      <div style={{ marginBottom: '4px' }}>{faq.question}</div>
+                      {faq.category && (
+                        <span style={{
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          background: isSelected ? 'rgba(255,255,255,0.3)' : '#f1f5f9',
+                          color: isSelected ? 'white' : '#64748b'
+                        }}>
+                          {faq.category}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 버튼 영역 */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                onClick={handleFAQSkip}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '2px solid #e2e8f0',
+                  background: 'white',
+                  color: '#64748b',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {faqUIData.skipOption?.label || '건너뛰기'}
+              </button>
+              <button
+                onClick={handleFAQSubmit}
+                disabled={selectedFAQs.length === 0}
+                style={{
+                  flex: 2,
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: selectedFAQs.length > 0
+                    ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                    : '#e2e8f0',
+                  color: selectedFAQs.length > 0 ? 'white' : '#94a3b8',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: selectedFAQs.length > 0 ? 'pointer' : 'not-allowed',
+                  transition: 'all 0.2s ease',
+                  boxShadow: selectedFAQs.length > 0 ? '0 4px 12px rgba(34, 197, 94, 0.3)' : 'none'
+                }}
+              >
+                {selectedFAQs.length > 0
+                  ? `선택한 질문 ${selectedFAQs.length}개 확인하기`
+                  : '질문을 선택해주세요'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 자동 스크롤을 위한 참조 지점 */}
         <div ref={messagesEndRef} />
         </div>
 
       {/* 하단 영역 */}
-      {!showResult && !isWaitingForGuardian && (
+      {!showResult && !isWaitingForGuardian && !isFAQPhase && (
         <div style={{ marginTop: 'auto' }}>
           {/* AI 진단 중 메시지 */}
           {isProcessing && (

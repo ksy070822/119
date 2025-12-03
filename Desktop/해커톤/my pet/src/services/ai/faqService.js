@@ -1,18 +1,73 @@
 // FAQ 서비스 (FAQ Selection Service)
 // 진단/증상 기반 추천 FAQ 제공 및 답변 생성
+// Firebase owner_faq 컬렉션에서 FAQ 데이터 조회
 
-import { faqData, searchFAQ } from '../../data/faqData';
+import { db } from '../../lib/firebase';
+import { collection, getDocs, query, where, limit } from 'firebase/firestore';
+import { faqData as localFaqData, searchFAQ as localSearchFAQ } from '../../data/faqData';
 import { FOLLOW_UP_QUESTIONS, SYMPTOM_TAGS, CONDITIONS } from '../../data/petMedicalData';
 
 /**
- * 진단 기반 추천 FAQ 생성
+ * Firebase에서 관련 FAQ 조회
+ * @param {string} species - 반려동물 종류
+ * @param {string} keywords - 검색 키워드
+ * @returns {Promise<Array>} FAQ 목록
+ */
+async function fetchFAQsFromFirebase(species, keywords) {
+  try {
+    const faqRef = collection(db, 'owner_faq');
+
+    // species 필터링 쿼리
+    const q = query(
+      faqRef,
+      where('species_code', 'in', [species, 'all']),
+      limit(30)
+    );
+
+    const snapshot = await getDocs(q);
+    const allFAQs = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // 키워드로 관련성 높은 FAQ 필터링
+    if (keywords) {
+      const keywordList = keywords.toLowerCase().split(/[\s,]+/).filter(Boolean);
+      const scoredFAQs = allFAQs.map(faq => {
+        let score = 0;
+        const faqText = `${faq.question_ko || ''} ${faq.answer_ko || ''} ${faq.symptom_label_ko || ''} ${(faq.keywords || []).join(' ')}`.toLowerCase();
+
+        keywordList.forEach(keyword => {
+          if (keyword && keyword.length > 1 && faqText.includes(keyword)) {
+            score += 1;
+          }
+        });
+
+        return { ...faq, relevanceScore: score };
+      });
+
+      return scoredFAQs
+        .filter(faq => faq.relevanceScore > 0)
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, 5);
+    }
+
+    return allFAQs.slice(0, 5);
+  } catch (error) {
+    console.error('Firebase FAQ 조회 오류:', error);
+    return [];
+  }
+}
+
+/**
+ * 진단 기반 추천 FAQ 생성 (비동기 - Firebase 사용)
  * 증상과 진단에 맞는 FAQ 3개를 선별하여 반환
  * @param {Object} medicalDiagnosis - Medical Agent 진단 결과
  * @param {Object} symptomData - 증상 데이터
  * @param {string} species - 반려동물 종류 ('dog', 'cat', etc.)
- * @returns {Array} 추천 FAQ 목록 (최대 3개)
+ * @returns {Promise<Array>} 추천 FAQ 목록 (최대 3개)
  */
-export function getRecommendedFAQs(medicalDiagnosis, symptomData, species = 'dog') {
+export async function getRecommendedFAQs(medicalDiagnosis, symptomData, species = 'dog') {
   const diagnosis = medicalDiagnosis?.possible_diseases?.[0]?.name_kor || '';
   const symptoms = symptomData?.selectedSymptoms || [];
   const symptomText = symptomData?.symptomText || '';
@@ -24,28 +79,45 @@ export function getRecommendedFAQs(medicalDiagnosis, symptomData, species = 'dog
     ...symptomText.split(/[\s,]+/).filter(Boolean)
   ].filter(Boolean);
 
-  // searchFAQ 사용하여 관련 FAQ 찾기
   const keywordString = keywords.join(' ');
-  let relatedFAQs = searchFAQ(keywordString, species);
 
-  // 결과가 부족하면 일반 FAQ도 추가
+  // Firebase에서 FAQ 조회 시도
+  let relatedFAQs = [];
+  try {
+    relatedFAQs = await fetchFAQsFromFirebase(species, keywordString);
+    console.log('Firebase FAQ 조회 성공:', relatedFAQs.length, '개');
+  } catch (error) {
+    console.warn('Firebase FAQ 조회 실패, 로컬 데이터 사용:', error);
+  }
+
+  // Firebase 결과가 부족하면 로컬 데이터로 보충
   if (relatedFAQs.length < 3) {
-    const generalFAQs = faqData.filter(faq =>
+    const localFAQs = localSearchFAQ(keywordString, species);
+    const existingQuestions = new Set(relatedFAQs.map(f => f.question_ko));
+
+    const additionalFAQs = localFAQs.filter(faq => !existingQuestions.has(faq.question_ko));
+    relatedFAQs = [...relatedFAQs, ...additionalFAQs];
+  }
+
+  // 여전히 부족하면 일반 FAQ 추가
+  if (relatedFAQs.length < 3) {
+    const deptCode = getDepartmentFromDiagnosis(diagnosis);
+    const existingQuestions = new Set(relatedFAQs.map(f => f.question_ko));
+
+    const generalFAQs = localFaqData.filter(faq =>
       (faq.species_code === species || faq.species_code === 'all') &&
-      !relatedFAQs.some(r => r.question_ko === faq.question_ko)
+      !existingQuestions.has(faq.question_ko)
     );
 
-    // 진단과 관련된 부서의 FAQ 우선
-    const deptCode = getDepartmentFromDiagnosis(diagnosis);
     const deptFAQs = generalFAQs.filter(faq => faq.department_code === deptCode);
     const otherFAQs = generalFAQs.filter(faq => faq.department_code !== deptCode);
 
-    relatedFAQs = [...relatedFAQs, ...deptFAQs, ...otherFAQs].slice(0, 3);
+    relatedFAQs = [...relatedFAQs, ...deptFAQs, ...otherFAQs];
   }
 
   // FAQ 형식 정리
   return relatedFAQs.slice(0, 3).map((faq, index) => ({
-    id: `faq_${index}_${faq.symptom_tag || 'general'}`,
+    id: faq.id || `faq_${index}_${faq.symptom_tag || 'general'}`,
     question: faq.question_ko,
     answer: faq.answer_ko,
     category: faq.department_label_ko || '일반',

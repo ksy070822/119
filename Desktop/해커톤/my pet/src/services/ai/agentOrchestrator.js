@@ -456,10 +456,16 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
 
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // 7. FAQ 선택 단계 - 추천 FAQ 3개 노출
-    const recommendedFAQs = getRecommendedFAQs(medicalResult.json, enrichedSymptomData, normalizedPetData.species);
-    const faqUIData = formatFAQsForUI(recommendedFAQs);
+    // 7. FAQ 선택 단계 - 추천 FAQ 3개 노출 (Firebase에서 비동기 조회)
+    let recommendedFAQs = [];
+    try {
+      recommendedFAQs = await getRecommendedFAQs(medicalResult.json, enrichedSymptomData, normalizedPetData.species);
+      console.log('추천 FAQ 조회 완료:', recommendedFAQs.length, '개');
+    } catch (faqFetchError) {
+      console.warn('FAQ 조회 실패:', faqFetchError);
+    }
 
+    const faqUIData = formatFAQsForUI(recommendedFAQs);
     let faqAnswers = [];
 
     if (onWaitForGuardianResponse && recommendedFAQs.length > 0) {
@@ -475,13 +481,9 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
         timestamp: Date.now()
       });
 
-      // 보호자 FAQ 선택 대기 (30초 타임아웃)
+      // 보호자 FAQ 선택 대기 (타임아웃 없음 - 사용자가 선택할 때까지 대기)
       try {
-        const faqPromise = onWaitForGuardianResponse(faqUIData, 'faq');
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('FAQ_TIMEOUT')), 30000)
-        );
-        const faqSelections = await Promise.race([faqPromise, timeoutPromise]);
+        const faqSelections = await onWaitForGuardianResponse(faqUIData, 'faq');
 
         // 선택된 FAQ에 대한 답변 생성
         if (faqSelections && faqSelections.length > 0 && !faqSelections.includes('skip')) {
@@ -509,8 +511,8 @@ export const runMultiAgentDiagnosis = async (petData, symptomData, onLogReceived
           }
         }
       } catch (faqError) {
-        // 타임아웃 또는 오류 시 FAQ 단계 건너뜀
-        console.warn('FAQ 단계 건너뜀:', faqError.message);
+        // 오류 시 FAQ 단계 건너뜀
+        console.warn('FAQ 단계 오류:', faqError.message);
         onLogReceived({
           agent: 'FAQ Assistant',
           role: '진료 요약 · 관리실',
