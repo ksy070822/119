@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============ 헬퍼 함수 ============
+
+    // 로그인 여부 확인
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 현재 로그인한 유저 문서 가져오기
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // 특정 clinicId에 대한 병원 직원인지 체크
+    function isClinicStaff(clinicId) {
+      return isSignedIn()
+        && userDoc().data.userMode == "clinic"
+        && userDoc().data.defaultClinicId == clinicId;
+    }
+
+    // 본인 여부 확인
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ============ 사용자 컬렉션 ============
+    match /users/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    // ============ 반려동물 컬렉션 ============
+    match /pets/{petId} {
+      allow read: if isSignedIn() && (
+        isOwner(resource.data.userId) ||
+        exists(/databases/$(database)/documents/bookings/{bookingId}) &&
+        get(/databases/$(database)/documents/bookings/{bookingId}).data.petId == petId
+      );
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    // ============ 병원 컬렉션 ============
+    match /clinics/{clinicId} {
+      allow read: if isSignedIn();  // 모든 로그인 사용자가 병원 정보 조회 가능
+      allow update: if isClinicStaff(clinicId);
+    }
+
+    // ============ 병원 직원 컬렉션 ============
+    match /clinics/{clinicId}/staff/{staffId} {
+      allow read: if isClinicStaff(clinicId);
+      allow write: if isClinicStaff(clinicId);
+    }
+
+    // ============ 환자 기록 컬렉션 ============
+    match /clinicPatients/{patientId} {
+      allow read: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.ownerUserId)
+      );
+      allow write: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+    }
+
+    // ============ 예약 컬렉션 ============
+    match /bookings/{bookingId} {
+      // 읽기: 병원 직원 또는 예약한 보호자
+      allow read: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.userId)
+      );
+
+      // 생성: 보호자 (자신의 userId로 예약)
+      allow create: if isSignedIn() && (
+        isOwner(request.resource.data.userId) ||
+        isClinicStaff(request.resource.data.clinicId)
+      );
+
+      // 수정: 병원 직원 (상태 업데이트 등)
+      allow update: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+
+      // 삭제: 병원 직원 또는 예약한 보호자
+      allow delete: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.userId)
+      );
+    }
+
+    // ============ 진단서 컬렉션 ============
+    match /diagnoses/{diagId} {
+      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자 (ownerId 기준)
+      allow read: if isSignedIn() && (
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId)
+      );
+
+      // 생성: 병원 직원 또는 보호자 (본인)
+      allow create: if isSignedIn() && (
+        (request.resource.data.clinicId != null && isClinicStaff(request.resource.data.clinicId)) ||
+        isOwner(request.resource.data.ownerId)
+      );
+
+      // 수정: 병원 직원 또는 소유자
+      allow update: if isSignedIn() && (
+        (resource.data.clinicId != null && isClinicStaff(resource.data.clinicId)) ||
+        isOwner(resource.data.ownerId)
+      );
+
+      // 삭제: 소유자만
+      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
+    }
+
+    // ============ 사전 문진 컬렉션 ============
+    match /preQuestionnaires/{qId} {
+      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자
+      allow read: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.ownerId)
+      );
+
+      // 생성: 병원 직원 또는 보호자 (본인)
+      allow create: if isSignedIn() && (
+        isClinicStaff(request.resource.data.clinicId) ||
+        isOwner(request.resource.data.ownerId)
+      );
+
+      // 수정: 병원 직원 또는 소유자
+      allow update: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.ownerId)
+      );
+
+      // 삭제: 소유자만
+      allow delete: if isSignedIn() && isOwner(resource.data.ownerId);
+    }
+
+    // ============ 환자 기록 (진료 기록) 컬렉션 ============
+    match /medicalRecords/{mrId} {
+      // 읽기: 병원 직원 (clinicId 기준) 또는 소유자
+      allow read: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.ownerId)
+      );
+
+      // 생성: 병원 직원만
+      allow create: if isSignedIn() && isClinicStaff(request.resource.data.clinicId);
+
+      // 수정: 병원 직원만
+      allow update: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+
+      // 삭제: 병원 직원 또는 소유자
+      allow delete: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.ownerId)
+      );
+    }
+
+    // ============ 진료 결과 컬렉션 ============
+    match /clinicResults/{resultId} {
+      // 읽기: 병원 직원 또는 보호자
+      allow read: if isSignedIn() && (
+        isClinicStaff(resource.data.clinicId) ||
+        isOwner(resource.data.userId)
+      );
+
+      // 생성/수정: 병원 직원만
+      allow create, update: if isSignedIn() && isClinicStaff(request.resource.data.clinicId);
+
+      // 삭제: 병원 직원만
+      allow delete: if isSignedIn() && isClinicStaff(resource.data.clinicId);
+    }
+
+    // ============ 일일 케어 로그 컬렉션 ============
+    match /dailyLogs/{logId} {
+      allow read, write: if isSignedIn();  // 본인 데이터만 읽고 쓸 수 있도록 필터링은 클라이언트에서
+    }
+
+    // ============ OCR 문서 컬렉션 ============
+    match /records/{recordId} {
+      allow read, write: if isSignedIn();  // 본인 데이터만 읽고 쓸 수 있도록 필터링은 클라이언트에서
+    }
+
+    // ============ 통계 컬렉션 ============
+    match /clinicStats/{clinicId} {
+      allow read: if isClinicStaff(clinicId);
+      allow write: if false;  // 통계는 Cloud Functions에서만 업데이트
+    }
+
+    // ============ 기본 거부 ============
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
