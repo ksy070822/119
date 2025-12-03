@@ -2103,10 +2103,8 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
               </div>
           <p className="text-[10px] sm:text-xs text-slate-400 mt-1.5 sm:mt-2">피부, 눈, 귀 등 증상 부위 사진을 첨부하면 더 정확한 진단이 가능해요</p>
         </div>
-      </div>
+        </div>
 
-<<<<<<< HEAD
-      {/* Bottom Button - 네비게이션바 위에 배치 */}
       {/* Bottom Button - 내비게이션바 위에 배치 */}
       <div className="fixed bottom-16 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-[430px] bg-white/95 backdrop-blur-sm border-t border-slate-100 p-4 z-40">
         <button 
