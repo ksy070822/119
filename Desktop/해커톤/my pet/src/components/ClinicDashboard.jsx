@@ -15,6 +15,41 @@ import { collection, query, where, onSnapshot, orderBy, getDoc, doc } from 'fire
 import { getPetImage } from '../utils/imagePaths';
 import { TreatmentSheet } from './TreatmentSheet';
 
+// 동물 종류 한글 매핑
+const SPECIES_LABELS = {
+  dog: '강아지',
+  cat: '고양이',
+  rabbit: '토끼',
+  hamster: '햄스터',
+  bird: '조류',
+  hedgehog: '고슴도치',
+  reptile: '파충류',
+  etc: '기타',
+  other: '기타'
+};
+
+// 나이 표시 헬퍼 (이미 "세"가 포함되어 있으면 그대로, 아니면 추가)
+const formatAge = (age) => {
+  if (!age) return '나이 미상';
+  if (typeof age === 'string' && age.includes('세')) return age;
+  if (typeof age === 'number') return `${age}세`;
+  return age;
+};
+
+// 성별 표시 헬퍼 (색상 포함)
+const formatGender = (gender) => {
+  if (!gender) return null;
+  const isMale = gender === 'M' || gender === 'male' || gender === '수컷' || gender === '♂';
+  const isFemale = gender === 'F' || gender === 'female' || gender === '암컷' || gender === '♀';
+  
+  if (isMale) {
+    return <span className="text-blue-600 font-semibold">♂</span>;
+  } else if (isFemale) {
+    return <span className="text-red-600 font-semibold">♀</span>;
+  }
+  return gender;
+};
+
 // 로컬 타임존 기준으로 YYYY-MM-DD 문자열을 반환
 const getLocalDateString = (date = new Date()) => {
   const year = date.getFullYear();
@@ -99,7 +134,16 @@ export function ClinicDashboard({ currentUser, onBack }) {
           if (bookingData.userId) {
             try {
               const userDoc = await getDoc(doc(db, 'users', bookingData.userId));
-              owner = userDoc.exists() ? userDoc.data() : bookingData.owner || null;
+              if (userDoc.exists()) {
+                const userData = userDoc.data();
+                owner = {
+                  ...userData,
+                  name: userData.displayName || userData.name || bookingData.owner?.name || '알 수 없음',
+                  displayName: userData.displayName || userData.name || bookingData.owner?.displayName
+                };
+              } else {
+                owner = bookingData.owner || null;
+              }
             } catch (e) {
               owner = bookingData.owner || null;
             }
@@ -712,11 +756,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
                         />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900">
-                          {booking.pet?.name || '미등록'} ({booking.pet?.breed || '품종 미상'}, {booking.pet?.age || '?'}세)
+                        <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
+                          {booking.pet?.name || '미등록'} ({SPECIES_LABELS[booking.pet?.species] || booking.pet?.speciesLabelKo || booking.pet?.species || '기타'}, {formatAge(booking.pet?.age)})
+                          {booking.pet?.sex && <span className="ml-1">{formatGender(booking.pet.sex)}</span>}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          보호자: {booking.owner?.name || '알 수 없음'} · {booking.owner?.phone || ''}
+                          보호자: {booking.owner?.displayName || booking.owner?.name || '알 수 없음'} · {booking.owner?.phone || ''}
                         </p>
                       </div>
                     </div>
@@ -964,11 +1009,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
                         />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-base font-semibold text-gray-900">
-                          {patient.petName} ({patient.speciesLabelKo || patient.species})
+                        <h3 className="text-sm font-semibold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
+                          {patient.petName} ({SPECIES_LABELS[patient.species] || patient.speciesLabelKo || patient.species || '기타'})
+                          {patient.sex && <span className="ml-1">{formatGender(patient.sex)}</span>}
                         </h3>
                         <p className="text-sm text-gray-600">
-                          보호자: {patient.ownerName} · {patient.ownerPhone}
+                          보호자: {patient.ownerDisplayName || patient.ownerName || '알 수 없음'} · {patient.ownerPhone || ''}
                         </p>
                       </div>
                     </div>
@@ -1074,9 +1120,9 @@ export function ClinicDashboard({ currentUser, onBack }) {
               <div>
                 <div className="font-semibold mb-1">펫 정보</div>
                 <div className="text-gray-700">
-                  종: {selectedBooking.pet?.speciesLabelKo || selectedBooking.pet?.species}<br/>
-                  품종: {selectedBooking.pet?.breed}<br/>
-                  생일: {selectedBooking.pet?.birthDate}<br/>
+                  종: {SPECIES_LABELS[selectedBooking.pet?.species] || selectedBooking.pet?.speciesLabelKo || selectedBooking.pet?.species || '기타'}<br/>
+                  품종: {selectedBooking.pet?.breed || '미등록'}<br/>
+                  나이: {formatAge(selectedBooking.pet?.age)} {selectedBooking.pet?.sex && formatGender(selectedBooking.pet.sex)}<br/>
                   체중: {selectedBooking.pet?.weight ? `${selectedBooking.pet.weight}kg` : '기록 없음'}
                 </div>
               </div>
@@ -1084,9 +1130,9 @@ export function ClinicDashboard({ currentUser, onBack }) {
               <div>
                 <div className="font-semibold mb-1">보호자 정보</div>
                 <div className="text-gray-700">
-                  이름: {selectedBooking.owner?.name}<br/>
-                  연락처: {selectedBooking.owner?.phone}<br/>
-                  이메일: {selectedBooking.owner?.email}
+                  이름: {selectedBooking.owner?.displayName || selectedBooking.owner?.name || '알 수 없음'}<br/>
+                  연락처: {selectedBooking.owner?.phone || '없음'}<br/>
+                  이메일: {selectedBooking.owner?.email || '없음'}
                 </div>
               </div>
 

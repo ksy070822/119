@@ -214,7 +214,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center p-6 pt-12">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center p-6 pt-12">
       {/* 로고 - 좌측 정렬 */}
       <div className="w-full max-w-sm mb-8">
         <div className="flex items-center gap-3">
@@ -236,7 +236,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
             onClick={() => setUserMode('guardian')}
             className={`flex-1 py-4 px-3 rounded-xl bg-white shadow-md transition-all flex flex-col items-center ${
               userMode === 'guardian'
-                ? 'ring-2 ring-cyan-500 bg-cyan-50'
+                ? 'ring-2 ring-sky-500 bg-sky-50'
                 : 'hover:shadow-lg'
             }`}
           >
@@ -255,7 +255,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
             onClick={() => setUserMode('clinic')}
             className={`flex-1 py-4 px-3 rounded-xl bg-white shadow-md transition-all flex flex-col items-center ${
               userMode === 'clinic'
-                ? 'ring-2 ring-cyan-500 bg-cyan-50'
+                ? 'ring-2 ring-sky-500 bg-sky-50'
                 : 'hover:shadow-lg'
             }`}
           >
@@ -279,7 +279,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
           <button
             onClick={() => setShowEmailForm(true)}
             disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30"
+            className="w-full py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-bold rounded-xl hover:from-sky-600 hover:to-sky-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
           >
             {loading ? (
               <>
@@ -306,7 +306,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
                     setResetSuccess(false);
                     setResetEmail('');
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all"
+                  className="w-full py-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-bold rounded-xl hover:from-sky-600 hover:to-sky-700 transition-all"
                 >
                   로그인으로 돌아가기
                 </button>
@@ -323,7 +323,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
                   placeholder="가입한 이메일"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
                   required
                 />
                 <button
@@ -376,7 +376,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white font-bold rounded-xl hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/30"
+              className="w-full py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-bold rounded-xl hover:from-sky-600 hover:to-sky-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30"
             >
               {loading ? (
                 <>
@@ -404,7 +404,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
                   setShowPasswordReset(true);
                   setError('');
                 }}
-                className="text-cyan-600 text-sm hover:underline font-medium"
+                className="text-sky-600 text-sm hover:underline font-medium"
               >
                 비밀번호 찾기
               </button>
@@ -414,7 +414,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
               <button
                 type="button"
                 onClick={onGoToRegister}
-                className="text-cyan-600 font-bold text-sm hover:underline"
+                className="text-sky-600 font-bold text-sm hover:underline"
               >
                 회원가입
               </button>
@@ -437,7 +437,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
                 <div className="w-full border-t border-slate-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-gradient-to-b from-cyan-50 to-blue-50 text-slate-500">또는</span>
+                <span className="px-3 bg-gradient-to-b from-sky-50 to-blue-50 text-slate-500">또는</span>
               </div>
             </div>
 
@@ -483,7 +483,7 @@ export function LoginScreen({ onLogin, onGoToRegister, onSkipLogin }) {
           <div className="mt-4">
             <button
               onClick={() => onSkipLogin(userMode)}
-              className="w-full py-3 bg-white/80 text-cyan-700 font-medium rounded-xl hover:bg-white transition-all flex items-center justify-center gap-2 border border-cyan-200 shadow-sm"
+              className="w-full py-3 bg-white/80 text-sky-700 font-medium rounded-xl hover:bg-white transition-all flex items-center justify-center gap-2 border border-sky-200 shadow-sm"
             >
               <span className="material-symbols-outlined text-sm">rocket_launch</span>
               로그인 없이 바로 입장하기
@@ -672,12 +672,12 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                 onClick={() => setFormData({ ...formData, userMode: 'guardian' })}
                 className={`w-full p-5 rounded-xl border-2 transition-all flex items-start gap-4 text-left ${
                   formData.userMode === 'guardian'
-                    ? 'border-cyan-500 bg-cyan-50'
+                    ? 'border-sky-500 bg-sky-50'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${
-                  formData.userMode === 'guardian' ? 'bg-cyan-100' : 'bg-slate-100'
+                  formData.userMode === 'guardian' ? 'bg-sky-100' : 'bg-slate-100'
                 }`}>
                   🐕
                 </div>
@@ -685,7 +685,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">보호자</span>
                     {formData.userMode === 'guardian' && (
-                      <span className="text-cyan-500 text-sm font-bold">✓ 선택됨</span>
+                      <span className="text-sky-500 text-sm font-bold">✓ 선택됨</span>
                     )}
                   </div>
                   <p className="text-sm text-slate-500 mt-1">
@@ -705,12 +705,12 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                 onClick={() => setFormData({ ...formData, userMode: 'clinic' })}
                 className={`w-full p-5 rounded-xl border-2 transition-all flex items-start gap-4 text-left ${
                   formData.userMode === 'clinic'
-                    ? 'border-cyan-500 bg-cyan-50'
+                    ? 'border-sky-500 bg-sky-50'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${
-                  formData.userMode === 'clinic' ? 'bg-cyan-100' : 'bg-slate-100'
+                  formData.userMode === 'clinic' ? 'bg-sky-100' : 'bg-slate-100'
                 }`}>
                   🏥
                 </div>
@@ -718,7 +718,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-900">병원 (수의사/스태프)</span>
                     {formData.userMode === 'clinic' && (
-                      <span className="text-cyan-500 text-sm font-bold">✓ 선택됨</span>
+                      <span className="text-sky-500 text-sm font-bold">✓ 선택됨</span>
                     )}
                   </div>
                   <p className="text-sm text-slate-500 mt-1">

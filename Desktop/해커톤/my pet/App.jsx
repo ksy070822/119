@@ -4891,8 +4891,42 @@ function App() {
         // userMode를 localStorage에 저장
         localStorage.setItem('petMedical_userMode', mode);
 
-        // 로그인한 사용자의 반려동물 데이터 로드
-        const userPets = getPetsForUser(user.uid);
+        // 로그인한 사용자의 반려동물 데이터 로드 (Firestore 우선)
+        let userPets = [];
+        try {
+          // Firestore에서 동물 데이터 가져오기
+          const petsResult = await petService.getPetsByUser(user.uid);
+          if (petsResult.success && petsResult.data && petsResult.data.length > 0) {
+            userPets = petsResult.data;
+            // localStorage에도 저장 (오프라인 지원)
+            savePetsForUser(user.uid, userPets);
+            console.log(`✅ Firestore에서 ${userPets.length}마리 반려동물 로드 완료`);
+          } else {
+            // Firestore에 데이터가 없으면 localStorage 확인
+            userPets = getPetsForUser(user.uid);
+            
+            // 보호자 모드이고 동물 데이터가 없으면 시드 데이터 생성
+            if (mode === 'guardian' && userPets.length === 0) {
+              console.log('🐾 보호자 테스트 계정: 동물 데이터 자동 생성 중...');
+              try {
+                await seedGuardianData(user.uid, user.email);
+                // 시드 데이터 생성 후 다시 Firestore에서 가져오기
+                const seedResult = await petService.getPetsByUser(user.uid);
+                if (seedResult.success && seedResult.data && seedResult.data.length > 0) {
+                  userPets = seedResult.data;
+                  savePetsForUser(user.uid, userPets);
+                  console.log(`✅ 시드 데이터 생성 완료: ${userPets.length}마리 반려동물`);
+                }
+              } catch (seedError) {
+                console.warn('시드 데이터 생성 실패:', seedError);
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('동물 데이터 로드 실패, localStorage 확인:', error);
+          userPets = getPetsForUser(user.uid);
+        }
+
         setPets(userPets);
         if (userPets.length > 0) {
           setPetData(userPets[0]);

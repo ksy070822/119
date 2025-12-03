@@ -1285,8 +1285,12 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
       {/* 예약 모달 */}
       {showBookingModal && bookingHospital && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-t-3xl w-full max-w-md p-4 pb-6 animate-slide-up max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] animate-fade-in" onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowBookingModal(false);
+          }
+        }}>
+          <div className="bg-white rounded-3xl w-full max-w-md mx-4 p-4 pb-6 max-h-[90vh] overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
             {bookingSuccess ? (
               /* 예약 성공 화면 */
               <div className="text-center py-8">
