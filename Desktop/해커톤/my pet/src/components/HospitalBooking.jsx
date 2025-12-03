@@ -216,6 +216,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     let isMounted = true;
 
     const init = async () => {
+      // 페이지 최상단으로 스크롤
+      window.scrollTo(0, 0);
+
       try {
         // 🧪 테스트: 실제 clinicId 가져오기
         try {
@@ -243,7 +246,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         }
         if (isMounted) setLoading(false);
 
-        // 위치 및 병원 검색 (Firestore 우선 사용)
+        // 위치 및 병원 검색 (카카오맵 우선, 행안부 fallback)
         try {
           const position = await getCurrentPosition();
           if (isMounted) {
@@ -254,9 +257,26 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
             }
           }
 
-          // Firestore에서 병원 검색 (우선)
+          // 카카오맵 API에서 병원 검색 (우선)
           try {
-            console.log('[HospitalBooking] Firestore에서 병원 검색 시작');
+            console.log('[HospitalBooking] 카카오맵에서 병원 검색 시작');
+            const kakaoHospitals = await searchAnimalHospitals(position.lat, position.lng);
+
+            if (isMounted && kakaoHospitals.length > 0) {
+              console.log('[HospitalBooking] 카카오맵 병원 데이터:', kakaoHospitals.length, '개');
+              // 🧪 테스트 병원을 최상단에 추가
+              setHospitals([TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+              setDataSource('kakao');
+              setMapLoading(false);
+              return; // 카카오맵 성공 시 여기서 종료
+            }
+          } catch (kakaoErr) {
+            console.warn('[HospitalBooking] 카카오맵 검색 실패, Firestore로 fallback:', kakaoErr);
+          }
+
+          // 카카오맵 실패 시 Firestore(행안부) 데이터로 fallback
+          try {
+            console.log('[HospitalBooking] Firestore(행안부)에서 병원 검색 시작');
             const firestoreHospitals = await getNearbyHospitalsFromFirestore(
               position.lat,
               position.lng,
@@ -265,36 +285,46 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
             if (isMounted && firestoreHospitals.length > 0) {
               console.log('[HospitalBooking] Firestore 병원 데이터:', firestoreHospitals.length, '개');
-              // 🧪 테스트 병원을 최상단에 추가
               setHospitals([TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
               setDataSource('firestore');
               setMapLoading(false);
-              return; // Firestore 성공 시 여기서 종료
+              return;
             }
           } catch (firestoreErr) {
-            console.warn('[HospitalBooking] Firestore 검색 실패, Kakao로 fallback:', firestoreErr);
+            console.warn('[HospitalBooking] Firestore 검색도 실패:', firestoreErr);
           }
 
-          // Firestore 실패 시 Kakao Map API로 fallback
-          const hospitalList = await searchAnimalHospitals(position.lat, position.lng);
+          // 둘 다 실패 시 빈 결과로 설정
           if (isMounted) {
-            // 🧪 테스트 병원을 최상단에 추가
-            setHospitals([TEST_HOSPITAL_HAPPYVET, ...hospitalList]);
+            setHospitals([TEST_HOSPITAL_HAPPYVET]);
             setDataSource('kakao');
             setMapLoading(false);
           }
         } catch (err) {
           console.error('위치/병원 검색 오류:', err);
-          // 기본 위치(강남역)로 Firestore 검색 시도
+          // 기본 위치(강남역)로 카카오맵 검색 시도
           if (isMounted) {
             const defaultLat = 37.4979;
             const defaultLng = 127.0276;
             setUserLocation({ lat: defaultLat, lng: defaultLng });
 
+            // 카카오맵 먼저 시도
+            try {
+              const kakaoHospitals = await searchAnimalHospitals(defaultLat, defaultLng);
+              if (kakaoHospitals.length > 0) {
+                setHospitals([TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+                setDataSource('kakao');
+                setMapLoading(false);
+                return;
+              }
+            } catch (kakaoErr) {
+              console.warn('[HospitalBooking] 카카오맵 fallback 실패:', kakaoErr);
+            }
+
+            // 카카오맵 실패 시 Firestore 시도
             try {
               const firestoreHospitals = await getNearbyHospitalsFromFirestore(defaultLat, defaultLng, 5);
               if (firestoreHospitals.length > 0) {
-                // 🧪 테스트 병원을 최상단에 추가
                 setHospitals([TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
                 setDataSource('firestore');
                 setMapLoading(false);
