@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { generateHospitalPacket } from '../services/ai/hospitalPacket';
-import { getCurrentPosition, searchAnimalHospitals, initKakaoMap, addMarker, loadKakao } from '../services/kakaoMap';
+import { getCurrentPosition, searchAnimalHospitals, initKakaoMap, addMarker, loadKakao, searchHospitalsByRegionName } from '../services/kakaoMap';
 import { getApiKey, API_KEY_TYPES } from '../services/apiKeyManager';
 import { getNearbyHospitalsFromFirestore, searchHospitalsByRegion, searchHospitals } from '../lib/firestoreHospitals';
 import { bookingService } from '../services/firestore';
@@ -210,6 +210,13 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
   // 테스트 병원 state (동적으로 clinicId 업데이트)
   const [testHospital, setTestHospital] = useState(TEST_HOSPITAL_HAPPYVET);
+  
+  // 병원 리스트에 테스트 병원을 항상 최상단에 배치하는 헬퍼 함수
+  const ensureTestHospitalOnTop = (hospitalList) => {
+    const testHosp = hospitalList.find(h => h.isTestHospital === true);
+    const otherHospitals = hospitalList.filter(h => h.isTestHospital !== true);
+    return testHosp ? [testHosp, ...otherHospitals] : hospitalList;
+  };
 
   // 1. 병원 패킷 생성 및 현재 위치 가져오기
   useEffect(() => {
@@ -264,8 +271,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
             if (isMounted && kakaoHospitals.length > 0) {
               console.log('[HospitalBooking] 카카오맵 병원 데이터:', kakaoHospitals.length, '개');
-              // 🧪 테스트 병원을 최상단에 추가
-              setHospitals([TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+              // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+              const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+              setHospitals(hospitalList);
               setDataSource('kakao');
               setMapLoading(false);
               return; // 카카오맵 성공 시 여기서 종료
@@ -285,7 +293,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
 
             if (isMounted && firestoreHospitals.length > 0) {
               console.log('[HospitalBooking] Firestore 병원 데이터:', firestoreHospitals.length, '개');
-              setHospitals([TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
+              // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+              const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
+              setHospitals(hospitalList);
               setDataSource('firestore');
               setMapLoading(false);
               return;
@@ -294,9 +304,10 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
             console.warn('[HospitalBooking] Firestore 검색도 실패:', firestoreErr);
           }
 
-          // 둘 다 실패 시 빈 결과로 설정
+          // 둘 다 실패 시 테스트 병원만 표시
           if (isMounted) {
-            setHospitals([TEST_HOSPITAL_HAPPYVET]);
+            const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET]);
+            setHospitals(hospitalList);
             setDataSource('kakao');
             setMapLoading(false);
           }
@@ -312,7 +323,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
             try {
               const kakaoHospitals = await searchAnimalHospitals(defaultLat, defaultLng);
               if (kakaoHospitals.length > 0) {
-                setHospitals([TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+                // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+                const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...kakaoHospitals]);
+                setHospitals(hospitalList);
                 setDataSource('kakao');
                 setMapLoading(false);
                 return;
@@ -325,7 +338,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
             try {
               const firestoreHospitals = await getNearbyHospitalsFromFirestore(defaultLat, defaultLng, 5);
               if (firestoreHospitals.length > 0) {
-                setHospitals([TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
+                // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+                const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...firestoreHospitals]);
+                setHospitals(hospitalList);
                 setDataSource('firestore');
                 setMapLoading(false);
                 return;
@@ -367,8 +382,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                 businessHours: '24시간 운영',
               }
             ];
-            // 🧪 테스트 병원을 최상단에 추가
-            setHospitals([TEST_HOSPITAL_HAPPYVET, ...fallbackHospitals]);
+            // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+            const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...fallbackHospitals]);
+            setHospitals(hospitalList);
             setMapLoading(false);
           }
         }
@@ -744,8 +760,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         setLocationError(position.error);
       }
       const hospitalList = await searchAnimalHospitals(position.lat, position.lng);
-      // 🧪 테스트 병원을 최상단에 추가
-      setHospitals([TEST_HOSPITAL_HAPPYVET, ...hospitalList]);
+      // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+      const finalHospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...hospitalList]);
+      setHospitals(finalHospitalList);
     } catch (error) {
       console.error('위치 갱신 오류:', error);
     } finally {
@@ -841,8 +858,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
         setIsSearching(true);
         try {
           const results = await getNearbyHospitalsFromFirestore(userLocation.lat, userLocation.lng, 5);
-          // 🧪 테스트 병원을 최상단에 추가
-          setHospitals([TEST_HOSPITAL_HAPPYVET, ...results]);
+          // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+          const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...results]);
+          setHospitals(hospitalList);
           setSearchMode('nearby');
         } catch (err) {
           console.error('위치 기반 검색 실패:', err);
@@ -855,15 +873,51 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     setIsSearching(true);
     try {
       console.log('[HospitalBooking] 지역/병원명 검색:', searchQuery);
-      const results = await searchHospitalsByRegion(searchQuery, 50);
-      console.log('[HospitalBooking] 검색 결과:', results.length, '개');
-      // 🧪 테스트 병원을 최상단에 추가
-      setHospitals([TEST_HOSPITAL_HAPPYVET, ...results]);
-      setSearchMode('region');
-      setDataSource('firestore');
+      
+      // 1. 카카오맵 REST API 우선 시도
+      try {
+        const kakaoResults = await searchHospitalsByRegionName(searchQuery);
+        if (kakaoResults && kakaoResults.length > 0) {
+          console.log('[HospitalBooking] 카카오맵 검색 결과:', kakaoResults.length, '개');
+          // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+          const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...kakaoResults]);
+          setHospitals(hospitalList);
+          setSearchMode('region');
+          setDataSource('kakao');
+          setIsSearching(false);
+          return;
+        }
+      } catch (kakaoErr) {
+        console.warn('[HospitalBooking] 카카오맵 검색 실패, Firestore로 fallback:', kakaoErr);
+      }
+      
+      // 2. Firestore fallback (권한 오류 가능성 있음)
+      try {
+        const results = await searchHospitalsByRegion(searchQuery, 50);
+        console.log('[HospitalBooking] Firestore 검색 결과:', results.length, '개');
+        // 🧪 테스트 병원을 최상단에 추가 (항상 고정)
+        const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET, ...results]);
+        setHospitals(hospitalList);
+        setSearchMode('region');
+        setDataSource('firestore');
+      } catch (firestoreErr) {
+        console.error('[HospitalBooking] Firestore 검색 오류:', firestoreErr);
+        // 권한 오류인 경우 사용자에게 안내
+        if (firestoreErr.message?.includes('permissions') || firestoreErr.code === 'permission-denied') {
+          alert('검색 권한 오류가 발생했습니다. 카카오맵 검색을 사용하거나, Firebase 보안 규칙을 확인해주세요.');
+        } else {
+          alert('검색 중 오류가 발생했습니다: ' + firestoreErr.message);
+        }
+        // 테스트 병원만이라도 표시
+        const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET]);
+        setHospitals(hospitalList);
+      }
     } catch (err) {
       console.error('검색 오류:', err);
-      alert('검색 중 오류가 발생했습니다.');
+      alert('검색 중 오류가 발생했습니다: ' + err.message);
+      // 테스트 병원만이라도 표시
+      const hospitalList = ensureTestHospitalOnTop([testHospital || TEST_HOSPITAL_HAPPYVET]);
+      setHospitals(hospitalList);
     }
     setIsSearching(false);
   };
@@ -892,11 +946,19 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
     );
   }
 
-  // 검색 필터링
-  const filteredHospitals = hospitals.filter(hospital =>
+  // 검색 필터링 - 테스트 병원은 항상 최상단에 고정, 그 아래로 위치 기반 병원들
+  const testHospital = hospitals.find(h => h.isTestHospital === true);
+  const otherHospitals = hospitals.filter(h => h.isTestHospital !== true);
+  
+  const filteredOtherHospitals = otherHospitals.filter(hospital =>
     !searchQuery || hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (hospital.address && hospital.address.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+  
+  // 테스트 병원이 있으면 항상 최상단에 배치, 그 아래로 필터링된 위치 기반 병원들
+  const filteredHospitals = testHospital 
+    ? [testHospital, ...filteredOtherHospitals]
+    : filteredOtherHospitals;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -1200,8 +1262,9 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-2.5 text-center bg-[#FEE500] rounded-xl text-xs font-bold text-[#3C1E1E] hover:bg-[#F5DC00] transition-colors flex items-center justify-center"
+                    className="flex-1 py-2.5 text-center bg-[#FEE500] rounded-xl text-xs font-bold text-[#3C1E1E] hover:bg-[#F5DC00] transition-colors flex items-center justify-center gap-1"
                   >
+                    <span>📍</span>
                     길찾기
                   </a>
                   <a
