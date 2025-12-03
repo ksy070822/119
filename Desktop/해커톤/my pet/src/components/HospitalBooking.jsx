@@ -15,29 +15,98 @@ import { getPetImage } from '../utils/imagePaths';
 // Firestore에서 실제 clinicId를 동적으로 가져오는 함수
 const fetchHappyVetClinicId = async () => {
   try {
-    // clinics 컬렉션에서 "행복" 이름을 포함하는 병원 찾기
-    const clinicsRef = collection(db, 'clinics');
+    const clinicsRef = collection(db, "clinics");
+
+    // 1️⃣ 정확히 "행복 동물병원" (공백 포함)
+    try {
+      const exactQuery = query(
+        clinicsRef,
+        where("name", "==", "행복 동물병원"),
+        limit(1)
+      );
+      const exactSnap = await getDocs(exactQuery);
+
+      if (!exactSnap.empty) {
+        const doc = exactSnap.docs[0];
+        console.log(
+          "[테스트] 정확매칭 clinicId:",
+          doc.id,
+          doc.data().name
+        );
+        return doc.id; // 이 병원이 clinicStaff와 연결된 병원
+      }
+    } catch (e) {
+      console.warn("[fetchHappyVetClinicId] exact match 오류:", e);
+    }
+
+    // 2️⃣ 정확히 "행복동물병원" (공백 없음)
+    try {
+      const altQuery = query(
+        clinicsRef,
+        where("name", "==", "행복동물병원"),
+        limit(1)
+      );
+      const altSnap = await getDocs(altQuery);
+
+      if (!altSnap.empty) {
+        const doc = altSnap.docs[0];
+        console.log(
+          "[테스트] 공백없는 버전 clinicId:",
+          doc.id,
+          doc.data().name
+        );
+        return doc.id;
+      }
+    } catch (e) {
+      console.warn("[fetchHappyVetClinicId] alt match 오류:", e);
+    }
+
+    // 3️⃣ 전체 스캔 후 "행복 동물병원" 포함하는 병원 우선
     const snapshot = await getDocs(clinicsRef);
+    let candidateId = null;
 
     for (const doc of snapshot.docs) {
-      const data = doc.data();
-      // 병원 이름에 "행복" 또는 "happyvet"이 포함되어 있으면 해당 clinicId 반환
-      if (data.name && (data.name.includes('행복') || data.name.toLowerCase().includes('happy'))) {
-        console.log('[테스트] 행복동물병원 clinicId 발견:', doc.id, data.name);
+      const name = doc.data().name || "";
+      if (name.includes("행복 동물병원")) {
+        console.log(
+          "[테스트] 전체 스캔 - 행복 동물병원 포함:",
+          doc.id,
+          name
+        );
         return doc.id;
       }
     }
 
-    // 못 찾으면 첫 번째 병원 ID 반환 (테스트용)
+    // 4️⃣ "행복" 또는 "happy" 포함 병원
+    for (const doc of snapshot.docs) {
+      const name = (doc.data().name || "").toLowerCase();
+      if (name.includes("행복") || name.includes("happy")) {
+        console.log(
+          "[테스트] 전체 스캔 - 행복/happy 포함:",
+          doc.id,
+          doc.data().name
+        );
+        return doc.id;
+      }
+    }
+
+    // 5️⃣ fallback: clinics 첫 번째 병원
     if (snapshot.docs.length > 0) {
       const firstClinic = snapshot.docs[0];
-      console.log('[테스트] 행복동물병원 못 찾음, 첫 번째 병원 사용:', firstClinic.id, firstClinic.data().name);
+      console.log(
+        "[테스트] fallback 첫 병원:",
+        firstClinic.id,
+        firstClinic.data().name
+      );
       return firstClinic.id;
     }
+
   } catch (error) {
-    console.error('[테스트] clinicId 조회 실패:', error);
+    console.error("[fetchHappyVetClinicId] 실패:", error);
   }
-  return 'happyvet_test_clinic'; // 기본값
+
+  // 6️⃣ 최종 fallback
+  return "happyvet_test_clinic";
 };
 
 // 테스트 병원 객체 생성 함수
