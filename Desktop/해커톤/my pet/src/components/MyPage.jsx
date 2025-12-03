@@ -117,7 +117,28 @@ const saveBookingsToStorage = (bookings) => {
 };
 
 export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome, userId }) {
-  const [activeTab, setActiveTab] = useState('pets'); // 'pets', 'records', 'bookings'
+  // localStorage에서 초기 탭 확인
+  const getInitialTab = () => {
+    const savedTab = localStorage.getItem('mypage_initialTab');
+    if (savedTab && ['pets', 'bookings', 'records'].includes(savedTab)) {
+      localStorage.removeItem('mypage_initialTab');
+      return savedTab;
+    }
+    return 'pets';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab); // 'pets', 'records', 'bookings'
+  
+  // 커스텀 이벤트 리스너 추가
+  useEffect(() => {
+    const handleSetTab = (event) => {
+      if (event.detail && ['pets', 'bookings', 'records'].includes(event.detail)) {
+        setActiveTab(event.detail);
+      }
+    };
+    window.addEventListener('mypage-set-tab', handleSetTab);
+    return () => window.removeEventListener('mypage-set-tab', handleSetTab);
+  }, []);
   const [pets, setPets] = useState([]);
   const [diagnoses, setDiagnoses] = useState([]);
   const [bookings, setBookings] = useState([]);

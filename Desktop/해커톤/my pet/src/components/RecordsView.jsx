@@ -336,7 +336,28 @@ const SAMPLE_CHECKUP_DETAIL = {
 };
 
 export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, onHospitalBooking }) {
-  const [activeTab, setActiveTab] = useState('visits'); // visits, medication, checkup, vaccination
+  // localStorage에서 초기 탭 확인
+  const getInitialTab = () => {
+    const savedTab = localStorage.getItem('records_initialTab');
+    if (savedTab && ['visits', 'medication', 'checkup', 'vaccination'].includes(savedTab)) {
+      localStorage.removeItem('records_initialTab');
+      return savedTab;
+    }
+    return 'visits';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab); // visits, medication, checkup, vaccination
+  
+  // 커스텀 이벤트 리스너 추가
+  useEffect(() => {
+    const handleSetTab = (event) => {
+      if (event.detail && ['visits', 'medication', 'checkup', 'vaccination'].includes(event.detail)) {
+        setActiveTab(event.detail);
+      }
+    };
+    window.addEventListener('records-set-tab', handleSetTab);
+    return () => window.removeEventListener('records-set-tab', handleSetTab);
+  }, []);
   const [diagnoses, setDiagnoses] = useState([]);
   const [clinicResults, setClinicResults] = useState([]);
   const [medicationFeedback, setMedicationFeedback] = useState({});

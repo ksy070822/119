@@ -1039,27 +1039,27 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
                         <div className="flex-1 flex flex-col justify-between py-1">
                           <div className="flex flex-col items-center justify-center text-center w-full">
-                            <p className="text-base font-bold text-gray-800 w-full">AI 전문 의료진 24시간 대기</p>
-                            <p className="text-base font-bold text-gray-800 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                            <p className="text-base font-bold text-sky-700 mt-2 w-full">
+                            <p className="text-lg font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
+                            <p className="text-lg font-display font-bold text-gray-900 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                            <p className="text-base font-semibold text-sky-600 mt-2 w-full">
                               오늘도 든든한 케어 시작!
                             </p>
                           </div>
 
                           <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                            <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                               {getSpeciesDisplay()}
                             </span>
                             {getSexDisplay() && (
-                              <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                              <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                                 {getSexDisplay()}
                               </span>
                             )}
-                            <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                            <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                               {calculateAge(petData.birthDate)}
                             </span>
                             {todayWeight && (
-                              <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                              <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                                 {todayWeight}kg
                               </span>
                             )}
@@ -1085,7 +1085,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                     <div className="bg-amber-50 rounded-2xl p-3 shadow-lg border-2 border-amber-200 relative overflow-hidden mb-4">
                       <div className="relative flex items-center justify-center gap-2 mb-2">
                         <span className="text-2xl">🤖</span>
-                        <h3 className="text-gray-800 font-bold text-base">AI 건강 문진</h3>
+                        <h3 className="text-gray-900 font-display font-bold text-base">AI 건강 문진</h3>
                       </div>
                       <button
                         onClick={() => onNavigate('ai-consultation')}
@@ -1111,27 +1111,51 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                       </div>
 
                       <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-200">
-                        <div className="flex items-center gap-3 py-3 border-b border-gray-100">
+                        <button
+                          onClick={() => {
+                            setCurrentTab('mypage');
+                            // MyPage의 bookings 탭으로 이동하기 위해 localStorage에 저장
+                            localStorage.setItem('mypage_initialTab', 'bookings');
+                            // 컴포넌트가 마운트된 후 탭 변경을 위해 약간의 지연
+                            setTimeout(() => {
+                              const event = new CustomEvent('mypage-set-tab', { detail: 'bookings' });
+                              window.dispatchEvent(event);
+                            }, 100);
+                          }}
+                          className="w-full flex items-center gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
                           <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
                             <span className="text-2xl">📅</span>
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 text-left">
                             <h4 className="text-sm font-bold text-gray-800 mb-0.5">병원 예약일</h4>
                             <p className="text-xs text-gray-500">다음 진료: 2025년 12월 15일</p>
                           </div>
                           <span className="text-gray-400 text-lg">&gt;</span>
-                        </div>
+                        </button>
 
-                        <div className="flex items-center gap-3 py-3 border-b border-gray-100">
+                        <button
+                          onClick={() => {
+                            setCurrentTab('records');
+                            // RecordsView의 vaccination 탭으로 이동하기 위해 localStorage에 저장
+                            localStorage.setItem('records_initialTab', 'vaccination');
+                            // 컴포넌트가 마운트된 후 탭 변경을 위해 약간의 지연
+                            setTimeout(() => {
+                              const event = new CustomEvent('records-set-tab', { detail: 'vaccination' });
+                              window.dispatchEvent(event);
+                            }, 100);
+                          }}
+                          className="w-full flex items-center gap-3 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
                           <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
                             <span className="text-2xl">💉</span>
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 text-left">
                             <h4 className="text-sm font-bold text-gray-800 mb-0.5">접종 예정</h4>
                             <p className="text-xs text-gray-500">광견병 백신 (2주 후)</p>
                           </div>
                           <span className="text-gray-400 text-lg">&gt;</span>
-                        </div>
+                        </button>
 
                         <div className="flex items-center gap-3 py-3">
                           <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -1256,20 +1280,42 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                         </button>
                       </div>
                       <div className="space-y-3">
-                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+                        <button
+                          onClick={() => {
+                            setCurrentTab('mypage');
+                            localStorage.setItem('mypage_initialTab', 'bookings');
+                            setTimeout(() => {
+                              const event = new CustomEvent('mypage-set-tab', { detail: 'bookings' });
+                              window.dispatchEvent(event);
+                            }, 100);
+                          }}
+                          className="w-full flex items-center gap-3 p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer text-left"
+                        >
                           <span className="text-2xl">📅</span>
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-gray-900">병원 예약일</p>
                             <p className="text-sm text-gray-500">다음 진료: 2025년 12월 15일</p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+                          <span className="text-gray-400 text-lg">&gt;</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCurrentTab('records');
+                            localStorage.setItem('records_initialTab', 'vaccination');
+                            setTimeout(() => {
+                              const event = new CustomEvent('records-set-tab', { detail: 'vaccination' });
+                              window.dispatchEvent(event);
+                            }, 100);
+                          }}
+                          className="w-full flex items-center gap-3 p-3 bg-green-50 rounded-xl hover:bg-green-100 transition-colors cursor-pointer text-left"
+                        >
                           <span className="text-2xl">💉</span>
-                          <div>
+                          <div className="flex-1">
                             <p className="font-medium text-gray-900">접종 예정</p>
                             <p className="text-sm text-gray-500">광견병 백신 (2주 후)</p>
                           </div>
-                        </div>
+                          <span className="text-gray-400 text-lg">&gt;</span>
+                        </button>
                         <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
                           <span className="text-2xl">⚠️</span>
                           <div>
@@ -1428,27 +1474,27 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div className="flex flex-col items-center justify-center text-center w-full">
-                    <p className="text-base font-bold text-gray-800 w-full">AI 전문 의료진 24시간 대기</p>
-                    <p className="text-base font-bold text-gray-800 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                    <p className="text-base font-bold text-sky-700 mt-2 w-full">
+                    <p className="text-lg font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
+                    <p className="text-lg font-display font-bold text-gray-900 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                    <p className="text-base font-semibold text-sky-600 mt-2 w-full">
                       오늘도 든든한 케어 시작!
                     </p>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                    <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                       {getSpeciesDisplay()}
                     </span>
                     {getSexDisplay() && (
-                      <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                         {getSexDisplay()}
                       </span>
                     )}
-                    <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                       {calculateAge(petData.birthDate)}
                     </span>
                     {todayWeight && (
-                      <span className="text-[11px] text-gray-600 font-medium bg-white/80 px-2 py-0.5 rounded-full">
+                      <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                         {todayWeight}kg
                       </span>
                     )}
