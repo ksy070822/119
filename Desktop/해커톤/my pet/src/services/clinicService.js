@@ -16,6 +16,14 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 
+// 로컬 타임존 기준으로 YYYY-MM-DD 문자열을 반환
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`; // 예: "2025-12-03"
+};
+
 // ============================================
 // 병원 정보 관련
 // ============================================
@@ -135,11 +143,7 @@ export async function getClinicStaff(clinicId) {
 export async function getTodayBookings(clinicId) {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalDateString(today); // 🔴 로컬 기준 YYYY-MM-DD
 
     // clinics 정보 가져오기 (병원명 확인용)
     const clinicDoc = await getDoc(doc(db, 'clinics', clinicId));
@@ -514,7 +518,7 @@ export async function getClinicResults(clinicId, options = {}) {
  */
 export async function getUpcomingVaccinations(clinicId) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString(); // 🔴 로컬 기준 YYYY-MM-DD
 
     const vaccinationsQuery = query(
       collection(db, 'vaccinations'),
@@ -547,7 +551,7 @@ export async function getUpcomingVaccinations(clinicId) {
  */
 export async function getClinicStats(clinicId) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString(); // 🔴 로컬 기준 YYYY-MM-DD
     const thisMonth = today.substring(0, 7);
 
     // 오늘 예약 수
