@@ -1934,7 +1934,7 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
         <p className="text-sm text-slate-500 mt-1">{petData.petName || petData.name || '반려동물'}의 증상을 알려주세요</p>
       </div>
 
-      <div className="px-4 pt-4 pb-32 space-y-4">
+      <div className="px-4 pt-4 pb-24 space-y-4">
         {/* 진료과목 선택 */}
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
           <h3 className="font-bold text-slate-800 mb-1 text-sm">어디가 불편해 보이나요? *</h3>
@@ -4808,8 +4808,8 @@ function App() {
         </div>
       )}
 
-      {/* 하단 탭 네비게이션 - 보호자 모드에서만 표시 */}
-      {userMode === 'guardian' && currentTab && (!currentView || currentView === 'ai-consultation') && (
+      {/* 하단 탭 네비게이션 - 보호자 모드에서 항상 표시 (특정 화면 제외) */}
+      {userMode === 'guardian' && currentTab && (
         <BottomTabNavigation
           currentTab={currentTab}
           onTabChange={handleTabChange}
