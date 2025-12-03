@@ -118,5 +118,23 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isSignedIn();
     }
+
+    // ============ commentTemplates (코멘트 템플릿) ============
+    // 모든 사용자가 읽기 가능 (앱에서 랜덤 유의사항 문구 표시용)
+    match /commentTemplates/{templateId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // ============ owner_faq (보호자 FAQ) ============
+    match /owner_faq/{faqId} {
+      allow read: if true;
+      allow create, update, delete: if isSignedIn();
+    }
+
+    // ============ dailyCareLogs (일일 케어 로그) ============
+    match /dailyCareLogs/{logId} {
+      allow read, create, update, delete: if isSignedIn();
+    }
   }
 }

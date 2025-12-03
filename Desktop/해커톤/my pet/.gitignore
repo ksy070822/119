@@ -33,3 +33,6 @@ npm-debug.log*
 *.tmp
 *.temp
 
+
+# Firebase service account key
+scripts/serviceAccountKey.json
