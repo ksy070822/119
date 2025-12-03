@@ -1079,8 +1079,8 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                     <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
                       {/* 배경 장식 제거 - 깔끔한 흰색 배경 */}
 
-                      <div className="relative flex items-stretch gap-3">
-                        <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
+                      <div className="relative flex items-stretch gap-4">
+                        <div className="flex-shrink-0 w-28 h-40 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
                           <img
                             src={getMainCharacterImagePath()}
                             alt={petData?.petName || petData?.name || '반려동물'}
@@ -1112,16 +1112,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           />
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-between py-1">
+                        <div className="flex-1 flex flex-col justify-between py-2">
                           <div className="flex flex-col items-center justify-center text-center w-full">
-                            <p className="text-lg font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
-                            <p className="text-lg font-display font-bold text-gray-900 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                            <p className="text-base font-semibold text-sky-600 mt-2 w-full">
+                            <p className="text-xl font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
+                            <p className="text-xl font-display font-bold text-gray-900 mt-1.5 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                            <p className="text-lg font-semibold text-sky-600 mt-2.5 w-full">
                               오늘도 든든한 케어 시작!
                             </p>
                             <button
                               onClick={() => onNavigate('profile-list')}
-                              className="text-xs text-sky-600 font-semibold mt-2"
+                              className="text-sm text-sky-600 font-semibold mt-2"
                             >
                               반려동물 변경하기 &gt;
                             </button>
@@ -1485,12 +1485,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         ) : (
           <>
             {/* Pet Profile Banner - 캐릭터 이미지 포함 */}
-            <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
+            <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
               {/* 배경 장식 제거 - 깔끔한 흰색 배경 */}
 
-              <div className="relative flex items-stretch gap-3">
+              <div className="relative flex items-stretch gap-4">
                 {/* 캐릭터 이미지 - 세로로 길게, 가로 좁게 */}
-                <div className="flex-shrink-0 w-24 h-36 bg-amber-50 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
+                <div className="flex-shrink-0 w-28 h-40 bg-amber-50 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
                   <img
                     src={getMainCharacterImagePath()}
                     alt={petData?.petName || '반려동물'}
@@ -1522,16 +1522,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   />
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
+                <div className="flex-1 flex flex-col justify-between py-2 min-w-0">
                   <div className="flex flex-col items-center justify-center text-center w-full">
-                    <p className="text-sm sm:text-base font-display font-bold text-gray-900 w-full leading-tight">AI 전문 의료진 24시간 대기</p>
-                    <p className="text-sm sm:text-base font-display font-bold text-gray-900 mt-1 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                    <p className="text-xs sm:text-sm font-semibold text-sky-600 mt-2 w-full">
+                    <p className="text-base sm:text-lg font-display font-bold text-gray-900 w-full leading-tight">AI 전문 의료진 24시간 대기</p>
+                    <p className="text-base sm:text-lg font-display font-bold text-gray-900 mt-1.5 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                    <p className="text-sm sm:text-base font-semibold text-sky-600 mt-2.5 w-full">
                       오늘도 든든한 케어 시작!
                     </p>
                     <button
                       onClick={() => onNavigate('profile-list')}
-                      className="text-xs text-sky-600 font-semibold mt-2"
+                      className="text-xs sm:text-sm text-sky-600 font-semibold mt-2"
                     >
                       반려동물 변경하기 &gt;
                     </button>
