@@ -625,17 +625,17 @@ export function RegisterScreen({ onRegister, onGoToLogin }) {
   };
 
   return (
-    <div className="min-h-screen bg-background-light flex flex-col items-center justify-center p-4 sm:p-6 pt-8 sm:pt-12">
-      {/* 로고 - 좌측 정렬 */}
-      <div className="w-full max-w-sm text-left mb-4 sm:mb-6">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 mb-2 sm:mb-3">
+    <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 pt-8 sm:pt-12">
+      {/* 로고 + 텍스트 가로 배치, 중앙 정렬 */}
+      <div className="w-full max-w-sm mb-4 sm:mb-6">
+        <div className="flex items-center justify-center gap-3 mb-2">
           <img
             src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
             alt="PetMedical.AI"
-            className="w-full h-full object-contain"
+            className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
           />
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 font-display">회원가입</h1>
         </div>
-        <h1 className="text-lg sm:text-xl font-bold text-slate-900 font-display">회원가입</h1>
       </div>
 
       {/* 진행 상태 */}
