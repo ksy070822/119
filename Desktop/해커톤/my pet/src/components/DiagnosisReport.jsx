@@ -15,9 +15,10 @@ const SPECIES_LABELS = {
   other: '기타'
 };
 
-function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoToHospital, onGoToTreatment }) {
+function DiagnosisReport({ petData, diagnosisResult, symptomData, userData, onClose, onGoToHospital, onGoToTreatment, onShowDetail }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showDetailView, setShowDetailView] = useState(false);
   const reportRef = useRef(null);
 
   const getPetInfo = () => {
@@ -78,8 +79,13 @@ function DiagnosisReport({ petData, diagnosisResult, symptomData, onClose, onGoT
 
   const emergencyInfo = getEmergencyInfo(diagnosisResult?.emergency);
 
+  // 급성/만성 판단
+  const isAcute = diagnosisResult?.diagnosis?.includes('급성') ||
+                  diagnosisResult?.isAcute ||
+                  diagnosisResult?.type === 'acute';
+
   // 신뢰도 계산
-  const confidenceLevel = Math.round((diagnosisResult?.probability || 0.7) * 100);
+  const confidenceLevel = Math.round((diagnosisResult?.probability || diagnosisResult?.confidence || 0.7) * 100);
 
   const handleSaveAsImage = async () => {
     setIsSaving(true);
@@ -165,19 +171,132 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
     }, 1000);
   };
 
-  const getPetEmoji = () => {
-    const species = petInfo.species?.toLowerCase();
-    const emojis = {
-      dog: '🐶',
-      cat: '🐱',
-      rabbit: '🐰',
-      hamster: '🐹',
-      bird: '🐦',
-      hedgehog: '🦔',
-      reptile: '🦎'
-    };
-    return emojis[species] || '🐾';
+  const handleShowDetail = () => {
+    if (onShowDetail) {
+      onShowDetail();
+    } else {
+      setShowDetailView(true);
+    }
   };
+
+  // 보호자 정보
+  const guardianName = userData?.name || userData?.displayName || petData?.ownerName || '보호자';
+  const loginMethod = userData?.provider === 'kakao' ? '카카오톡' :
+                      userData?.provider === 'google' ? 'Google' :
+                      userData?.provider === 'email' ? '이메일' : '카카오톡';
+
+  // 상세 보기 화면
+  if (showDetailView) {
+    return (
+      <div className="dr-overlay">
+        <div className="dr-container" ref={reportRef}>
+          {/* 헤더 */}
+          <div className="dr-header">
+            <div className="dr-header-left">
+              <button className="dr-back-btn" onClick={() => setShowDetailView(false)}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <div className="dr-header-text">
+                <h1>상세 진단 내용</h1>
+              </div>
+            </div>
+            <button className="dr-close-btn" onClick={onClose}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* 상세 콘텐츠 */}
+          <div className="dr-content">
+            {/* 상세 설명 */}
+            {diagnosisResult?.description && (
+              <div className="dr-section">
+                <h3 className="dr-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                  </svg>
+                  상세 설명
+                </h3>
+                <div className="dr-description-box">
+                  {diagnosisResult.description}
+                </div>
+              </div>
+            )}
+
+            {/* 권장 조치사항 */}
+            {diagnosisResult?.actions?.length > 0 && (
+              <div className="dr-section">
+                <h3 className="dr-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  권장 조치사항
+                </h3>
+                <div className="dr-actions-list">
+                  {diagnosisResult.actions.map((action, idx) => (
+                    <div key={idx} className="dr-action-item">
+                      <div className="dr-action-num">{idx + 1}</div>
+                      <p className="dr-action-text">{action}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 약물 안내 */}
+            {diagnosisResult?.medicationGuidance?.hasMedicationGuidance && (
+              <div className="dr-section dr-medication-section">
+                <h3 className="dr-section-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+                  </svg>
+                  약물 안내
+                </h3>
+                <p className="dr-medication-summary">{diagnosisResult.medicationGuidance.message}</p>
+                {diagnosisResult.medicationGuidance.medications?.map((categoryMed, idx) => (
+                  <div key={idx} className="dr-medication-category">
+                    <div className="dr-medication-category-title">{categoryMed.category} 관련</div>
+                    {categoryMed.medications?.slice(0, 2).map((med, medIdx) => (
+                      <div key={medIdx} className="dr-medication-item">
+                        <div className="dr-medication-type">{med.type}</div>
+                        <div className="dr-medication-details">
+                          <span>복용: {med.usage}</span>
+                          <span>기간: {med.duration}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                <p className="dr-medication-disclaimer">{diagnosisResult.medicationGuidance.disclaimer}</p>
+              </div>
+            )}
+
+            {/* 병원 방문 안내 */}
+            {(diagnosisResult?.hospitalVisit || diagnosisResult?.emergency === 'high' || diagnosisResult?.emergency === 'medium') && (
+              <div className="dr-hospital-alert">
+                <div className="dr-hospital-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </div>
+                <div className="dr-hospital-content">
+                  <strong>중요 안내사항</strong>
+                  <p>{diagnosisResult?.hospitalVisitTime || '가능한 빨리'} 병원 방문을 권장합니다.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dr-overlay">
@@ -220,11 +339,15 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
 
           {/* 반려동물 정보 카드 */}
           <div className="dr-pet-card">
-            <div className="dr-pet-avatar">
+            <div className="dr-pet-avatar-square">
               {petInfo.profileImage ? (
                 <img src={petInfo.profileImage} alt={petInfo.name} />
               ) : (
-                <span className="dr-pet-emoji">{getPetEmoji()}</span>
+                <div className="dr-pet-icon-placeholder">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="#f59e0b">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
               )}
             </div>
             <div className="dr-pet-details">
@@ -258,32 +381,26 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
             </div>
           </div>
 
-          {/* 증상 정보 */}
-          {symptomData && (
-            <div className="dr-section">
-              <h3 className="dr-section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2">
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                </svg>
-                증상 정보
-              </h3>
-              {symptomData?.department && (
-                <p className="dr-symptom-department">진료과목: {symptomData.department}</p>
-              )}
-              {symptomData?.selectedSymptoms?.length > 0 && (
-                <div className="dr-symptom-tags">
-                  {symptomData.selectedSymptoms.map((symptom, idx) => (
-                    <span key={idx} className="dr-symptom-tag">{symptom}</span>
-                  ))}
-                </div>
-              )}
-              {(symptomData?.userDescription || symptomData?.description) && (
-                <div className="dr-description-box">
-                  {symptomData?.userDescription || symptomData?.description}
-                </div>
-              )}
+          {/* 보호자 정보 */}
+          <div className="dr-guardian-card">
+            <div className="dr-guardian-header">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>보호자 정보</span>
             </div>
-          )}
+            <div className="dr-guardian-content">
+              <div className="dr-guardian-item">
+                <span className="dr-guardian-label">보호자 이름</span>
+                <span className="dr-guardian-value">{guardianName} 님</span>
+              </div>
+              <div className="dr-guardian-item">
+                <span className="dr-guardian-label">진행 중</span>
+                <span className="dr-guardian-value dr-guardian-method">{loginMethod}</span>
+              </div>
+            </div>
+          </div>
 
           {/* 진단 결과 카드 */}
           <div className="dr-diagnosis-card">
@@ -297,6 +414,9 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
                 <h3>진단 결과</h3>
               </div>
               <div className="dr-emergency-badges">
+                {isAcute && (
+                  <span className="dr-badge dr-badge-acute">급성</span>
+                )}
                 <span className="dr-badge" style={{ backgroundColor: emergencyInfo.color }}>
                   {emergencyInfo.text}
                 </span>
@@ -304,15 +424,17 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
             </div>
 
             <div className="dr-diagnosis-content">
-              <h4 className="dr-diagnosis-name">{diagnosisResult?.diagnosis || '진단 결과 없음'}</h4>
+              <div className="dr-diagnosis-inner-card">
+                <h4 className="dr-diagnosis-name">{diagnosisResult?.diagnosis || '진단 결과 없음'}</h4>
 
-              {/* 신뢰도 바 */}
-              <div className="dr-confidence">
-                <span className="dr-confidence-label">신뢰도</span>
-                <div className="dr-confidence-bar">
-                  <div className="dr-confidence-fill" style={{ width: `${confidenceLevel}%` }}></div>
+                {/* 신뢰도 바 */}
+                <div className="dr-confidence">
+                  <span className="dr-confidence-label">신뢰도</span>
+                  <div className="dr-confidence-bar">
+                    <div className="dr-confidence-fill" style={{ width: `${confidenceLevel}%` }}></div>
+                  </div>
+                  <span className="dr-confidence-value">{confidenceLevel}%</span>
                 </div>
-                <span className="dr-confidence-value">{confidenceLevel}%</span>
               </div>
 
               {/* 중증도 평가 */}
@@ -336,92 +458,22 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
                   <span className="dr-severity-value">{diagnosisResult.triage_score}/5</span>
                 </div>
               )}
+
+              {/* 상세 진단 내용 보기 버튼 */}
+              <button className="dr-detail-btn" onClick={handleShowDetail}>
+                상세 진단 내용 보기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
             </div>
           </div>
-
-          {/* 상세 설명 */}
-          {diagnosisResult?.description && (
-            <div className="dr-section">
-              <h3 className="dr-section-title">상세 설명</h3>
-              <div className="dr-description-box">
-                {diagnosisResult.description}
-              </div>
-            </div>
-          )}
-
-          {/* 권장 조치사항 */}
-          {diagnosisResult?.actions?.length > 0 && (
-            <div className="dr-section">
-              <h3 className="dr-section-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                권장 조치사항
-              </h3>
-              <div className="dr-actions-list">
-                {diagnosisResult.actions.map((action, idx) => (
-                  <div key={idx} className="dr-action-item">
-                    <div className="dr-action-num">{idx + 1}</div>
-                    <p className="dr-action-text">{action}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 약물 안내 */}
-          {diagnosisResult?.medicationGuidance?.hasMedicationGuidance && (
-            <div className="dr-section dr-medication-section">
-              <h3 className="dr-section-title">약물 안내</h3>
-              <p className="dr-medication-summary">{diagnosisResult.medicationGuidance.message}</p>
-              {diagnosisResult.medicationGuidance.medications?.map((categoryMed, idx) => (
-                <div key={idx} className="dr-medication-category">
-                  <div className="dr-medication-category-title">{categoryMed.category} 관련</div>
-                  {categoryMed.medications?.slice(0, 2).map((med, medIdx) => (
-                    <div key={medIdx} className="dr-medication-item">
-                      <div className="dr-medication-type">{med.type}</div>
-                      <div className="dr-medication-details">
-                        <span>복용: {med.usage}</span>
-                        <span>기간: {med.duration}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-              <p className="dr-medication-disclaimer">{diagnosisResult.medicationGuidance.disclaimer}</p>
-            </div>
-          )}
-
-          {/* 병원 방문 안내 */}
-          {(diagnosisResult?.hospitalVisit || diagnosisResult?.emergency === 'high' || diagnosisResult?.emergency === 'medium') && (
-            <div className="dr-hospital-alert">
-              <div className="dr-hospital-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <div className="dr-hospital-content">
-                <strong>중요 안내사항</strong>
-                <p>{diagnosisResult?.hospitalVisitTime || '가능한 빨리'} 병원 방문을 권장합니다. 증상이 지속되거나 악화될 경우 반드시 전문 수의사의 진료를 받으세요.</p>
-              </div>
-            </div>
-          )}
 
           {/* 하단 안내 */}
           <div className="dr-footer-notice">
+            <span className="dr-notice-icon">💡</span>
             본 진단서는 AI 분석 결과로 참고용입니다.
-            정확한 진단은 반드시 전문 수의사와 상담하세요.
-          </div>
-
-          {/* 푸터 로고 */}
-          <div className="dr-footer-logo">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="#06b6d4">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-            <span>PetMedical.AI</span>
+            <br />정확한 진단은 반드시 전문 수의사와 상담하세요.
           </div>
         </div>
 
@@ -445,10 +497,11 @@ ${diagnosisResult?.actions?.map((action, idx) => `${idx + 1}. ${action}`).join('
             disabled={isSending}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="22" y1="2" x2="11" y2="13"/>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            {isSending ? '전송 중...' : '병원 예약하기'}
+            {isSending ? '전송 중...' : '병원에 전송'}
           </button>
           <button
             className="dr-btn dr-btn-treatment"
