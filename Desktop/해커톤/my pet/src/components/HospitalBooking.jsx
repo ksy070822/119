@@ -536,6 +536,8 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
       id: 'booking_' + Date.now(),
       petId: petData?.id,
       petName: petData?.petName,
+      petSpecies: petData?.species || null, // 동물 종류 (대분류)
+      petBreed: petData?.breed || null, // 품종 (소분류)
       petProfile: petProfile, // 상세 펫 정보 추가
       hospital: {
         id: bookingHospital.id,
@@ -552,11 +554,14 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
       aiDiagnosis: aiDiagnosisData // AI 진단 상세 데이터 포함
     };
 
-    // localStorage에 저장
+    // localStorage에 저장 (사용자별 키 사용)
     try {
-      const existingBookings = JSON.parse(localStorage.getItem('petMedical_bookings') || '[]');
+      const userId = currentUser?.uid;
+      const storageKey = userId ? `petMedical_bookings_${userId}` : 'petMedical_bookings';
+      const existingBookings = JSON.parse(localStorage.getItem(storageKey) || '[]');
       existingBookings.push(bookingData);
-      localStorage.setItem('petMedical_bookings', JSON.stringify(existingBookings));
+      localStorage.setItem(storageKey, JSON.stringify(existingBookings));
+      console.log('✅ 예약 localStorage 저장 완료:', storageKey, bookingData.id);
     } catch (error) {
       console.error('예약 localStorage 저장 실패:', error);
     }
