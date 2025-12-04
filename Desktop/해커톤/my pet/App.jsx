@@ -3966,7 +3966,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
                 margin: '0 0 8px 0',
                 lineHeight: '1.3'
               }}>
-                {diagnosisResult.diagnosis || '진단 결과'}
+                {typeof diagnosisResult.diagnosis === 'string' ? diagnosisResult.diagnosis : (diagnosisResult.diagnosis?.name || '진단 결과')}
               </h2>
               <p style={{
                 fontSize: '13px',
@@ -4362,7 +4362,7 @@ function DiagnosisResultView({ petData, diagnosisResult, symptomData, onGoToTrea
             margin: '0 0 8px 0',
             lineHeight: '1.3'
           }}>
-            {diagnosisResult?.diagnosis || '진단 결과'}
+            {typeof diagnosisResult?.diagnosis === 'string' ? diagnosisResult.diagnosis : (diagnosisResult?.diagnosis?.name || '진단 결과')}
           </h2>
           <p style={{
             fontSize: '13px',
@@ -4840,7 +4840,7 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
                 opacity: 0.9,
                 margin: 0
               }}>
-                {diagnosisResult.diagnosis}
+                {typeof diagnosisResult.diagnosis === 'string' ? diagnosisResult.diagnosis : (diagnosisResult.diagnosis?.name || '')}
               </p>
             )}
           </div>
@@ -6173,7 +6173,9 @@ function App() {
               </h3>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-lg font-semibold text-slate-900 flex-1">
-                  {lastDiagnosis.diagnosis || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상'}
+                  {typeof lastDiagnosis.diagnosis === 'string'
+                    ? lastDiagnosis.diagnosis
+                    : (lastDiagnosis.diagnosis?.name || lastDiagnosis.suspectedConditions?.[0]?.name || '일반 건강 이상')}
                 </p>
                 <span className={`shrink-0 px-3 py-1 rounded-full text-sm font-bold ${
                   lastDiagnosis.riskLevel === 'High' || lastDiagnosis.emergency === 'high' ? 'bg-red-100 text-red-600' :
