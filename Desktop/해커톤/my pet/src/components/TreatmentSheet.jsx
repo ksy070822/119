@@ -16,7 +16,7 @@ export function TreatmentSheet({ booking, clinic, onClose, onSaved, onShared }) 
   const [lastResultId, setLastResultId] = useState(null);
   const [isSharing, setIsSharing] = useState(false);
 
-  // 기존 진단서가 있는지 확인하여 isSaved/lastResultId 초기화
+  // 기존 진단서가 있는지 확인하여 isSaved/lastResultId 초기화 및 폼 데이터 로드
   useEffect(() => {
     const initExistingResult = async () => {
       if (!booking?.id) return;
@@ -25,9 +25,25 @@ export function TreatmentSheet({ booking, clinic, onClose, onSaved, onShared }) 
         const bookingId = booking.bookingId || booking.id;
         const res = await clinicResultService.getResultByBooking(bookingId);
         if (res.success && res.data) {
+          const existingResult = res.data;
           setIsSaved(true);
-          setLastResultId(res.data.id);
-          console.log('[TreatmentSheet] 기존 진단서 발견:', res.data.id);
+          setLastResultId(existingResult.id);
+          
+          // ✅ 기존 진단서 데이터를 폼에 채워넣기
+          if (existingResult.mainDiagnosis) {
+            setMainDiagnosis(existingResult.mainDiagnosis);
+          }
+          if (existingResult.triageScore !== undefined && existingResult.triageScore !== null) {
+            setTriageScore(existingResult.triageScore);
+          }
+          if (existingResult.soap) {
+            setSubjective(existingResult.soap.subjective || '');
+            setObjective(existingResult.soap.objective || '');
+            setAssessment(existingResult.soap.assessment || '');
+            setPlan(existingResult.soap.plan || '');
+          }
+          
+          console.log('[TreatmentSheet] 기존 진단서 발견 및 로드:', existingResult.id);
         }
       } catch (error) {
         console.error('[TreatmentSheet] 기존 진단서 조회 오류:', error);

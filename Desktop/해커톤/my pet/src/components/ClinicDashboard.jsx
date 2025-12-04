@@ -95,7 +95,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
   // 임직원 등록 상태
   const [newStaffEmail, setNewStaffEmail] = useState('');
-  const [newStaffRole, setNewStaffRole] = useState('vet');
+  const [newStaffRole, setNewStaffRole] = useState(''); // 초기값을 빈 문자열로 설정
   const [staffList, setStaffList] = useState([]);
   const [isAddingStaff, setIsAddingStaff] = useState(false);
 
@@ -145,7 +145,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
     const today = getLocalDateString();
     console.log('[실시간 구독 시작] clinicId:', currentClinic.id, '날짜:', today);
-
+    
     const unsubscribes = [];
 
     // clinics ID로 실시간 구독
@@ -159,11 +159,11 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
       const unsubscribe1 = onSnapshot(q1, async (snapshot) => {
         console.log('[실시간] 예약 업데이트:', snapshot.docs.length, '개');
-
+        
         const bookings = [];
         for (const bookingDoc of snapshot.docs) {
           const bookingData = bookingDoc.data();
-
+          
           let pet = null;
           if (bookingData.petId) {
             try {
@@ -173,7 +173,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
               pet = bookingData.pet || bookingData.petProfile || null;
             }
           }
-
+          
           let owner = null;
           if (bookingData.userId) {
             try {
@@ -226,13 +226,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
           setTodayBookings((prev) => {
             const map = new Map(prev.map(b => [b.id, b]));
             for (const bookingDoc of snapshot.docs) {
-              const bookingData = bookingDoc.data();
+                const bookingData = bookingDoc.data();
               const enriched = {
-                ...bookingData,
+                  ...bookingData,
                 id: bookingDoc.id,
                 bookingId: bookingData.bookingId || bookingDoc.id,
-                pet: bookingData.pet || bookingData.petProfile || null,
-                owner: bookingData.owner || null
+                  pet: bookingData.pet || bookingData.petProfile || null,
+                  owner: bookingData.owner || null
               };
               map.set(bookingDoc.id, enriched);
             }
@@ -608,13 +608,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
         <div
           key={day}
           onClick={() => count > 0 && handleDateClick(day)}
-          className={`aspect-square flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer
+          className={`aspect-square flex flex-col items-center justify-start pt-2 rounded-xl transition-all cursor-pointer
             ${isSelected ? 'bg-gradient-to-br from-red-300 to-rose-400 text-white shadow-lg scale-105' :
               isToday ? 'bg-white border-2 border-rose-300 shadow-md' :
               count > 0 ? 'bg-white/90 shadow-sm hover:shadow-md hover:scale-105' :
               'bg-white/30'}
           `}
-          style={{ position: 'relative' }}
         >
           <div className={`text-sm font-bold
             ${isSelected ? 'text-white' :
@@ -627,7 +626,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
             {day}
           </div>
           {count > 0 && (
-            <div className={`absolute bottom-1 text-xs px-1.5 py-0.5 rounded-full font-bold shadow-sm
+            <div className={`mt-1 w-5 h-5 flex items-center justify-center text-[10px] rounded-full font-bold
               ${isSelected ? 'bg-white text-rose-500' : 'bg-gradient-to-r from-red-300 to-rose-400 text-white'}`}
             >
               {count}
@@ -712,6 +711,10 @@ export function ClinicDashboard({ currentUser, onBack }) {
       alert('이메일을 입력해주세요.');
       return;
     }
+    if (!newStaffRole) {
+      alert('직무를 선택해주세요.');
+      return;
+    }
     setIsAddingStaff(true);
     try {
       // 이메일로 사용자 찾기
@@ -732,6 +735,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
       if (result.success) {
         alert('임직원이 등록되었습니다.');
         setNewStaffEmail('');
+        setNewStaffRole(''); // 직무도 초기화
         // 스태프 목록 새로고침
         loadStaffList();
       } else {
@@ -795,25 +799,25 @@ export function ClinicDashboard({ currentUser, onBack }) {
       `}</style>
 
       {/* Header - 로고 중앙 정렬 (파스텔 레드 테마) */}
-      <header className="bg-gradient-to-r from-red-300 to-rose-300 text-white px-4 pt-4 pb-4 shadow-lg">
-        <div className="flex items-center justify-between">
-          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+      <header className="bg-gradient-to-r from-red-300 to-rose-300 px-4 pt-8 pb-8 shadow-lg">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div className="flex items-center justify-center flex-1">
-            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
               <img
                 src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
                 alt="PetMedical.AI"
-                className="w-6 h-6 object-contain"
+                className="w-8 h-8 object-contain"
               />
             </div>
-            <div className="text-center ml-2">
-              <h1 className="text-xl font-bold tracking-tight">PetMedical.AI</h1>
-              <p className="text-red-100 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
+            <div className="text-center ml-3">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">PetMedical.AI</h1>
+              <p className="text-rose-700 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors" title="로그아웃">
+          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800" title="로그아웃">
             <span className="material-symbols-outlined">logout</span>
           </button>
         </div>
@@ -829,7 +833,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
           { id: 'stats', icon: 'analytics', label: '진료 현황' },
           { id: 'settings', icon: 'settings', label: '병원 설정' }
         ].map(tab => (
-          <button
+            <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 min-w-[70px] px-3 py-3 text-xs font-medium text-center border-b-2 transition-all
@@ -839,12 +843,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
           >
             <span className="material-symbols-outlined block text-xl mb-1">{tab.icon}</span>
             {tab.label}
-          </button>
+            </button>
         ))}
       </div>
 
       {/* Content */}
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 max-w-lg mx-auto">
         {/* 홈 탭 - 병원 프로필 및 대시보드 카드 */}
         {activeTab === 'home' && (
           <>
@@ -892,13 +896,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
               </div>
 
               {/* 오늘 진료할 환자 배너 - 클릭 시 오늘 예약 탭으로 이동 */}
-              <button
+            <button
                 onClick={() => { setActiveTab('today'); setTodayFilter('all'); }}
                 className="w-full mt-3 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-bold text-sm py-3 rounded-xl shadow-md hover:shadow-lg transition-all"
-              >
+            >
                 오늘 진료할 환자 {todayBookings.length}명 확인하기 &gt;
-              </button>
-            </div>
+            </button>
+          </div>
 
             {/* 대시보드 카드 영역 */}
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -913,7 +917,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{todayTreatmentCount}</div>
                 <p className="text-xs text-gray-500 mt-1">확정된 진료 대기</p>
-              </div>
+        </div>
 
               {/* 확정 대기 카드 */}
               <div
@@ -926,7 +930,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 </div>
                 <div className="text-3xl font-bold text-gray-900">{pendingCount}</div>
                 <p className="text-xs text-gray-500 mt-1">확정 필요한 예약</p>
-              </div>
+        </div>
 
               {/* 이번달 진료 카드 */}
               <div
@@ -936,10 +940,10 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="material-symbols-outlined text-rose-400">analytics</span>
                   <span className="text-sm font-semibold text-gray-700">이번달 진료</span>
-                </div>
+          </div>
                 <div className="text-3xl font-bold text-gray-900">{monthlyStats.total}</div>
                 <p className="text-xs text-gray-500 mt-1">완료된 진료</p>
-              </div>
+            </div>
 
               {/* 예약 달력 카드 */}
               <div
@@ -949,11 +953,11 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="material-symbols-outlined text-rose-400">calendar_month</span>
                   <span className="text-sm font-semibold text-gray-700">예약 달력</span>
-                </div>
+          </div>
                 <div className="text-3xl font-bold text-gray-900">{monthlyBookings.length}</div>
                 <p className="text-xs text-gray-500 mt-1">이번달 총 예약</p>
-              </div>
             </div>
+          </div>
 
             {/* 병원 설정 바로가기 */}
             <button
@@ -965,8 +969,8 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 <div className="text-left">
                   <p className="text-sm font-semibold text-gray-700">병원 설정</p>
                   <p className="text-xs text-gray-400">병원 정보 및 임직원 관리</p>
-                </div>
-              </div>
+        </div>
+      </div>
               <span className="material-symbols-outlined text-gray-400">chevron_right</span>
             </button>
           </>
@@ -984,14 +988,14 @@ export function ClinicDashboard({ currentUser, onBack }) {
           <div>
             {/* 필터 버튼 */}
             <div className="flex gap-2 mb-3">
-              <button
+          <button
                 onClick={() => setTodayFilter('all')}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   todayFilter === 'all' ? 'bg-rose-400 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 전체 ({todayBookings.length})
-              </button>
+          </button>
               <button
                 onClick={() => setTodayFilter('confirmed')}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
@@ -1008,7 +1012,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
               >
                 확정 대기 ({todayBookings.filter(b => b.status === 'pending').length})
               </button>
-            </div>
+      </div>
 
             <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
               <span className="w-2 h-2 bg-rose-400 rounded-full animate-pulse"></span>
@@ -1039,8 +1043,18 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           </span>
                         )}
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadgeClass(booking.status)}`}>
-                        {getStatusLabel(booking.status)}
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        booking.status === 'completed' && booking.sharedToGuardian
+                          ? 'bg-blue-100 text-blue-800'
+                          : booking.hasResult && !booking.sharedToGuardian
+                          ? 'bg-purple-100 text-purple-800'
+                          : getStatusBadgeClass(booking.status)
+                      }`}>
+                        {booking.status === 'completed' && booking.sharedToGuardian
+                          ? '진료 완료'
+                          : booking.hasResult && !booking.sharedToGuardian
+                          ? '진단서 저장됨'
+                          : getStatusLabel(booking.status)}
                       </span>
                     </div>
 
@@ -1080,7 +1094,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
                     {/* 정보 버튼들 - 양방향 데이터 교류 핵심 */}
                     <div className="grid grid-cols-3 gap-2 mb-3">
-                      <button
+          <button
                         onClick={() => handleShowPatientDetail(booking)}
                         className="p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs font-medium text-rose-700 hover:bg-rose-100 transition-colors flex flex-col items-center gap-1"
                       >
@@ -1097,15 +1111,15 @@ export function ClinicDashboard({ currentUser, onBack }) {
                       >
                         <span className="material-symbols-outlined text-lg">description</span>
                         AI진단서
-                      </button>
-                      <button
-                        onClick={() => handleShowHistory(booking)}
+          </button>
+          <button
+            onClick={() => handleShowHistory(booking)}
                         className="p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors flex flex-col items-center gap-1"
-                      >
+          >
                         <span className="material-symbols-outlined text-lg">history</span>
                         과거기록
-                      </button>
-                    </div>
+          </button>
+        </div>
 
                     {/* 액션 버튼 - 상태별 분기 */}
                     <div className="grid grid-cols-2 gap-2">
@@ -1132,12 +1146,20 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           : '예약 상태'}
                       </button>
 
-                      {/* 우측 버튼: 진료 시작 / 진료 결과 보기 */}
+                      {/* 우측 버튼: 진료 시작 / 보호자에게 공유하기 / 진료 결과 보기 */}
                       <button
                         onClick={() => {
-                          if (booking.status === 'confirmed') {
+                          if (booking.status === 'pending') {
+                            // pending 상태에서는 아무 동작 안 함
+                            return;
+                          } else if (booking.status === 'confirmed' && !booking.hasResult) {
+                            // 진료 예정이고 진단서가 없으면 진료 시작
                             handleStartTreatment(booking.id);
-                          } else if (booking.status === 'completed') {
+                          } else if (booking.status === 'confirmed' && booking.hasResult && !booking.sharedToGuardian) {
+                            // 진단서 저장됐지만 공유 전이면 TreatmentSheet 열기 (공유하기)
+                            handleStartTreatment(booking.id);
+                          } else if (booking.status === 'completed' || booking.sharedToGuardian) {
+                            // 완료 상태면 진료 결과 보기
                             handleShowResultDetail(booking);
                           }
                         }}
@@ -1145,23 +1167,29 @@ export function ClinicDashboard({ currentUser, onBack }) {
                         className={`py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5
                           ${booking.status === 'pending'
                             ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                            : booking.status === 'confirmed'
-                            ? 'bg-sky-600 text-white hover:bg-sky-700'
+                            : booking.hasResult && !booking.sharedToGuardian
+                            ? 'bg-purple-600 text-white hover:bg-purple-700'
                             : 'bg-sky-600 text-white hover:bg-sky-700'}`}
                       >
                         {booking.status === 'pending' && (
                           <>
-                            <span className="material-symbols-outlined text-lg">play_arrow</span>
-                            진료 시작
+                        <span className="material-symbols-outlined text-lg">play_arrow</span>
+                        진료 시작
                           </>
                         )}
-                        {booking.status === 'confirmed' && (
+                        {booking.status === 'confirmed' && !booking.hasResult && (
                           <>
                             <span className="material-symbols-outlined text-lg">play_arrow</span>
                             진료 시작
                           </>
                         )}
-                        {booking.status === 'completed' && (
+                        {booking.status === 'confirmed' && booking.hasResult && !booking.sharedToGuardian && (
+                          <>
+                            <span className="material-symbols-outlined text-lg">send</span>
+                            보호자에게 공유하기
+                          </>
+                        )}
+                        {(booking.status === 'completed' || booking.sharedToGuardian) && (
                           <>
                             <span className="material-symbols-outlined text-lg">description</span>
                             진료 결과 보기
@@ -1185,12 +1213,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
               <div>
                 {/* 뒤로가기 헤더 */}
                 <div className="flex items-center gap-3 mb-4">
-                  <button
+                <button
                     onClick={() => { setSelectedPatient(null); setPatientRecords([]); }}
                     className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
-                  >
+                >
                     <span className="material-symbols-outlined text-gray-600">arrow_back</span>
-                  </button>
+                </button>
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-rose-100 to-pink-100 overflow-hidden border-2 border-rose-200">
                       <img
@@ -1198,13 +1226,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
                         alt={selectedPatient.name}
                         className="w-full h-full object-cover"
                       />
-                    </div>
+                  </div>
                     <div>
                       <h2 className="text-lg font-bold text-gray-900">{selectedPatient.name}</h2>
                       <p className="text-sm text-gray-500">
                         {SPECIES_LABELS[selectedPatient.species] || '기타'} · 방문 {selectedPatient.visitCount}회
                       </p>
-                    </div>
+                </div>
                   </div>
                 </div>
 
@@ -1270,17 +1298,17 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
                         {/* AI 진단서 보기 버튼 */}
                         {(record.aiDiagnosis || record.diagnosisId) && (
-                          <button
+                <button
                             onClick={() => handleShowAIDiagnosis(record)}
                             className="w-full py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-semibold hover:bg-emerald-200 transition-colors flex items-center justify-center gap-1.5"
-                          >
+                >
                             <span className="material-symbols-outlined text-lg">smart_toy</span>
                             AI 진단서 보기
-                          </button>
+                </button>
                         )}
-                      </div>
+              </div>
                     ))}
-                  </div>
+            </div>
                 )}
               </div>
             ) : (
@@ -1296,7 +1324,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     <div className="text-5xl mb-3">📁</div>
                     <p className="text-gray-400">등록된 환자가 없습니다</p>
                     <p className="text-gray-300 text-sm mt-1">예약이 들어오면 자동으로 추가됩니다</p>
-                  </div>
+              </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     {patientList.map((patient, index) => (
@@ -1313,7 +1341,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                               alt={patient.name}
                               className="w-full h-full object-cover"
                             />
-                          </div>
+            </div>
                         </div>
 
                         {/* 환자 정보 */}
@@ -1493,7 +1521,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                 <div className="text-center py-6 text-gray-400">
                   <span className="material-symbols-outlined text-3xl block mb-2">bar_chart</span>
                   이번 달 진료 기록이 없습니다
-                </div>
+                      </div>
               ) : (
                 <div className="space-y-2">
                   {Object.entries(monthlyStats.speciesCount)
@@ -1507,13 +1535,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
                               className="h-full bg-gradient-to-r from-red-300 to-rose-400 rounded-full"
                               style={{ width: `${(count / monthlyStats.total) * 100}%` }}
                             />
-                          </div>
+                    </div>
                           <span className="font-bold text-rose-500 w-8 text-right">{count}</span>
                         </div>
                       </div>
                     ))}
-                </div>
-              )}
+              </div>
+            )}
             </div>
           </div>
         )}
@@ -1522,41 +1550,41 @@ export function ClinicDashboard({ currentUser, onBack }) {
         {activeTab === 'settings' && (
           <div className="space-y-4">
             {/* 병원 정보 섹션 */}
-            <div>
-              <h2 className="font-bold text-gray-900 mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-900 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-rose-400">local_hospital</span>
                   병원 정보
                 </span>
-                {!isEditingClinic && (
-                  <button
+              {!isEditingClinic && (
+                <button
                     className="px-3 py-1.5 text-xs rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                    onClick={() => {
-                      setEditClinic({
-                        name: currentClinic?.name || '',
-                        address: currentClinic?.address || '',
-                        phone: currentClinic?.phone || ''
-                      });
-                      setIsEditingClinic(true);
-                    }}
-                  >
-                    수정
-                  </button>
-                )}
-              </h2>
+                  onClick={() => {
+                    setEditClinic({
+                      name: currentClinic?.name || '',
+                      address: currentClinic?.address || '',
+                      phone: currentClinic?.phone || ''
+                    });
+                    setIsEditingClinic(true);
+                  }}
+                >
+                  수정
+                </button>
+              )}
+            </h2>
 
               <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
+              <div>
                     <div className="text-xs font-semibold text-gray-500 mb-1">병원명</div>
-                    {isEditingClinic ? (
-                      <input
-                        type="text"
+                {isEditingClinic ? (
+                  <input
+                    type="text"
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        value={editClinic?.name || ''}
-                        onChange={e => setEditClinic(prev => ({ ...prev, name: e.target.value }))}
-                      />
-                    ) : (
+                    value={editClinic?.name || ''}
+                    onChange={e => setEditClinic(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                ) : (
                       <div className="text-sm text-gray-900 font-medium">{currentClinic?.name}</div>
                     )}
                   </div>
@@ -1568,67 +1596,67 @@ export function ClinicDashboard({ currentUser, onBack }) {
                        currentClinic?.staffRole === 'nurse' ? '간호사' : '스태프'}
                     </div>
                   </div>
-                </div>
+              </div>
 
-                <div>
+              <div>
                   <div className="text-xs font-semibold text-gray-500 mb-1">주소</div>
-                  {isEditingClinic ? (
-                    <textarea
+                {isEditingClinic ? (
+                  <textarea
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={2}
-                      value={editClinic?.address || ''}
-                      onChange={e => setEditClinic(prev => ({ ...prev, address: e.target.value }))}
-                    />
-                  ) : (
+                    rows={2}
+                    value={editClinic?.address || ''}
+                    onChange={e => setEditClinic(prev => ({ ...prev, address: e.target.value }))}
+                  />
+                ) : (
                     <div className="text-sm text-gray-600">{currentClinic?.address || '주소 정보 없음'}</div>
-                  )}
-                </div>
+                )}
+              </div>
 
-                <div>
+              <div>
                   <div className="text-xs font-semibold text-gray-500 mb-1">전화번호</div>
-                  {isEditingClinic ? (
-                    <input
-                      type="text"
+                {isEditingClinic ? (
+                  <input
+                    type="text"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={editClinic?.phone || ''}
-                      onChange={e => setEditClinic(prev => ({ ...prev, phone: e.target.value }))}
-                    />
-                  ) : (
+                    value={editClinic?.phone || ''}
+                    onChange={e => setEditClinic(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                ) : (
                     <div className="text-sm text-gray-600">{currentClinic?.phone || '전화번호 정보 없음'}</div>
-                  )}
-                </div>
+                )}
+              </div>
 
-                {isEditingClinic && (
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
+              {isEditingClinic && (
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
                       className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                       onClick={() => { setEditClinic(null); setIsEditingClinic(false); }}
-                    >
-                      취소
-                    </button>
-                    <button
+                  >
+                    취소
+                  </button>
+                  <button
                       className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                      onClick={async () => {
-                        if (!currentClinic?.id) return;
-                        try {
-                          const { updateClinicInfo } = await import('../services/clinicService');
+                    onClick={async () => {
+                      if (!currentClinic?.id) return;
+                      try {
+                        const { updateClinicInfo } = await import('../services/clinicService');
                           const res = await updateClinicInfo(currentClinic.id, editClinic);
-                          if (!res?.success) {
+                        if (!res?.success) {
                             alert('병원 정보 수정에 실패했습니다.');
-                            return;
-                          }
-                          setCurrentClinic(prev => ({ ...prev, ...editClinic }));
-                          setIsEditingClinic(false);
-                          alert('병원 정보가 수정되었습니다.');
-                        } catch (error) {
-                          alert('병원 정보 수정에 실패했습니다.');
+                          return;
                         }
-                      }}
-                    >
-                      저장
-                    </button>
-                  </div>
-                )}
+                          setCurrentClinic(prev => ({ ...prev, ...editClinic }));
+                        setIsEditingClinic(false);
+                          alert('병원 정보가 수정되었습니다.');
+                      } catch (error) {
+                          alert('병원 정보 수정에 실패했습니다.');
+                      }
+                    }}
+                  >
+                    저장
+                  </button>
+                </div>
+              )}
               </div>
             </div>
 
@@ -1682,10 +1710,17 @@ export function ClinicDashboard({ currentUser, onBack }) {
                       onChange={e => setNewStaffEmail(e.target.value)}
                     />
                     <select
-                      className="border border-gray-300 rounded-lg px-2 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white cursor-pointer min-w-[100px]"
                       value={newStaffRole}
                       onChange={e => setNewStaffRole(e.target.value)}
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.5rem center',
+                        backgroundSize: '12px'
+                      }}
                     >
+                      <option value="" disabled>직무</option>
                       <option value="vet">수의사</option>
                       <option value="nurse">간호사</option>
                       <option value="staff">스태프</option>
@@ -1711,10 +1746,51 @@ export function ClinicDashboard({ currentUser, onBack }) {
           booking={activeTreatmentBooking}
           clinic={currentClinic}
           onClose={() => setActiveTreatmentBooking(null)}
-          onSaved={() => loadClinicData()}
-          onShared={() => {
+          onSaved={async () => {
+            // ✅ 진단서 저장 후 해당 booking의 hasResult를 즉시 갱신
+            const bookingId = activeTreatmentBooking.bookingId || activeTreatmentBooking.id;
+            const enriched = await enrichBookingWithResult(activeTreatmentBooking);
+            
+            setTodayBookings(prev => 
+              prev.map(b => {
+                if (b.id === activeTreatmentBooking.id || b.bookingId === bookingId) {
+                  return enriched;
+                }
+                return b;
+              })
+            );
+            
+            // 전체 데이터도 갱신 (권한 오류 시 무시)
+            try {
+              await loadClinicData();
+            } catch (error) {
+              console.warn('병원 데이터 갱신 중 오류 (무시):', error);
+              // 권한 오류는 무시하고 계속 진행
+            }
+          }}
+          onShared={async () => {
+            // ✅ 공유 완료 후 해당 booking의 상태를 즉시 갱신
+            const bookingId = activeTreatmentBooking.bookingId || activeTreatmentBooking.id;
+            const enriched = await enrichBookingWithResult(activeTreatmentBooking);
+            
+            setTodayBookings(prev => 
+              prev.map(b => {
+                if (b.id === activeTreatmentBooking.id || b.bookingId === bookingId) {
+                  return { ...enriched, sharedToGuardian: true, status: 'completed' };
+                }
+                return b;
+              })
+            );
+            
             setActiveTreatmentBooking(null);
-            loadClinicData();
+            
+            // 전체 데이터도 갱신 (권한 오류 시 무시)
+            try {
+              await loadClinicData();
+            } catch (error) {
+              console.warn('병원 데이터 갱신 중 오류 (무시):', error);
+              // 권한 오류는 무시하고 계속 진행
+            }
           }}
         />
       )}
@@ -1743,7 +1819,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div>
+              <div>
                   <h4 className="text-xl font-bold text-gray-900">{selectedBooking.pet?.name || '미등록'}</h4>
                   <p className="text-gray-600">
                     {SPECIES_LABELS[selectedBooking.pet?.species] || '기타'} · {selectedBooking.pet?.breed || '품종 미상'}
@@ -1809,7 +1885,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     <span className="font-medium text-amber-900">{selectedBooking.symptom || selectedBooking.message || '없음'}</span>
                   </div>
                 </div>
-              </div>
+                  </div>
 
               {/* AI 진단 요약 */}
               {(selectedBooking.aiDiagnosis || selectedBooking.diagnosisId) && (
@@ -1823,7 +1899,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     {selectedBooking.aiDiagnosis?.description && (
                       <p className="mt-1 text-emerald-700 line-clamp-3">{selectedBooking.aiDiagnosis.description}</p>
                     )}
-                  </div>
+                      </div>
                   <button
                     onClick={() => {
                       setDetailModalType(null);
@@ -1834,12 +1910,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
                     AI 진단서 상세보기
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </button>
-                </div>
-              )}
+                        </div>
+                      )}
             </div>
           </div>
-        </div>
-      )}
+                        </div>
+                      )}
 
       {/* AI 진단서 상세보기 모달 */}
       {aiDiagnosisModal && (
@@ -1866,11 +1942,11 @@ export function ClinicDashboard({ currentUser, onBack }) {
                   alt="pet"
                   className="w-12 h-12 rounded-full object-cover"
                 />
-                <div>
+                        <div>
                   <div className="font-bold text-gray-900">{aiDiagnosisModal.booking?.pet?.name || '환자'}</div>
                   <div className="text-sm text-gray-500">
                     {aiDiagnosisModal.booking?.owner?.displayName || '보호자'}님이 전송
-                  </div>
+                        </div>
                 </div>
               </div>
 
@@ -1905,13 +1981,13 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
               {/* 상세 설명 */}
               {aiDiagnosisModal.diagnosis?.description && (
-                <div>
+                        <div>
                   <div className="text-sm font-semibold text-gray-700 mb-2">상세 설명</div>
                   <div className="bg-gray-50 p-3 rounded-xl text-sm text-gray-700">
                     {aiDiagnosisModal.diagnosis.description}
-                  </div>
-                </div>
-              )}
+                        </div>
+                    </div>
+                  )}
 
               {/* 권장 조치 */}
               {aiDiagnosisModal.diagnosis?.actions?.length > 0 && (
@@ -1924,9 +2000,9 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           {idx + 1}
                         </span>
                         <span className="text-sm text-gray-700">{action}</span>
-                      </div>
+                </div>
                     ))}
-                  </div>
+            </div>
                 </div>
               )}
 
@@ -1958,7 +2034,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
             </div>
 
             <div className="p-4">
-              {historyLoading ? (
+            {historyLoading ? (
                 <div className="py-10 text-center text-gray-400">
                   <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
                   불러오는 중...
@@ -1971,7 +2047,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
                       <span className="material-symbols-outlined text-emerald-500 text-lg">smart_toy</span>
                       AI 진단 기록
                     </h4>
-                    {historyData.diagnoses.length === 0 ? (
+                  {historyData.diagnoses.length === 0 ? (
                       <div className="text-sm text-gray-400 bg-gray-50 p-3 rounded-lg">기록 없음</div>
                     ) : (
                       <div className="space-y-2">
@@ -1979,22 +2055,22 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           <div key={d.id} className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
                             <div className="text-xs text-emerald-600 mb-1">
                               {d.createdAt?.toDate ? new Date(d.createdAt.toDate()).toLocaleDateString('ko-KR') : d.createdAt}
-                            </div>
+                          </div>
                             <div className="font-semibold text-emerald-900">{d.diagnosis}</div>
                             {d.symptom && <div className="text-sm text-emerald-700 mt-1">{d.symptom}</div>}
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                  )}
+                </div>
 
                   {/* 병원 진료 기록 */}
-                  <div>
+                <div>
                     <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-1">
                       <span className="material-symbols-outlined text-rose-400 text-lg">local_hospital</span>
                       병원 진료 기록
                     </h4>
-                    {historyData.results.length === 0 ? (
+                  {historyData.results.length === 0 ? (
                       <div className="text-sm text-gray-400 bg-gray-50 p-3 rounded-lg">기록 없음</div>
                     ) : (
                       <div className="space-y-2">
@@ -2008,8 +2084,8 @@ export function ClinicDashboard({ currentUser, onBack }) {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                  )}
+                </div>
                 </div>
               )}
             </div>
@@ -2047,25 +2123,25 @@ export function ClinicDashboard({ currentUser, onBack }) {
               {selectedResult.soap && (
                 <div className="space-y-3">
                   {selectedResult.soap.subjective && (
-                    <div>
+                  <div>
                       <div className="text-sm font-semibold text-gray-700 mb-1">Subjective (보호자 설명)</div>
                       <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{selectedResult.soap.subjective}</div>
                     </div>
                   )}
                   {selectedResult.soap.objective && (
-                    <div>
+                  <div>
                       <div className="text-sm font-semibold text-gray-700 mb-1">Objective (진찰 소견)</div>
                       <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{selectedResult.soap.objective}</div>
                     </div>
                   )}
                   {selectedResult.soap.assessment && (
-                    <div>
+                  <div>
                       <div className="text-sm font-semibold text-gray-700 mb-1">Assessment (평가)</div>
                       <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{selectedResult.soap.assessment}</div>
                     </div>
                   )}
                   {selectedResult.soap.plan && (
-                    <div>
+                  <div>
                       <div className="text-sm font-semibold text-gray-700 mb-1">Plan (치료 계획)</div>
                       <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-700">{selectedResult.soap.plan}</div>
                     </div>
