@@ -5457,7 +5457,7 @@ function App() {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(payload.notification?.title || payload.data?.title || '알림', {
           body: payload.notification?.body || payload.data?.body || '',
-          icon: '/icon/dog.png',
+          icon: PROFILE_IMAGES.dog,
           tag: payload.data?.type || 'notification',
           data: payload.data || {}
         });
