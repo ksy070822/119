@@ -608,13 +608,12 @@ export function ClinicDashboard({ currentUser, onBack }) {
         <div
           key={day}
           onClick={() => count > 0 && handleDateClick(day)}
-          className={`aspect-square flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer
+          className={`aspect-square flex flex-col items-center justify-start pt-2 rounded-xl transition-all cursor-pointer
             ${isSelected ? 'bg-gradient-to-br from-red-300 to-rose-400 text-white shadow-lg scale-105' :
               isToday ? 'bg-white border-2 border-rose-300 shadow-md' :
               count > 0 ? 'bg-white/90 shadow-sm hover:shadow-md hover:scale-105' :
               'bg-white/30'}
           `}
-          style={{ position: 'relative' }}
         >
           <div className={`text-sm font-bold
             ${isSelected ? 'text-white' :
@@ -627,7 +626,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
             {day}
           </div>
           {count > 0 && (
-            <div className={`absolute bottom-1 text-xs px-1.5 py-0.5 rounded-full font-bold shadow-sm
+            <div className={`mt-1 w-5 h-5 flex items-center justify-center text-[10px] rounded-full font-bold
               ${isSelected ? 'bg-white text-rose-500' : 'bg-gradient-to-r from-red-300 to-rose-400 text-white'}`}
             >
               {count}
@@ -795,25 +794,25 @@ export function ClinicDashboard({ currentUser, onBack }) {
       `}</style>
 
       {/* Header - 로고 중앙 정렬 (파스텔 레드 테마) */}
-      <header className="bg-gradient-to-r from-red-300 to-rose-300 text-white px-4 pt-4 pb-4 shadow-lg">
-        <div className="flex items-center justify-between">
-          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+      <header className="bg-gradient-to-r from-red-300 to-rose-300 px-4 pt-8 pb-8 shadow-lg">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800">
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
           <div className="flex items-center justify-center flex-1">
-            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
               <img
                 src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
                 alt="PetMedical.AI"
-                className="w-6 h-6 object-contain"
+                className="w-8 h-8 object-contain"
               />
             </div>
-            <div className="text-center ml-2">
-              <h1 className="text-xl font-bold tracking-tight">PetMedical.AI</h1>
-              <p className="text-red-100 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
+            <div className="text-center ml-3">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">PetMedical.AI</h1>
+              <p className="text-rose-700 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors" title="로그아웃">
+          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800" title="로그아웃">
             <span className="material-symbols-outlined">logout</span>
           </button>
         </div>
@@ -844,7 +843,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 pb-24">
+      <div className="p-4 pb-24 max-w-lg mx-auto">
         {/* 홈 탭 - 병원 프로필 및 대시보드 카드 */}
         {activeTab === 'home' && (
           <>
