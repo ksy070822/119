@@ -530,10 +530,21 @@ function ProfileRegistration({ onComplete, userId }) {
   return (
     <div className="registration-container">
       <div className="registration-card">
-        <div className="header-gradient">
-          <h1>🐾 PetMedical.AI</h1>
-          <p>반려동물 건강 관리의 시작</p>
-        </div>
+        <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
+          <div className="flex items-center justify-center">
+            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+              <img
+                src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
+                alt="PetMedical.AI"
+                className="w-12 h-12 object-contain"
+              />
+            </div>
+            <div className="text-center ml-4">
+              <h1 className="text-3xl font-bold tracking-tight">PetMedical.AI</h1>
+              <p className="text-sky-100 text-base font-medium">반려동물 건강 관리의 시작</p>
+            </div>
+          </div>
+        </header>
         
         {loading ? (
           <div className="loading-container">
