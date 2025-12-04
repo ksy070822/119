@@ -529,9 +529,16 @@ export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
       return;
     }
 
+    // 오늘 예약 목록 업데이트
     setTodayBookings(prev =>
       prev.map(b => b.id === targetId ? { ...b, status: 'confirmed' } : b)
     );
+
+    // 월별 예약 목록도 업데이트 (달력 반영)
+    setMonthlyBookings(prev =>
+      prev.map(b => b.id === targetId ? { ...b, status: 'confirmed' } : b)
+    );
+
     alert('예약이 확정되었습니다.');
   };
 
@@ -859,24 +866,29 @@ export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
       `}</style>
 
-      {/* Header - 로고 중앙 정렬 (로그인 화면과 유사한 형태) */}
+      {/* Header - 로고 좌측, 텍스트 중앙 (파스텔 레드 테마) */}
       <header className="bg-gradient-to-r from-red-300 to-rose-300 px-4 pt-8 pb-8 shadow-lg">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800">
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div className="flex flex-col items-center justify-center flex-1">
-            <div className="flex items-center gap-3">
+        <div className="flex items-center max-w-lg mx-auto">
+          {/* 좌측: 뒤로가기 + 로고 */}
+          <div className="flex items-center gap-2">
+            <button onClick={onBack} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800">
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md">
               <img
                 src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
                 alt="PetMedical.AI"
-                className="w-12 h-12 object-contain"
+                className="w-10 h-10 object-contain"
               />
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">PetMedical.AI</h1>
             </div>
-            <p className="text-rose-700 text-xs font-medium mt-1">AI기반 반려동물 건강관리 플랫폼</p>
           </div>
-          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors text-gray-800" title="로그아웃">
+          {/* 중앙: 텍스트 영역 */}
+          <div className="flex-1 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">PetMedical.AI</h1>
+            <p className="text-white text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
+          </div>
+          {/* 우측: 로그아웃 */}
+          <button onClick={handleLogout} className="p-2 hover:bg-white/20 rounded-full transition-colors text-white" title="로그아웃">
             <span className="material-symbols-outlined">logout</span>
           </button>
         </div>
