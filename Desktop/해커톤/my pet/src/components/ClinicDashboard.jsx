@@ -57,7 +57,7 @@ const getLocalDateString = (date = new Date()) => {
   return `${year}-${month}-${day}`;
 };
 
-export function ClinicDashboard({ currentUser, onBack }) {
+export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
   const [loading, setLoading] = useState(true);
   const [currentClinic, setCurrentClinic] = useState(null);
   const [clinics, setClinics] = useState([]);
@@ -2213,6 +2213,22 @@ export function ClinicDashboard({ currentUser, onBack }) {
           </div>
         </div>
       )}
+
+      {/* 하단 고정 네비게이션 - 보호자 모드 전환 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="flex items-center justify-center p-3">
+          <button
+            onClick={onModeSwitch}
+            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all"
+          >
+            <span>🐕</span>
+            <span>보호자 모드로 전환</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 하단 네비게이션 공간 확보 */}
+      <div className="h-20"></div>
     </div>
   );
 }
