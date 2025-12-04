@@ -1483,33 +1483,33 @@ export function ClinicDashboard({ currentUser, onBack }) {
 
             {/* 요약 카드 */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-gradient-to-br from-red-300 to-rose-400 text-white p-4 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-br from-red-300 to-rose-400 text-white p-4 rounded-2xl shadow-lg text-center">
                 <div className="text-3xl font-bold">{monthlyStats.total}</div>
                 <div className="text-red-100 text-sm">총 진료 완료</div>
               </div>
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-500 text-white p-4 rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-br from-sky-400 to-sky-500 text-white p-4 rounded-2xl shadow-lg text-center">
                 <div className="text-3xl font-bold">{monthlyStats.estimatedRevenue.toLocaleString()}원</div>
-                <div className="text-blue-100 text-sm">예상 매출</div>
-                        </div>
-                      </div>
+                <div className="text-sky-100 text-sm">예상 매출</div>
+              </div>
+            </div>
 
             {/* 예약 현황 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm mb-4">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-500">event_note</span>
                 예약 현황
-                          </h3>
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-amber-50 p-3 rounded-xl text-center border border-amber-200">
                   <div className="text-2xl font-bold text-amber-600">{monthlyStats.pendingCount}</div>
                   <div className="text-xs text-amber-700">확정 대기</div>
-                        </div>
+                </div>
                 <div className="bg-green-50 p-3 rounded-xl text-center border border-green-200">
                   <div className="text-2xl font-bold text-green-600">{monthlyStats.confirmedCount}</div>
                   <div className="text-xs text-green-700">확정됨</div>
-                      </div>
-                        </div>
-                      </div>
+                </div>
+              </div>
+            </div>
 
             {/* 종류별 진료 수 */}
             <div className="bg-white rounded-2xl p-4 shadow-sm">

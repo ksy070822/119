@@ -786,11 +786,13 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                     const actions = record.actions || record.recommendedActions || [];
                     
                     return (
-                      <div 
-                        key={record.id} 
+                      <div
+                        key={record.id}
                         className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
                         onClick={() => {
                           if (onViewDiagnosis) {
+                            // 돌아올 때 진료기록 탭으로 돌아오도록 설정
+                            localStorage.setItem('mypage_initialTab', 'records');
                             onViewDiagnosis({ ...record, pet });
                           }
                         }}
@@ -884,11 +886,13 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
                     const soap = record.soap || {};
                     
                     return (
-                      <div 
-                        key={record.id} 
+                      <div
+                        key={record.id}
                         className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
                         onClick={() => {
                           if (onViewDiagnosis) {
+                            // 돌아올 때 진료기록 탭으로 돌아오도록 설정
+                            localStorage.setItem('mypage_initialTab', 'records');
                             onViewDiagnosis({ ...record, pet });
                           }
                         }}

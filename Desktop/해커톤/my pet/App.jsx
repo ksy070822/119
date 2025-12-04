@@ -1236,15 +1236,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
             <div className="h-full overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
               {/* Header - 회사 로고 가운데 배치 */}
               <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-center relative">
                   <div className="flex items-center">
-                    <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
-                      <img
-                        src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
-                        alt="PetMedical.AI"
-                        className="w-10 h-10 object-contain"
-                      />
-                    </div>
+                    <img
+                      src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
+                      alt="PetMedical.AI"
+                      className="w-12 h-12 object-contain"
+                    />
                     <div className="text-left ml-3">
                       <h1 className="text-2xl font-bold tracking-tight">PetMedical.AI</h1>
                       <p className="text-sky-100 text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
@@ -1256,7 +1254,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
                         onLogout && onLogout();
                       }
                     }}
-                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                    className="absolute right-0 p-2 hover:bg-white/20 rounded-lg transition-colors"
                     title="로그아웃"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
