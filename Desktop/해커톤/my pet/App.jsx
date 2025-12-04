@@ -1290,20 +1290,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
                         <div className="flex-1 flex flex-col justify-between py-2">
                           <div className="flex flex-col items-center justify-center text-center w-full">
-                            <p className="text-xl font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
+                            <span className="inline-block bg-gradient-to-r from-sky-500 to-sky-600 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-md mb-2">
+                              AI 전문 의료진 24시간 대기
+                            </span>
                             <p className="text-xl font-display font-bold text-gray-900 mt-1.5 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
                             <p className="text-lg font-semibold text-sky-600 mt-2.5 w-full">
                               오늘도 든든한 케어 시작!
                             </p>
-                            <button
-                              onClick={() => onNavigate('profile-list')}
-                              className="text-sm text-sky-600 font-semibold mt-2"
-                            >
-                              반려동물 변경하기 &gt;
-                            </button>
                           </div>
 
-                          <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap mt-2">
                             <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                               {getSpeciesDisplay()}
                             </span>
@@ -1315,11 +1311,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                             <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
                               {calculateAge(petData.birthDate)}
                             </span>
-                            {todayWeight && (
-                              <span className="text-[11px] text-sky-700 font-semibold bg-sky-100 px-2.5 py-1 rounded-full border border-sky-200">
-                                {todayWeight}kg
-                              </span>
-                            )}
+                            <button
+                              onClick={() => onNavigate('profile-list')}
+                              className="text-[11px] text-amber-800 font-semibold bg-amber-100 px-2.5 py-1 rounded-full border border-amber-300 hover:bg-amber-200 transition-colors"
+                            >
+                              동물변경
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1700,17 +1697,13 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
 
                 <div className="flex-1 flex flex-col justify-between py-2 min-w-0">
                   <div className="flex flex-col items-center justify-center text-center w-full">
-                    <p className="text-base sm:text-lg font-display font-bold text-gray-900 w-full leading-tight">AI 전문 의료진 24시간 대기</p>
+                    <span className="inline-block bg-gradient-to-r from-sky-500 to-sky-600 text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-md mb-2">
+                      AI 전문 의료진 24시간 대기
+                    </span>
                     <p className="text-base sm:text-lg font-display font-bold text-gray-900 mt-1.5 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
                     <p className="text-sm sm:text-base font-semibold text-sky-600 mt-2.5 w-full">
                       오늘도 든든한 케어 시작!
                     </p>
-                    <button
-                      onClick={() => onNavigate('profile-list')}
-                      className="text-xs sm:text-sm text-sky-600 font-semibold mt-2"
-                    >
-                      반려동물 변경하기 &gt;
-                    </button>
                   </div>
 
                   <div className="flex items-center gap-1 flex-wrap mt-2 justify-center">
@@ -1729,11 +1722,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                     <span className="text-[10px] sm:text-[11px] text-sky-700 font-semibold bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
                       {calculateAge(petData.birthDate)}
                     </span>
-                    {todayWeight && (
-                      <span className="text-[10px] sm:text-[11px] text-sky-700 font-semibold bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                        {todayWeight}kg
-                      </span>
-                    )}
+                    <button
+                      onClick={() => onNavigate('profile-list')}
+                      className="text-[10px] sm:text-[11px] text-amber-800 font-semibold bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300 hover:bg-amber-200 transition-colors"
+                    >
+                      동물변경
+                    </button>
                   </div>
                 </div>
               </div>
