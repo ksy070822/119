@@ -5868,6 +5868,16 @@ function App() {
           }}
           onClinicMode={() => setCurrentView('clinic-admin')}
           userId={currentUser?.uid}
+          onPetsUpdate={(updatedPets) => {
+            setPets(updatedPets);
+            // 현재 선택된 반려동물도 업데이트
+            if (petData?.id) {
+              const updatedPet = updatedPets.find(p => p.id === petData.id);
+              if (updatedPet) {
+                setPetData(updatedPet);
+              }
+            }
+          }}
         />
       )}
 
@@ -6216,6 +6226,16 @@ function App() {
               }}
               onClinicMode={() => setCurrentView('clinic-admin')}
               userId={currentUser?.uid}
+              onPetsUpdate={(updatedPets) => {
+                setPets(updatedPets);
+                // 현재 선택된 반려동물도 업데이트
+                if (petData?.id) {
+                  const updatedPet = updatedPets.find(p => p.id === petData.id);
+                  if (updatedPet) {
+                    setPetData(updatedPet);
+                  }
+                }
+              }}
             />
           )}
 

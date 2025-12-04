@@ -128,7 +128,7 @@ const getClinicResultsFromStorage = () => {
   }
 };
 
-export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome, userId }) {
+export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClinicMode, onHome, userId, onPetsUpdate }) {
   // localStorage에서 초기 탭 확인
   const getInitialTab = () => {
     const savedTab = localStorage.getItem('mypage_initialTab');
@@ -266,6 +266,12 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
     } else {
       savePetsToStorage(updatedPets);
     }
+
+    // 부모 컴포넌트에 pets 업데이트 알림
+    if (onPetsUpdate) {
+      onPetsUpdate(updatedPets);
+    }
+
     setEditingPet(null);
     setEditFormData(null);
   };
@@ -285,6 +291,11 @@ export function MyPage({ onBack, onSelectPet, onViewDiagnosis, onAddPet, onClini
         savePetsForUser(userId, updatedPets);
       } else {
         savePetsToStorage(updatedPets);
+      }
+
+      // 부모 컴포넌트에 pets 업데이트 알림
+      if (onPetsUpdate) {
+        onPetsUpdate(updatedPets);
       }
     }
   };
