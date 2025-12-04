@@ -4922,7 +4922,7 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
               <p style={{
                 fontSize: '28px',
                 fontWeight: 'bold',
-                color: '#0891b2',
+                color: '#0ea5e9',
                 margin: 0
               }}>
                 {recoveryTime}
