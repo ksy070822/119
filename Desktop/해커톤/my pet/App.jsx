@@ -1048,7 +1048,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                 <div className="flex items-center justify-center">
                   <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                     <img
-                      src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+                      src={`${import.meta.env.BASE_URL}icon/login/logo_red_line.png`}
                       alt="PetMedical.AI"
                       className="w-10 h-10 object-contain"
                     />
@@ -1457,7 +1457,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         <div className="flex items-center justify-center">
           <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
             <img
-              src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+              src={`${import.meta.env.BASE_URL}icon/login/logo_red_line.png`}
               alt="PetMedical.AI"
               className="w-10 h-10 object-contain"
             />
