@@ -1321,7 +1321,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
 
                         <div className="flex-1 flex flex-col justify-between py-2">
                           <div className="flex flex-col items-center justify-center text-center w-full">
-                            <span className="inline-block bg-sky-500 text-white text-sm font-bold px-4 py-1.5 rounded-lg shadow-md mb-2">
+                            <span className="inline-block bg-sky-400 text-white text-sm font-bold px-4 py-1.5 rounded-lg shadow-md mb-2">
                               AI 전문 의료진 24시간 대기
                             </span>
                             <p className="text-xl font-display font-bold text-gray-900 mt-1.5 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
@@ -1658,9 +1658,9 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
           <div className="min-h-screen overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
       {/* Header - 회사 로고 가운데 배치 */}
       <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="w-10"></div>
-          <div className="flex items-center">
+          <div className="flex items-center justify-center flex-1">
             <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
               <img
                 src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
@@ -1682,7 +1682,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
             className="p-2 hover:bg-white/20 rounded-full transition-colors"
             title="로그아웃"
           >
-            <span className="text-xl">🚪</span>
+            <span className="material-symbols-outlined text-white text-2xl">logout</span>
           </button>
         </div>
       </header>
@@ -1742,7 +1742,7 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
 
                 <div className="flex-1 flex flex-col justify-between py-2 min-w-0">
                   <div className="flex flex-col items-center justify-center text-center w-full">
-                    <span className="inline-block bg-gradient-to-r from-sky-500 to-sky-600 text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-md mb-2">
+                    <span className="inline-block bg-sky-400 text-white text-xs sm:text-sm font-bold px-3 py-1 rounded-full shadow-md mb-2">
                       AI 전문 의료진 24시간 대기
                     </span>
                     <p className="text-base sm:text-lg font-display font-bold text-gray-900 mt-1.5 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
