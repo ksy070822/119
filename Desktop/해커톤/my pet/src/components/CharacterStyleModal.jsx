@@ -1,13 +1,10 @@
 import { useState } from 'react';
 
-// 캐릭터 스타일 옵션
+// 캐릭터 스타일 옵션 - 3가지 표정
 const CHARACTER_STYLES = [
-  { id: 'cute', label: '귀여운 스타일', emoji: '😊', description: '부드럽고 따뜻한 느낌' },
-  { id: 'cartoon', label: '만화 스타일', emoji: '🎨', description: '밝고 활기찬 만화풍' },
-  { id: 'realistic', label: '사실적 스타일', emoji: '📷', description: '자연스럽고 현실적인 느낌' },
-  { id: 'watercolor', label: '수채화 스타일', emoji: '🖌️', description: '부드러운 수채화 느낌' },
-  { id: 'anime', label: '애니메이션 스타일', emoji: '✨', description: '일본 애니메이션 풍' },
-  { id: 'sketch', label: '스케치 스타일', emoji: '✏️', description: '연필 스케치 느낌' }
+  { id: 'happy', label: 'Happy', emoji: '😊', description: '밝고 행복한 표정' },
+  { id: 'funny', label: 'Funny', emoji: '😜', description: '재미있고 익살스러운 표정' },
+  { id: 'lovely', label: 'Lovely', emoji: '🥰', description: '사랑스럽고 귀여운 표정' }
 ];
 
 export function CharacterStyleModal({ onClose, onStyleSelect, originalImageUrl, petName }) {
@@ -26,8 +23,7 @@ export function CharacterStyleModal({ onClose, onStyleSelect, originalImageUrl, 
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">캐릭터 스타일 선택</h2>
-            <p className="text-gray-600 mt-1">{petName}의 캐릭터 스타일을 선택해주세요</p>
+            <h2 className="text-xl font-bold text-gray-900">{petName}의 어떤 모습을 프로필로 설정할까요?</h2>
           </div>
           <button
             onClick={onClose}
@@ -37,18 +33,7 @@ export function CharacterStyleModal({ onClose, onStyleSelect, originalImageUrl, 
           </button>
         </div>
 
-        {originalImageUrl && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-            <p className="text-sm text-gray-600 mb-2">원본 이미지</p>
-            <img 
-              src={originalImageUrl} 
-              alt="원본" 
-              className="w-32 h-32 object-cover rounded-lg mx-auto"
-            />
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {CHARACTER_STYLES.map((style) => (
             <button
               key={style.id}

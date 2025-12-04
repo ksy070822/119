@@ -130,6 +130,9 @@ const createTestHospital = (clinicId) => ({
 // 기본 테스트 병원 (초기값, 나중에 실제 clinicId로 업데이트됨)
 let TEST_HOSPITAL_HAPPYVET = createTestHospital('happyvet_test_clinic');
 
+// 🧪 테스트 모드: true이면 모든 예약이 테스트 병원으로 전송됨
+const TEST_MODE_ALL_BOOKINGS_TO_TEST_HOSPITAL = true;
+
 // 나이 계산 함수
 const calculateAge = (birthDate) => {
   if (!birthDate) return '';
@@ -632,8 +635,13 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
       let actualClinicId = bookingHospital.id; // 기본값은 animal_hospitals ID
       let animalHospitalId = bookingHospital.id; // 원본 ID 보관
 
-      // 🧪 테스트 병원인 경우 ID를 직접 사용 (이미 clinicId가 설정되어 있음)
-      if (bookingHospital.isTestHospital) {
+      // 🧪 테스트 모드: 모든 예약을 테스트 병원 계정으로 전송
+      if (TEST_MODE_ALL_BOOKINGS_TO_TEST_HOSPITAL) {
+        actualClinicId = testHospital?.id || TEST_HOSPITAL_HAPPYVET.id;
+        console.log('[예약] 🧪 테스트 모드 - 모든 예약을 테스트 병원으로 전송:', actualClinicId);
+        console.log('[예약] 선택한 병원:', bookingHospital.name, '→ 테스트 병원으로 라우팅');
+      } else if (bookingHospital.isTestHospital) {
+        // 테스트 병원인 경우 ID를 직접 사용 (이미 clinicId가 설정되어 있음)
         actualClinicId = bookingHospital.id;
         console.log('[예약] 테스트 병원 - clinicId 직접 사용:', actualClinicId);
       } else {
