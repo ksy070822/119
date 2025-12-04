@@ -4930,7 +4930,11 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
             gap: '8px',
             marginBottom: '4px'
           }}>
-            <span style={{ color: '#06b6d4', fontSize: '16px' }}>❤️</span>
+            <img
+              src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+              alt="PetMedical.AI"
+              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+            />
             <span style={{ fontSize: '15px', fontWeight: '600', color: '#475569' }}>PetMedical.AI</span>
           </div>
           <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>
