@@ -1009,7 +1009,7 @@ export function HospitalBooking({ petData, diagnosis, symptomData, onBack, onSel
                 onClick={handleRefreshLocation}
                 className="ml-auto px-2 py-1 text-xs text-green-600 hover:bg-green-100 rounded"
               >
-                🔄 새로고침
+                🔄
               </button>
             </div>
           </div>

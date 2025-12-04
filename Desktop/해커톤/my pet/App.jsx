@@ -1222,16 +1222,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
               {/* Header - 회사 로고 가운데 배치 */}
               <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
                 <div className="flex items-center justify-center">
-                  <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+                  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                     <img
-                      src={`${import.meta.env.BASE_URL}icon/login/logo_red_line.png`}
+                      src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
                       alt="PetMedical.AI"
-                      className="w-10 h-10 object-contain"
+                      className="w-12 h-12 object-contain"
                     />
                   </div>
-                  <div className="text-center ml-3">
-                    <h1 className="text-2xl font-bold tracking-tight">PetMedical.AI</h1>
-                    <p className="text-sky-100 text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
+                  <div className="text-center ml-4">
+                    <h1 className="text-3xl font-bold tracking-tight">PetMedical.AI</h1>
+                    <p className="text-sky-100 text-base font-medium">AI기반 반려동물 건강관리 플랫폼</p>
                   </div>
                 </div>
               </header>
@@ -1631,16 +1631,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
       {/* Header - 회사 로고 가운데 배치 */}
       <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
         <div className="flex items-center justify-center">
-          <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+          <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
             <img
-              src={`${import.meta.env.BASE_URL}icon/login/logo_red_line.png`}
+              src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
               alt="PetMedical.AI"
-              className="w-10 h-10 object-contain"
+              className="w-12 h-12 object-contain"
             />
           </div>
-          <div className="text-center ml-3">
-            <h1 className="text-2xl font-bold tracking-tight">PetMedical.AI</h1>
-            <p className="text-sky-100 text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
+          <div className="text-center ml-4">
+            <h1 className="text-3xl font-bold tracking-tight">PetMedical.AI</h1>
+            <p className="text-sky-100 text-base font-medium">AI기반 반려동물 건강관리 플랫폼</p>
           </div>
         </div>
       </header>

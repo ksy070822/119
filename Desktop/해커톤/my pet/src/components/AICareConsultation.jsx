@@ -144,7 +144,7 @@ export function AICareConsultation({ petData, onBack, onHome }) {
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       {/* 헤더 */}
-      <div className="bg-gradient-to-r from-violet-500 to-purple-600 text-white px-4 py-6">
+      <div className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 py-6">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={onBack} className="p-2 -ml-2 rounded-lg hover:bg-white/10">
             ← 뒤로
@@ -157,7 +157,109 @@ export function AICareConsultation({ petData, onBack, onHome }) {
       </div>
 
       <div className="p-4 space-y-4">
-        {/* 7일 케어 기록 요약 - 개선된 UI */}
+        {/* AI 분석 결과 - 상단 배치 */}
+        {analysis && (
+          <>
+            {/* 1. 패턴 분석 */}
+            {analysis.patterns && analysis.patterns.length > 0 && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <span className="text-xl">📈</span>
+                  패턴 분석
+                </h2>
+                <ul className="space-y-2">
+                  {analysis.patterns.map((pattern, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="text-sky-500">•</span>
+                      {pattern}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 2. 위험도 동향 */}
+            {analysis.risk_changes && (
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                  <span className="text-xl">📉</span>
+                  위험도 동향
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                    analysis.risk_changes.trend === 'up' ? 'bg-red-100 text-red-700' :
+                    analysis.risk_changes.trend === 'down' ? 'bg-green-100 text-green-700' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
+                    {analysis.risk_changes.trend === 'up' ? '↑ 상승' :
+                     analysis.risk_changes.trend === 'down' ? '↓ 하강' : '→ 안정'}
+                  </div>
+                  <span className="text-sm text-slate-600">{analysis.risk_changes.description}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 3. AI 권장사항 */}
+            {analysis.predictions && analysis.predictions.length > 0 && (
+              <div className="bg-gradient-to-br from-sky-50 to-sky-100 rounded-2xl p-5 border border-sky-100">
+                <h2 className="font-bold text-sky-800 mb-4 flex items-center gap-2">
+                  <span className="text-xl">🔮</span>
+                  AI 권장사항
+                </h2>
+                <ul className="space-y-2">
+                  {analysis.predictions.map((pred, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm text-sky-700">
+                      <span className="text-sky-500">→</span>
+                      {pred}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 4. 건강 상태 체크 */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+              <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span className="text-xl">🏥</span>
+                건강 상태 체크
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`p-3 rounded-xl ${analysis.digestionIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <span className="text-sm">{analysis.digestionIssue ? '⚠️ 소화기 주의' : '✅ 소화기 양호'}</span>
+                </div>
+                <div className={`p-3 rounded-xl ${analysis.skinIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <span className="text-sm">{analysis.skinIssue ? '⚠️ 피부 주의' : '✅ 피부 양호'}</span>
+                </div>
+                <div className={`p-3 rounded-xl ${analysis.earIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <span className="text-sm">{analysis.earIssue ? '⚠️ 귀 주의' : '✅ 귀 양호'}</span>
+                </div>
+                <div className={`p-3 rounded-xl ${analysis.fever ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                  <span className="text-sm">{analysis.fever ? '⚠️ 발열 의심' : '✅ 체온 정상'}</span>
+                </div>
+              </div>
+
+              {/* 에너지 레벨 */}
+              <div className="mt-4">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-slate-600">활력 지수</span>
+                  <span className="font-medium">{Math.round((analysis.energyLevel || 0.5) * 100)}%</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (analysis.energyLevel || 0.5) > 0.7 ? 'bg-green-500' :
+                      (analysis.energyLevel || 0.5) > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${(analysis.energyLevel || 0.5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* 5. 7일 케어 기록 요약 - 하단 배치 */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-800 flex items-center gap-2">
@@ -219,115 +321,6 @@ export function AICareConsultation({ petData, onBack, onHome }) {
           </div>
         </div>
 
-        {/* AI 분석 결과 */}
-        {analysis && (
-          <>
-            {/* 건강 상태 플래그 */}
-            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-              <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <span className="text-xl">🏥</span>
-                건강 상태 체크
-              </h2>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className={`p-3 rounded-xl ${analysis.digestionIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <span className="text-sm">{analysis.digestionIssue ? '⚠️ 소화기 주의' : '✅ 소화기 양호'}</span>
-                </div>
-                <div className={`p-3 rounded-xl ${analysis.skinIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <span className="text-sm">{analysis.skinIssue ? '⚠️ 피부 주의' : '✅ 피부 양호'}</span>
-                </div>
-                <div className={`p-3 rounded-xl ${analysis.earIssue ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <span className="text-sm">{analysis.earIssue ? '⚠️ 귀 주의' : '✅ 귀 양호'}</span>
-                </div>
-                <div className={`p-3 rounded-xl ${analysis.fever ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
-                  <span className="text-sm">{analysis.fever ? '⚠️ 발열 의심' : '✅ 체온 정상'}</span>
-                </div>
-              </div>
-
-              {/* 에너지 레벨 */}
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-600">활력 지수</span>
-                  <span className="font-medium">{Math.round((analysis.energyLevel || 0.5) * 100)}%</span>
-                </div>
-                <div className="w-full bg-slate-200 rounded-full h-3">
-                  <div
-                    className={`h-3 rounded-full transition-all ${
-                      (analysis.energyLevel || 0.5) > 0.7 ? 'bg-green-500' :
-                      (analysis.energyLevel || 0.5) > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${(analysis.energyLevel || 0.5) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 패턴 분석 */}
-            {analysis.patterns && analysis.patterns.length > 0 && (
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                <h2 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <span className="text-xl">📈</span>
-                  패턴 분석
-                </h2>
-                <ul className="space-y-2">
-                  {analysis.patterns.map((pattern, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
-                      <span className="text-violet-500">•</span>
-                      {pattern}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* 예측 및 권장사항 */}
-            {analysis.predictions && analysis.predictions.length > 0 && (
-              <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-5 border border-violet-100">
-                <h2 className="font-bold text-violet-800 mb-4 flex items-center gap-2">
-                  <span className="text-xl">🔮</span>
-                  AI 권장사항
-                </h2>
-                <ul className="space-y-2">
-                  {analysis.predictions.map((pred, idx) => (
-                    <li key={idx} className="flex items-start gap-2 text-sm text-violet-700">
-                      <span className="text-violet-500">→</span>
-                      {pred}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* 위험도 변화 */}
-            {analysis.risk_changes && (
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-                <h2 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
-                  <span className="text-xl">📉</span>
-                  위험도 동향
-                </h2>
-                <div className="flex items-center gap-3">
-                  <div className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                    analysis.risk_changes.trend === 'up' ? 'bg-red-100 text-red-700' :
-                    analysis.risk_changes.trend === 'down' ? 'bg-green-100 text-green-700' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
-                    {analysis.risk_changes.trend === 'up' ? '↑ 상승' :
-                     analysis.risk_changes.trend === 'down' ? '↓ 하강' : '→ 안정'}
-                  </div>
-                  <span className="text-sm text-slate-600">{analysis.risk_changes.description}</span>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* 다시 분석하기 버튼 */}
-        <button
-          onClick={loadAndAnalyze}
-          className="w-full py-3 bg-violet-500 hover:bg-violet-600 text-white font-bold rounded-xl transition-colors"
-        >
-          다시 분석하기
-        </button>
       </div>
     </div>
   );
