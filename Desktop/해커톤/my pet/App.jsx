@@ -47,6 +47,8 @@ import { CharacterStyleModal } from './src/components/CharacterStyleModal'
 import { CharacterResultModal } from './src/components/CharacterResultModal'
 import { generatePetCharacter } from './src/services/ai/characterGenerator'
 import { uploadImage, generateFileName } from './src/lib/storageUtils'
+// 동적 import 대신 정적 import로 변경 (빌드 시 chunk 분리로 인한 404 오류 방지)
+import { runMultiAgentDiagnosis } from './src/services/ai/agentOrchestrator'
 
 // 동물 종류 한글 매핑
 const SPECIES_LABELS_APP = {
@@ -2653,8 +2655,7 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
         if (!isMounted) return;
 
         // 프론트엔드 모드로 실행 (agentOrchestrator 사용)
-        const { runMultiAgentDiagnosis } = await import('./src/services/ai/agentOrchestrator');
-        
+        // 정적 import로 변경됨 - 파일 상단에서 import
         try {
           const frontendResult = await runMultiAgentDiagnosis(
             petData,
