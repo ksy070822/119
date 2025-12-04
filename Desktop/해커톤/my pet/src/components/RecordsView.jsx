@@ -635,30 +635,6 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
           </div>
         </div>
 
-        {/* 최근 병원 방문 요약 */}
-        {visitRecords.length > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-slate-800">최근 병원 방문</h3>
-              <span className="text-xs text-slate-400">{formatDateShort(visitRecords[0]?.date || visitRecords[0]?.created_at)}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                visitRecords[0]?.source === 'clinic' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-              }`}>
-                {visitRecords[0]?.source === 'clinic' ? '병원 진료' : 'AI 진단'}
-              </span>
-              <span className="text-sm text-slate-700">{visitRecords[0]?.hospitalName || 'AI 진단'}</span>
-            </div>
-            <p className="text-sm text-slate-600">{visitRecords[0]?.diagnosis || '진단 정보 없음'}</p>
-            {visitRecords[0]?.medications?.length > 0 && (
-              <p className="text-xs text-slate-500 mt-2">
-                💊 처방약 {visitRecords[0].medications.length}개
-              </p>
-            )}
-          </div>
-        )}
-
         {/* 탭 네비게이션 */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="flex border-b border-slate-100 overflow-x-auto">
