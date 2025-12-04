@@ -687,7 +687,11 @@ export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const bookingsByDate = {};
-    monthlyBookings.forEach(booking => {
+    
+    // todayBookings와 monthlyBookings를 합쳐서 사용
+    const allBookings = [...todayBookings, ...monthlyBookings];
+    
+    allBookings.forEach(booking => {
       // booking.date가 문자열 형식(YYYY-MM-DD)일 수도 있고 Date 객체일 수도 있음
       let bookingDate;
       if (typeof booking.date === 'string') {
@@ -709,6 +713,7 @@ export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
       }
     });
     
+    console.log('📅 [renderCalendar] todayBookings:', todayBookings.length, 'monthlyBookings:', monthlyBookings.length);
     console.log('📅 [renderCalendar] 예약 건수:', bookingsByDate);
 
     const today = new Date();
@@ -769,7 +774,10 @@ export function ClinicDashboard({ currentUser, onBack, onModeSwitch }) {
     const month = currentMonth.getMonth();
     const selectedDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
     
-    return monthlyBookings.filter(booking => {
+    // todayBookings와 monthlyBookings를 합쳐서 사용
+    const allBookings = [...todayBookings, ...monthlyBookings];
+    
+    return allBookings.filter(booking => {
       // booking.date가 문자열 형식(YYYY-MM-DD)일 수도 있고 Date 객체일 수도 있음
       let bookingDate;
       if (typeof booking.date === 'string') {
