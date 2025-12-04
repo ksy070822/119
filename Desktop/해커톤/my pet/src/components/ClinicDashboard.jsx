@@ -712,7 +712,14 @@ export function ClinicDashboard({ currentUser, onBack }) {
         return;
       }
 
-      const result = await addClinicStaff(currentClinic.id, userRes.data.uid, newStaffRole);
+      // ✅ userId는 문서 ID(id) 또는 uid 필드를 사용
+      const userId = userRes.data.id || userRes.data.uid;
+      if (!userId) {
+        alert('사용자 ID를 찾을 수 없습니다.');
+        return;
+      }
+
+      const result = await addClinicStaff(currentClinic.id, userId, newStaffRole);
       if (result.success) {
         alert('임직원이 등록되었습니다.');
         setNewStaffEmail('');
