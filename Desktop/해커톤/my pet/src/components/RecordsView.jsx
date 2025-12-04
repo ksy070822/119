@@ -335,7 +335,9 @@ const SAMPLE_CHECKUP_DETAIL = {
   nextCheckupDate: '2025-09-05'
 };
 
-export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, onHospitalBooking }) {
+export function RecordsView({ petData, pets = [], onBack, onViewDiagnosis, onOCR, onHome, onHospitalBooking, onSelectPet }) {
+  const [showPetSelector, setShowPetSelector] = useState(false);
+
   // localStorage에서 초기 탭 확인
   const getInitialTab = () => {
     const savedTab = localStorage.getItem('records_initialTab');
@@ -476,9 +478,9 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
     const clinicVisits = clinicResults.map(result => ({
       id: result.id,
       date: result.visitDate || result.createdAt,
-      hospitalName: result.hospitalName,
+      hospitalName: result.hospitalName || result.clinicName || '병원',
       hospitalAddress: result.hospitalAddress || '',
-      diagnosis: result.finalDiagnosis || result.diagnosis,
+      diagnosis: result.finalDiagnosis || result.diagnosis || result.mainDiagnosis,
       type: 'visit',
       triage_score: result.triageScore,
       treatment: result.treatment,
@@ -486,7 +488,8 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
       totalCost: result.totalCost,
       nextVisitDate: result.nextVisitDate,
       doctorNote: result.doctorNote,
-      source: 'clinic' // 병원에서 입력한 기록
+      source: 'clinic',
+      sharedToGuardian: result.sharedToGuardian || false
     }));
 
     // AI 진단은 방문이력에서 제외 (마이페이지>진료기록에서만 표시)
@@ -580,8 +583,64 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
             <span className="text-sm">← 돌아가기</span>
           </button>
         </div>
-        <h1 className="text-xl font-bold text-slate-900">건강 기록</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-slate-900">
+            {petData?.petName || petData?.name || '반려동물'} 건강기록
+          </h1>
+          {pets.length > 1 && (
+            <button
+              onClick={() => setShowPetSelector(true)}
+              className="text-[11px] text-amber-800 font-semibold bg-amber-100 px-2.5 py-1 rounded-full border border-amber-300 hover:bg-amber-200 transition-colors"
+            >
+              동물변경
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* 동물 선택 모달 */}
+      {showPetSelector && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5">
+            <h3 className="font-bold text-lg text-slate-800 mb-4">반려동물 선택</h3>
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              {pets.map(pet => (
+                <button
+                  key={pet.id}
+                  onClick={() => {
+                    onSelectPet && onSelectPet(pet);
+                    setShowPetSelector(false);
+                  }}
+                  className={`w-full p-3 rounded-xl text-left flex items-center gap-3 transition-colors ${
+                    pet.id === petData?.id
+                      ? 'bg-sky-50 border-2 border-sky-500'
+                      : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <span className="text-lg">
+                      {pet.species === 'dog' ? '🐕' : pet.species === 'cat' ? '🐱' : '🐾'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">{pet.petName || pet.name}</p>
+                    <p className="text-xs text-slate-500">{pet.breed || '품종 미등록'}</p>
+                  </div>
+                  {pet.id === petData?.id && (
+                    <span className="ml-auto text-sky-500 text-sm">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowPetSelector(false)}
+              className="w-full mt-4 py-2.5 bg-slate-100 text-slate-600 font-medium rounded-xl hover:bg-slate-200 transition-colors"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="px-4 pt-4 pb-24 space-y-4">
         {/* 일일 기록 */}
@@ -630,28 +689,6 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
           </div>
         </div>
 
-        {/* 최근 병원 방문 요약 */}
-        {visitRecords.length > 0 && (
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-slate-800">최근 병원 방문</h3>
-              <span className="text-xs text-slate-400">{formatDateShort(visitRecords[0]?.date || visitRecords[0]?.created_at)}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                병원 진료
-              </span>
-              <span className="text-sm text-slate-700">{visitRecords[0]?.hospitalName || '병원'}</span>
-            </div>
-            <p className="text-sm text-slate-600">{visitRecords[0]?.diagnosis || '진단 정보 없음'}</p>
-            {visitRecords[0]?.medications?.length > 0 && (
-              <p className="text-xs text-slate-500 mt-2">
-                💊 처방약 {visitRecords[0].medications.length}개
-              </p>
-            )}
-          </div>
-        )}
-
         {/* 탭 네비게이션 */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="flex border-b border-slate-100 overflow-x-auto">
@@ -683,59 +720,84 @@ export function RecordsView({ petData, onBack, onViewDiagnosis, onOCR, onHome, o
               </div>
             ) : (
               visitRecords.map(record => (
-                <div
-                  key={record.id}
-                  onClick={() => onViewDiagnosis && onViewDiagnosis(record)}
-                  className="bg-slate-50 rounded-xl p-4 cursor-pointer hover:bg-slate-100 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                          병원 진료
-                        </span>
-                        <p className="text-slate-500 text-xs">{formatDateShort(record.date || record.created_at)}</p>
+                  <div
+                    key={record.id}
+                    className={`bg-slate-50 rounded-xl p-4 transition-all ${
+                      record.sharedToGuardian ? 'cursor-pointer hover:bg-slate-100' : ''
+                    }`}
+                    onClick={() => {
+                      if (record.sharedToGuardian) {
+                        onViewDiagnosis && onViewDiagnosis(record);
+                      }
+                    }}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            병원
+                          </span>
+                          <p className="text-slate-500 text-xs">{formatDateShort(record.date || record.created_at)}</p>
+                        </div>
+                        <h3 className="text-slate-900 font-bold text-base mb-1">
+                          {record.hospitalName || '병원'}
+                        </h3>
                       </div>
-                      <h3 className="text-slate-900 font-bold text-base mb-1">
-                        {record.hospitalName || '병원'}
-                      </h3>
+                      {record.sharedToGuardian && (
+                        <span className="material-symbols-outlined text-slate-400">chevron_right</span>
+                      )}
                     </div>
-                    <span className="material-symbols-outlined text-slate-400">chevron_right</span>
-                  </div>
 
-                  {record.diagnosis && (
-                    <p className="text-slate-700 text-sm mb-2">
-                      {record.diagnosis}
-                    </p>
-                  )}
+                    {record.diagnosis && (
+                      <p className="text-slate-700 text-sm mb-2">
+                        {record.diagnosis}
+                      </p>
+                    )}
 
-                  {/* 병원 진료 결과 추가 정보 */}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {record.treatment && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
-                        <span className="material-symbols-outlined text-xs">healing</span>
-                        {record.treatment}
-                      </span>
-                    )}
-                    {record.medications?.length > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
-                        <span className="material-symbols-outlined text-xs">medication</span>
-                        처방약 {record.medications.length}개
-                      </span>
-                    )}
-                    {record.totalCost > 0 && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
-                        💰 {record.totalCost.toLocaleString()}원
-                      </span>
-                    )}
-                    {record.nextVisitDate && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
-                        <span className="material-symbols-outlined text-xs">event</span>
-                        다음방문: {formatDateShort(record.nextVisitDate)}
-                      </span>
-                    )}
+                    {/* 병원 진료 결과 추가 정보 */}
+                    <div className="flex flex-wrap gap-2 mt-2 mb-3">
+                          {record.treatment && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
+                              <span className="material-symbols-outlined text-xs">healing</span>
+                              {record.treatment}
+                            </span>
+                          )}
+                          {record.medications?.length > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
+                              <span className="material-symbols-outlined text-xs">medication</span>
+                              처방약 {record.medications.length}개
+                            </span>
+                          )}
+                          {record.totalCost > 0 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
+                              💰 {record.totalCost.toLocaleString()}원
+                            </span>
+                          )}
+                          {record.nextVisitDate && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                              <span className="material-symbols-outlined text-xs">event</span>
+                              다음방문: {formatDateShort(record.nextVisitDate)}
+                            </span>
+                          )}
+                        </div>
+                        {/* ✅ 공유받은 진단서 버튼 (상태만으로 표현) */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (record.sharedToGuardian) {
+                              onViewDiagnosis && onViewDiagnosis(record);
+                            }
+                          }}
+                          disabled={!record.sharedToGuardian}
+                          className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5
+                            ${record.sharedToGuardian
+                              ? 'bg-sky-600 text-white hover:bg-sky-700'
+                              : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        >
+                          <span className="material-symbols-outlined text-lg">description</span>
+                          {record.sharedToGuardian ? '공유받은 진단서 보기' : '진단서 준비 중'}
+                        </button>
                   </div>
-                </div>
               ))
             )}
           </div>

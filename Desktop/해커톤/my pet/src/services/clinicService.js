@@ -705,6 +705,17 @@ export async function createClinic(clinicData) {
  */
 export async function addClinicStaff(clinicId, userId, role = 'director') {
   try {
+    // ✅ 필수 필드 검증
+    if (!clinicId) {
+      throw new Error('clinicId는 필수 필드입니다.');
+    }
+    if (!userId) {
+      throw new Error('userId는 필수 필드입니다.');
+    }
+    if (!role) {
+      throw new Error('role은 필수 필드입니다.');
+    }
+
     const staffRef = await addDoc(collection(db, 'clinicStaff'), {
       clinicId,
       userId,
