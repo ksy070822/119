@@ -426,8 +426,19 @@ export async function getClinicPatients(clinicId, options = {}) {
 
         // 클라이언트에서 정렬
         patients.sort((a, b) => {
-          const dateA = a.lastVisitDate || (a.updatedAt?.toDate ? a.updatedAt.toDate().toISOString() : '') || '';
-          const dateB = b.lastVisitDate || (b.updatedAt?.toDate ? b.updatedAt.toDate().toISOString() : '') || '';
+          const getDateString = (patient) => {
+            if (patient.lastVisitDate) {
+              // Timestamp 객체인 경우 문자열로 변환
+              return typeof patient.lastVisitDate === 'string'
+                ? patient.lastVisitDate
+                : (patient.lastVisitDate.toDate?.() ? patient.lastVisitDate.toDate().toISOString() : '');
+            }
+            // lastVisitDate가 없으면 updatedAt 사용
+            return patient.updatedAt?.toDate?.() ? patient.updatedAt.toDate().toISOString() : '';
+          };
+
+          const dateA = getDateString(a);
+          const dateB = getDateString(b);
           return dateB.localeCompare(dateA);
         });
 
