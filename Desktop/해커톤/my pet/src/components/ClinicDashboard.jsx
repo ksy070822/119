@@ -803,7 +803,7 @@ export function ClinicDashboard({ currentUser, onBack }) {
           <div className="flex items-center justify-center flex-1">
             <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
               <img
-                src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+                src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
                 alt="PetMedical.AI"
                 className="w-6 h-6 object-contain"
               />
