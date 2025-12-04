@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import './App.css'
-import { runMultiAgentDiagnosis } from './src/services/ai/agentOrchestrator'
+import { runMultiAgentDiagnosisViaBackend } from './src/services/api/backendAPI'
+import { requestQuestionAnswer } from './src/services/api/backendAPI'
 import { MyPage } from './src/components/MyPage'
 import { Avatar } from './src/components/Avatar'
 import { AvatarLayered } from './src/components/AvatarLayered'
@@ -34,12 +35,17 @@ import { auth } from './src/lib/firebase'
 import { ClinicDashboard } from './src/components/ClinicDashboard'
 import { AICareConsultation } from './src/components/AICareConsultation'
 import { getFAQContext } from './src/data/faqData'
-import { diagnosisService, bookingService, petService } from './src/services/firestore'
+import { diagnosisService, bookingService, petService, commentTemplateService, clinicResultService } from './src/services/firestore'
 import { requestPushPermission, setupForegroundMessageHandler } from './src/services/pushNotificationService'
 import { getUserClinics } from './src/services/clinicService'
 import { getSpeciesDisplayName } from './src/services/ai/commonContext'
 // 동물 이미지 경로 유틸리티 import
 import { getMainCharacterImage, getPetImage, PROFILE_IMAGES } from './src/utils/imagePaths'
+// AI 캐릭터 생성 관련 import
+import { CharacterStyleModal } from './src/components/CharacterStyleModal'
+import { CharacterResultModal } from './src/components/CharacterResultModal'
+import { generatePetCharacter } from './src/services/ai/characterGenerator'
+import { uploadImage, generateFileName } from './src/lib/storageUtils'
 
 // 동물 종류 한글 매핑
 const SPECIES_LABELS_APP = {
@@ -91,7 +97,11 @@ const savePetsForUser = async (userId, pets, newPetData = null) => {
           weight: newPetData.weight || null,
           neutered: newPetData.neutered || false,
           character: newPetData.character || null,
-          profileImage: newPetData.profileImage || null
+          profileImage: newPetData.profileImage || null,
+          originalPhoto: newPetData.originalPhoto || null,
+          characters: newPetData.characters || [],
+          sido: newPetData.sido || null,
+          sigungu: newPetData.sigungu || null
         });
         if (result.success) {
           console.log('반려동물 Firestore 저장 완료:', result.id);
@@ -303,6 +313,12 @@ function ProfileRegistration({ onComplete, userId }) {
 
   const [loading, setLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState(null); // Firebase Storage URL
+  const [generatedCharacter, setGeneratedCharacter] = useState(null); // 생성된 캐릭터 URL
+  const [characterStyle, setCharacterStyle] = useState(null);
+  const [converting, setConverting] = useState(false);
+  const [showStyleModal, setShowStyleModal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
 
   // 이미지 업로드 핸들러
   const handleImageUpload = (e) => {
@@ -314,14 +330,116 @@ function ProfileRegistration({ onComplete, userId }) {
         return;
       }
 
+      setLoading(true);
+      
+      // base64로 변환 (빠르게 처리, Firebase Storage 업로드 없음)
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64 = e.target.result;
         setPreviewImage(base64);
         setFormData(prev => ({ ...prev, profileImage: base64 }));
+        
+        // base64 변환이 완료되면 즉시 로딩 종료
+        setLoading(false);
+        
+        // Firebase Storage 업로드는 CORS 문제로 인해 비활성화
+        // base64로 저장하여 프로필 등록은 정상 작동
+        // TODO: Firebase Storage CORS 설정 완료 후 다시 활성화
+        // originalImageUrl은 null로 유지 (base64만 사용)
+        setOriginalImageUrl(null);
       };
+      
+      reader.onerror = () => {
+        console.error('이미지 읽기 오류');
+        alert('이미지를 읽을 수 없습니다.');
+        setLoading(false);
+      };
+      
       reader.readAsDataURL(file);
+      
+      // 기존 캐릭터 리셋
+      setGeneratedCharacter(null);
+      setCharacterStyle(null);
     }
+  };
+
+  // 캐릭터 변환 시작
+  const handleConvertClick = () => {
+    // originalImageUrl이 없어도 base64 이미지가 있으면 진행
+    if (!originalImageUrl && !previewImage) {
+      alert('먼저 반려동물 사진을 업로드해주세요.');
+      return;
+    }
+    setShowStyleModal(true);
+  };
+
+  // 스타일 선택 후 변환 시작
+  const handleStyleSelect = async (style) => {
+    setShowStyleModal(false);
+    setConverting(true);
+
+    try {
+      // originalImageUrl이 없으면 base64 이미지를 사용
+      const imageUrl = originalImageUrl || previewImage;
+      if (!imageUrl) {
+        alert('이미지가 없습니다. 다시 업로드해주세요.');
+        setConverting(false);
+        return;
+      }
+
+      const result = await generatePetCharacter(
+        imageUrl,
+        userId || 'temp',
+        'temp',
+        style
+      );
+
+      if (result.success) {
+        setGeneratedCharacter(result.characterUrl);
+        setCharacterStyle(style);
+        setShowResultModal(true);
+      } else {
+        alert(result.error || '캐릭터 생성에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('캐릭터 생성 오류:', error);
+      alert('캐릭터 생성 중 오류가 발생했습니다.');
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  // 캐릭터 저장만 (프로필에는 반영 안함)
+  const handleSaveCharacter = () => {
+    setShowResultModal(false);
+    alert('캐릭터가 저장되었습니다!');
+    // TODO: Firestore에 저장된 캐릭터 목록에 추가
+  };
+
+  // 캐릭터를 프로필로 설정
+  const handleSetAsProfile = () => {
+    if (generatedCharacter) {
+      // base64로 변환하여 프로필 이미지로 설정
+      fetch(generatedCharacter)
+        .then(res => res.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const base64 = e.target.result;
+            setPreviewImage(base64);
+            setFormData(prev => ({ ...prev, profileImage: base64 }));
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(err => {
+          console.error('이미지 변환 오류:', err);
+          // 실패 시 URL 직접 사용
+          setPreviewImage(generatedCharacter);
+          setFormData(prev => ({ ...prev, profileImage: generatedCharacter }));
+        });
+    }
+    setShowResultModal(false);
+    alert('프로필 사진이 변경되었습니다!');
   };
 
   // 종류 변경시 캐릭터와 품종도 변경
@@ -368,23 +486,31 @@ function ProfileRegistration({ onComplete, userId }) {
     '제주특별자치도': ['서귀포시', '제주시'],
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    try {
       const newPet = {
         ...formData,
         id: Date.now(),
         userId: userId, // 소유자 ID 저장
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // 원본 사진과 생성된 캐릭터 정보 포함
+        originalPhoto: originalImageUrl || null,
+        characters: generatedCharacter ? [{
+          url: generatedCharacter,
+          style: characterStyle,
+          createdAt: new Date().toISOString()
+        }] : []
       };
 
       // 사용자별로 저장
       if (userId) {
         const pets = getPetsForUser(userId);
         pets.push(newPet);
-        savePetsForUser(userId, pets, newPet); // newPet을 Firestore에도 저장
+        // Firestore 저장 완료까지 대기
+        await savePetsForUser(userId, pets, newPet);
       } else {
         // 호환성 유지
         const pets = getPetsFromStorage();
@@ -393,7 +519,12 @@ function ProfileRegistration({ onComplete, userId }) {
       }
 
       onComplete(newPet);
-    }, 1000);
+    } catch (error) {
+      console.error('반려동물 등록 오류:', error);
+      alert('반려동물 등록 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   return (
@@ -487,15 +618,38 @@ function ProfileRegistration({ onComplete, userId }) {
 
                 {/* 사진 업로드 버튼 */}
                 <div className="profile-options">
-                  <label className="upload-btn">
-                    📷 사진 업로드
+                  <label className="upload-btn" style={{ opacity: loading ? 0.6 : 1 }}>
+                    {loading ? '⏳ 업로드 중...' : '📷 사진 업로드'}
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleImageUpload}
                       style={{ display: 'none' }}
+                      disabled={loading}
                     />
                   </label>
+                  
+                  {/* 캐릭터 변환 버튼 - base64 이미지가 있으면 표시 (originalImageUrl 없어도 가능) */}
+                  {previewImage && (
+                    <button
+                      type="button"
+                      onClick={handleConvertClick}
+                      disabled={converting}
+                      className="upload-btn"
+                      style={{
+                        marginTop: '8px',
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        border: 'none',
+                        opacity: converting ? 0.6 : 1,
+                      }}
+                    >
+                      {converting 
+                        ? '🎨 캐릭터 생성 중...' 
+                        : `✨ ${formData.petName || '반려동물'} 캐릭터로 변환하기`
+                      }
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -624,6 +778,28 @@ function ProfileRegistration({ onComplete, userId }) {
           </form>
         )}
       </div>
+
+      {/* 스타일 선택 모달 */}
+      {showStyleModal && (
+        <CharacterStyleModal
+          onClose={() => setShowStyleModal(false)}
+          onStyleSelect={handleStyleSelect}
+          originalImageUrl={originalImageUrl}
+          petName={formData.petName || '반려동물'}
+        />
+      )}
+
+      {/* 결과 모달 */}
+      {showResultModal && generatedCharacter && characterStyle && (
+        <CharacterResultModal
+          onClose={() => setShowResultModal(false)}
+          characterUrl={generatedCharacter}
+          style={characterStyle}
+          onSave={handleSaveCharacter}
+          onSetAsProfile={handleSetAsProfile}
+          saving={false}
+        />
+      )}
     </div>
   );
 }
@@ -710,6 +886,41 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
     play: 0
   });
   const [latestBooking, setLatestBooking] = useState(null);
+  const [randomMessage, setRandomMessage] = useState(null);
+
+  // 랜덤 유의사항 메시지 로드
+  useEffect(() => {
+    const loadRandomMessage = async () => {
+      if (!petData?.id) return;
+
+      try {
+        // 병원 방문 기록 확인 (clinicResults)
+        const clinicResultsResult = await clinicResultService.getByPetId(petData.id);
+        const hasHospitalVisit = clinicResultsResult.success && clinicResultsResult.data && clinicResultsResult.data.length > 0;
+
+        // AI 진단 기록 확인
+        const diagnosesResult = await diagnosisService.getByPetId(petData.id);
+        const hasDiagnosis = diagnosesResult.success && diagnosesResult.data && diagnosesResult.data.length > 0;
+
+        // 조건에 따라 랜덤 메시지 가져오기
+        const result = await commentTemplateService.getRandomTemplate(hasHospitalVisit, hasDiagnosis);
+
+        if (result.success && result.data) {
+          // {name} 플레이스홀더를 실제 이름으로 교체
+          const petName = petData?.petName || petData?.name || '반려동물';
+          const messageText = result.data.text.replace(/{name}/g, petName);
+          setRandomMessage({
+            ...result.data,
+            displayText: messageText
+          });
+        }
+      } catch (error) {
+        console.error('랜덤 메시지 로드 오류:', error);
+      }
+    };
+
+    loadRandomMessage();
+  }, [petData?.id]);
 
   // 오늘 케어 기록 저장
   const saveTodayCare = () => {
@@ -810,21 +1021,22 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
       if (!petData?.userId) return;
 
       try {
-        const bookings = await bookingService.getByUser(petData.userId);
-        if (bookings && bookings.length > 0) {
+        const result = await bookingService.getBookingsByUser(petData.userId);
+        const bookingData = result?.data || result || [];
+        if (bookingData && bookingData.length > 0) {
           // 미래 예약만 필터링하고 가장 가까운 것 선택
           const now = new Date();
-          const futureBookings = bookings.filter(b => {
-            const bookingDate = b.bookingDate ? new Date(b.bookingDate) : null;
+          const futureBookings = bookingData.filter(b => {
+            const bookingDate = b.date ? new Date(b.date) : (b.bookingDate ? new Date(b.bookingDate) : null);
             return bookingDate && bookingDate >= now;
-          }).sort((a, b) => new Date(a.bookingDate) - new Date(b.bookingDate));
+          }).sort((a, b) => new Date(a.date || a.bookingDate) - new Date(b.date || b.bookingDate));
 
           if (futureBookings.length > 0) {
             setLatestBooking(futureBookings[0]);
-          } else if (bookings.length > 0) {
+          } else if (bookingData.length > 0) {
             // 미래 예약이 없으면 가장 최근 예약 표시
-            const sortedBookings = [...bookings].sort((a, b) =>
-              new Date(b.bookingDate) - new Date(a.bookingDate)
+            const sortedBookings = [...bookingData].sort((a, b) =>
+              new Date(b.date || b.bookingDate) - new Date(a.date || a.bookingDate)
             );
             setLatestBooking(sortedBookings[0]);
           }
@@ -1008,18 +1220,18 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
             {/* 모바일 컨텐츠 */}
             <div className="h-full overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
               {/* Header - 회사 로고 가운데 배치 */}
-              <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-4 pb-4 shadow-lg">
+              <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
                 <div className="flex items-center justify-center">
-                  <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+                  <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                     <img
-                      src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
+                      src={`${import.meta.env.BASE_URL}icon/login/logo_red.png`}
                       alt="PetMedical.AI"
-                      className="w-6 h-6 object-contain"
+                      className="w-10 h-10 object-contain"
                     />
                   </div>
-                  <div className="text-center ml-2">
-                    <h1 className="text-xl font-bold tracking-tight">PetMedical.AI</h1>
-                    <p className="text-sky-100 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
+                  <div className="text-center ml-3">
+                    <h1 className="text-2xl font-bold tracking-tight">PetMedical.AI</h1>
+                    <p className="text-sky-100 text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
                   </div>
                 </div>
               </header>
@@ -1043,8 +1255,8 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                     <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
                       {/* 배경 장식 제거 - 깔끔한 흰색 배경 */}
 
-                      <div className="relative flex items-stretch gap-3">
-                        <div className="flex-shrink-0 w-24 h-36 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
+                      <div className="relative flex items-stretch gap-4">
+                        <div className="flex-shrink-0 w-28 h-40 bg-white/80 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
                           <img
                             src={getMainCharacterImagePath()}
                             alt={petData?.petName || petData?.name || '반려동물'}
@@ -1076,16 +1288,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           />
                         </div>
 
-                        <div className="flex-1 flex flex-col justify-between py-1">
+                        <div className="flex-1 flex flex-col justify-between py-2">
                           <div className="flex flex-col items-center justify-center text-center w-full">
-                            <p className="text-lg font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
-                            <p className="text-lg font-display font-bold text-gray-900 mt-1 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                            <p className="text-base font-semibold text-sky-600 mt-2 w-full">
+                            <p className="text-xl font-display font-bold text-gray-900 w-full">AI 전문 의료진 24시간 대기</p>
+                            <p className="text-xl font-display font-bold text-gray-900 mt-1.5 w-full">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                            <p className="text-lg font-semibold text-sky-600 mt-2.5 w-full">
                               오늘도 든든한 케어 시작!
                             </p>
                             <button
                               onClick={() => onNavigate('profile-list')}
-                              className="text-xs text-sky-600 font-semibold mt-2"
+                              className="text-sm text-sky-600 font-semibold mt-2"
                             >
                               반려동물 변경하기 &gt;
                             </button>
@@ -1179,15 +1391,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           <span className="text-gray-400 text-lg">&gt;</span>
                         </button>
 
-                        <div className="flex items-center gap-3 py-3 border-b border-gray-100">
-                          <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <span className="text-2xl">⚠️</span>
+                        <div className="flex items-center gap-3 py-3 bg-yellow-50 rounded-xl px-3">
+                          <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-xl">💡</span>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-sm font-bold text-gray-800 mb-0.5">유의사항</h4>
-                            <p className="text-xs text-gray-500">피부 알레르기 주의 필요</p>
+                            <h4 className="text-sm font-bold text-yellow-800 mb-0.5">오늘의 케어 팁</h4>
+                            <p className="text-xs text-yellow-700">
+                              {randomMessage?.displayText || '오늘도 함께 건강한 하루 보내세요!'}
+                            </p>
                           </div>
-                          <span className="text-gray-400 text-lg">&gt;</span>
                         </div>
                       </div>
                     </div>
@@ -1326,11 +1539,15 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                           </div>
                           <span className="text-gray-400 text-lg">&gt;</span>
                         </button>
-                        <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
-                          <span className="text-2xl">⚠️</span>
+                        <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-xl">
+                          <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-xl">💡</span>
+                          </div>
                           <div>
-                            <p className="font-medium text-gray-900">유의사항</p>
-                            <p className="text-sm text-gray-500">피부 알레르기 주의 필요</p>
+                            <p className="font-medium text-yellow-800">오늘의 케어 팁</p>
+                            <p className="text-sm text-yellow-700">
+                              {randomMessage?.displayText || '오늘도 함께 건강한 하루 보내세요!'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -1412,18 +1629,18 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         <div className="relative overflow-hidden">
           <div className="min-h-screen overflow-y-auto overflow-x-hidden bg-slate-50 pb-20">
       {/* Header - 회사 로고 가운데 배치 */}
-      <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-4 pb-4 shadow-lg">
+      <header className="bg-gradient-to-r from-sky-500 to-sky-600 text-white px-4 pt-8 pb-8 shadow-lg">
         <div className="flex items-center justify-center">
-          <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center shadow-md flex-shrink-0">
+          <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
             <img
               src={`${import.meta.env.BASE_URL}icon/login/logo.png`}
               alt="PetMedical.AI"
-              className="w-6 h-6 object-contain"
+              className="w-10 h-10 object-contain"
             />
           </div>
-          <div className="text-center ml-2">
-            <h1 className="text-xl font-bold tracking-tight">PetMedical.AI</h1>
-            <p className="text-sky-100 text-xs font-medium">AI 기반 반려동물 건강 관리 서비스</p>
+          <div className="text-center ml-3">
+            <h1 className="text-2xl font-bold tracking-tight">PetMedical.AI</h1>
+            <p className="text-sky-100 text-sm font-medium">AI기반 반려동물 건강관리 플랫폼</p>
           </div>
         </div>
       </header>
@@ -1444,12 +1661,12 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
         ) : (
           <>
             {/* Pet Profile Banner - 캐릭터 이미지 포함 */}
-            <div className="bg-white rounded-2xl p-4 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
+            <div className="bg-white rounded-2xl p-5 shadow-lg border border-slate-100 relative overflow-hidden mb-4">
               {/* 배경 장식 제거 - 깔끔한 흰색 배경 */}
 
-              <div className="relative flex items-stretch gap-3">
+              <div className="relative flex items-stretch gap-4">
                 {/* 캐릭터 이미지 - 세로로 길게, 가로 좁게 */}
-                <div className="flex-shrink-0 w-24 h-36 bg-amber-50 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
+                <div className="flex-shrink-0 w-28 h-40 bg-amber-50 rounded-2xl shadow-md overflow-hidden border-2 border-white flex items-center justify-center">
                   <img
                     src={getMainCharacterImagePath()}
                     alt={petData?.petName || '반려동물'}
@@ -1481,16 +1698,16 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   />
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
+                <div className="flex-1 flex flex-col justify-between py-2 min-w-0">
                   <div className="flex flex-col items-center justify-center text-center w-full">
-                    <p className="text-sm sm:text-base font-display font-bold text-gray-900 w-full leading-tight">AI 전문 의료진 24시간 대기</p>
-                    <p className="text-sm sm:text-base font-display font-bold text-gray-900 mt-1 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
-                    <p className="text-xs sm:text-sm font-semibold text-sky-600 mt-2 w-full">
+                    <p className="text-base sm:text-lg font-display font-bold text-gray-900 w-full leading-tight">AI 전문 의료진 24시간 대기</p>
+                    <p className="text-base sm:text-lg font-display font-bold text-gray-900 mt-1.5 w-full leading-tight truncate">{petData?.petName || petData?.name || '반려동물'} 지켜줄게요 ❤️</p>
+                    <p className="text-sm sm:text-base font-semibold text-sky-600 mt-2.5 w-full">
                       오늘도 든든한 케어 시작!
                     </p>
                     <button
                       onClick={() => onNavigate('profile-list')}
-                      className="text-xs text-sky-600 font-semibold mt-2"
+                      className="text-xs sm:text-sm text-sky-600 font-semibold mt-2"
                     >
                       반려동물 변경하기 &gt;
                     </button>
@@ -1587,16 +1804,17 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet }) {
                   <span className="text-gray-400 text-lg">&gt;</span>
                 </button>
 
-                {/* 유의사항 */}
-                <div className="flex items-center gap-3 py-3">
-                  <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <span className="text-2xl">⚠️</span>
+                {/* 오늘의 케어 팁 */}
+                <div className="flex items-center gap-3 py-3 bg-yellow-50 rounded-xl px-3">
+                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-xl">💡</span>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-bold text-gray-800 mb-0.5">유의사항</h4>
-                    <p className="text-xs text-gray-500">피부 알레르기 주의 필요</p>
+                    <h4 className="text-sm font-bold text-yellow-800 mb-0.5">오늘의 케어 팁</h4>
+                    <p className="text-xs text-yellow-700">
+                      {randomMessage?.displayText || '오늘도 함께 건강한 하루 보내세요!'}
+                    </p>
                   </div>
-                  <span className="text-gray-400 text-lg">&gt;</span>
                 </div>
               </div>
             </div>
@@ -2103,10 +2321,8 @@ function SymptomInput({ petData, onComplete, onBack, onRegister }) {
               </div>
           <p className="text-[10px] sm:text-xs text-slate-400 mt-1.5 sm:mt-2">피부, 눈, 귀 등 증상 부위 사진을 첨부하면 더 정확한 진단이 가능해요</p>
         </div>
-      </div>
+        </div>
 
-<<<<<<< HEAD
-      {/* Bottom Button - 네비게이션바 위에 배치 */}
       {/* Bottom Button - 내비게이션바 위에 배치 */}
       <div className="fixed bottom-16 left-0 right-0 md:left-1/2 md:-translate-x-1/2 md:w-[430px] bg-white/95 backdrop-blur-sm border-t border-slate-100 p-4 z-40">
         <button 
@@ -2369,43 +2585,79 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
           });
         };
 
-        // 실제 AI API 호출
-        const result = await runMultiAgentDiagnosis(
-          petData,
-          symptomData,
-          (log) => {
-            if (!isMounted) return; // 컴포넌트가 언마운트되었으면 무시
-            
-            // 질문 단계 메시지는 별도 처리 (UI에 표시하지 않음)
-            if (log.isQuestionPhase) {
-              return;
-            }
+        // 백엔드 API 호출 (단계별 로그 시뮬레이션)
+        const stepMessages = [
+          { agent: 'CS Agent', role: '접수 · 예약 센터', icon: '🏥', type: 'cs', content: '안녕하세요, 접수센터입니다. 진료 접수 도와드리겠습니다.', delay: 0 },
+          { agent: 'Information Agent', role: '증상 사전 상담실', icon: '💉', type: 'info', content: '네, 접수 확인했습니다. 증상 정보를 분석 중입니다.', delay: 1500 },
+          { agent: 'Veterinarian Agent', role: '전문 수의사', icon: '👨‍⚕️', type: 'medical', content: '종합 진단 수행 중...', delay: 3000 },
+          { agent: 'Triage Engine', role: '응급도 판정실', icon: '🚨', type: 'triage', content: '응급도 평가 중...', delay: 4500 },
+          { agent: 'Care Agent', role: '처방 · 약물 관리실', icon: '💊', type: 'care', content: '케어 플랜 작성 중...', delay: 6000 },
+        ];
 
-            // 모든 메시지를 유지하되, 완전히 동일한 중복 메시지만 제거
-            setMessages(prev => {
-              // 완전히 동일한 메시지(같은 에이전트, 같은 내용)인 경우만 제거
-              const isDuplicate = prev.some(msg =>
-                msg.agent === log.agent && msg.content === log.content
-              );
+        // 단계별 메시지 표시
+        stepMessages.forEach((msg, index) => {
+          setTimeout(() => {
+            if (!isMounted) return;
+            setMessages(prev => [...prev, {
+              agent: msg.agent,
+              role: msg.role,
+              icon: msg.icon,
+              type: msg.type,
+              content: msg.content,
+              timestamp: Date.now()
+            }]);
+            setCurrentStep(index + 1);
+          }, msg.delay);
+        });
 
-              if (isDuplicate) {
-                return prev; // 중복이면 추가하지 않음
-              }
+        // 백엔드 API 호출
+        const backendResult = await runMultiAgentDiagnosisViaBackend(petData, symptomData);
+        
+        if (!isMounted) return;
 
-              // 새 메시지 추가 (기존 메시지 모두 유지)
-              return [...prev, {
-                agent: log.agent,
-                role: log.role,
-                icon: log.icon,
-                type: log.type,
-                content: log.content,
-                timestamp: log.timestamp
-              }];
-            });
-            setCurrentStep(prev => prev + 1);
-          },
-          handleWaitForGuardianResponse
-        );
+        if (!backendResult.success || !backendResult.report) {
+          console.error('[MultiAgentDiagnosis] 백엔드 API 오류:', backendResult.error);
+          setIsProcessing(false);
+          alert(backendResult.error || '진단 결과를 생성하는 중 오류가 발생했습니다. 다시 시도해주세요.');
+          return;
+        }
+
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        const report = backendResult.report;
+        const result = {
+          finalDiagnosis: {
+            id: Date.now().toString(),
+            created_at: Date.now(),
+            petId: petData.id,
+            petName: petData?.petName || petData?.name || '미상',
+            symptom: symptomData.symptomText || symptomData.description || '',
+            diagnosis: report.primary_assessment || report.diagnosis || '진단 결과',
+            description: report.description || report.summary || '',
+            riskLevel: report.risk_level || report.riskLevel || 'moderate',
+            emergency: report.act_color || report.emergency || 'yellow',
+            triage_score: report.triage_score || report.final_triage_score || 2,
+            triage_level: report.act_color || report.triage_level || 'yellow',
+            actions: report.home_care_instructions || report.actions || [],
+            careGuide: report.care_guide || report.supportive_message || '',
+            ownerSheet: {
+              immediate_home_actions: report.home_care_instructions || [],
+              things_to_avoid: report.things_to_avoid || [],
+              monitoring_guide: report.monitoring_guidance || [],
+            },
+            carePlan: {
+              hospital_needed: report.need_hospital_visit || report.final_hospital_visit || false,
+              follow_up_guide: {
+                home_care_duration: report.when_to_see_vet || '2~3일간 관찰',
+                condition_for_hospital: report.emergency_indicators?.[0] || '증상 악화 시',
+              },
+            },
+            possible_diseases: report.possible_diseases || [],
+            reasoning: report.reasoning || [],
+            medicationGuidance: report.medication_guidance || '',
+            faqAnswers: report.faq_answers || [],
+            recommendedFAQs: report.recommended_faqs || [],
+          }
+        };
         
         if (!isMounted) return; // 컴포넌트가 언마운트되었으면 무시
 
@@ -2724,115 +2976,29 @@ function MultiAgentDiagnosis({ petData, symptomData, onComplete, onBack, onDiagn
     setIsProcessing(true);
 
     try {
-      // Claude API를 사용하여 질문에 답변 (더 정확한 수의학 답변)
-      const apiKey = getApiKey(API_KEY_TYPES.ANTHROPIC);
-      if (!apiKey) {
-        throw new Error('Claude API 키가 설정되지 않았습니다. 마이페이지 > API 설정에서 키를 입력해주세요.');
-      }
-
-      // 진단 결과에서 상세 정보 추출
-      const diagnosisDetails = diagnosisResult.diagnosis || '일반 건강 이상';
-      const riskLevel = diagnosisResult.riskLevel || diagnosisResult.emergency || 'moderate';
-      const actions = diagnosisResult.actions || [];
-      const careGuide = diagnosisResult.careGuide || '';
-      const ownerSheet = diagnosisResult.ownerSheet || {};
-      const immediateActions = ownerSheet.immediate_home_actions || actions;
-      const thingsToAvoid = ownerSheet.things_to_avoid || [];
-      const monitoringGuide = ownerSheet.monitoring_guide || [];
-      const carePlan = diagnosisResult.carePlan || {};
-      const followUpGuide = carePlan.follow_up_guide || {};
-
-      const systemPrompt = `당신은 경력 10년 이상의 전문 수의사입니다. 반려동물 보호자의 질문에 대해 정확하고 친절하게 답변해주세요.
-
-중요 원칙:
-- 경미한 증상은 홈케어를 우선 권장하고, 무조건 병원 방문을 권하지 마세요.
-- 구체적이고 실용적인 조언을 제공하세요 (예: 어떤 음식을 얼마나, 구체적인 케어 방법)
-- 증상이 악화되는 경우에만 병원 방문을 안내하세요.
-- 검증되지 않은 민간요법은 제안하지 마세요.`;
-
-      const userPrompt = `[반려동물 정보]
-- 이름: ${petData?.petName || petData?.name || '미상'}
-- 종류: ${getSpeciesDisplayName(petData.species)}
-- 품종: ${petData.breed || '미등록'}
-- 나이: ${petData.age || '미등록'}세
-${petData.weight ? `- 체중: ${petData.weight}kg` : ''}
-
-[현재 진단 결과]
-- 진단명: ${diagnosisDetails}
-- 위험도: ${riskLevel}
-- 응급도: ${diagnosisResult.triage_level || 'yellow'}
-- Triage Score: ${diagnosisResult.triage_score || 'N/A'}/5
-- 병원 방문 필요 여부: ${carePlan.hospital_needed ? '필요' : '홈케어로 충분'}
-
-[권장 조치사항]
-${immediateActions.length > 0 ? immediateActions.map((a, i) => `${i + 1}. ${a}`).join('\n') : '추가 조치사항 없음'}
-
-[피해야 할 행동]
-${thingsToAvoid.length > 0 ? thingsToAvoid.map((a, i) => `${i + 1}. ${a}`).join('\n') : '없음'}
-
-[관찰 포인트]
-${monitoringGuide.length > 0 ? monitoringGuide.map((a, i) => `${i + 1}. ${a}`).join('\n') : '없음'}
-
-[재진료 안내]
-- 홈케어 기간: ${followUpGuide.home_care_duration || '2~3일간 관찰'}
-- 병원 방문 조건: ${followUpGuide.condition_for_hospital || '증상 악화 시'}
-
-${careGuide ? `[케어 가이드]\n${careGuide}` : ''}
-${getFAQContext(userQuestion, petData.species)}
-
-[보호자 질문]
-${userQuestion}
-
-위 질문에 대해 다음을 포함하여 답변해주세요:
-1. 질문에 대한 구체적이고 실용적인 답변 (참고 FAQ가 있다면 해당 내용을 기반으로)
-2. 현재 진단 결과와 연관된 조언
-3. 구체적인 실행 방법 (예: 음식 추천, 케어 방법, 주의사항)
-4. 필요시에만 병원 방문 시점 안내 (경미한 경우 홈케어 우선)
-
-답변은 친절하고 이해하기 쉽게 작성하되, 전문적이고 정확해야 합니다. 2-3문장으로 핵심만 간결하게 답변하세요.`;
-
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
+      // 백엔드 API 호출
+      const result = await requestQuestionAnswer({
+        user_question: userQuestion,
+        pet_data: {
+          petName: petData?.petName || petData?.name || '미상',
+          species: petData.species || 'dog',
+          breed: petData.breed || '미등록',
+          age: petData.age || '미상',
+          weight: petData.weight || null,
         },
-          body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [
-            { role: 'user', content: userPrompt }
-          ]
-        })
+        diagnosis_result: diagnosisResult,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Claude API 오류:', response.status, errorData);
-        throw new Error(`API 호출 실패: ${response.status} - ${errorData.error?.message || '알 수 없는 오류'}`);
+      if (!result.success) {
+        throw new Error(result.error || '답변 생성에 실패했습니다.');
       }
 
-      const data = await response.json();
-      
-      if (!data.content || !data.content[0] || !data.content[0].text) {
-        throw new Error('API 응답 형식 오류');
-      }
-
-      const answer = data.content[0].text;
-      
-      if (!answer || answer.trim().length === 0) {
-        throw new Error('빈 답변을 받았습니다');
-      }
-      
       setMessages(prev => [...prev, {
         agent: 'Veterinarian Agent',
         role: '전문 수의사',
         icon: '👨‍⚕️',
         type: 'medical',
-        content: answer.trim(),
+        content: result.answer || '답변을 생성할 수 없습니다.',
         isResponse: true,
         timestamp: Date.now()
       }]);
@@ -4446,12 +4612,8 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
   ];
 
   const [checklist, setChecklist] = useState(() => {
-    try {
-      const saved = localStorage.getItem(CHECKLIST_KEY);
-      return saved ? JSON.parse(saved) : defaultChecklist;
-    } catch {
-      return defaultChecklist;
-    }
+    // 항상 체크되지 않은 상태로 시작
+    return defaultChecklist;
   });
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -4710,19 +4872,19 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
 
             {/* 주의사항 */}
             <div style={{
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%)',
+              background: 'linear-gradient(135deg, #fef9c3 0%, #fef08a 100%)',
               borderRadius: '16px',
               padding: '16px',
               marginBottom: '16px',
-              border: '2px solid #fbbf24',
-              boxShadow: '0 2px 8px rgba(251, 191, 36, 0.2)'
+              border: '2px solid #facc15',
+              boxShadow: '0 2px 8px rgba(250, 204, 21, 0.2)'
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                 <div style={{
                   width: '32px',
                   height: '32px',
                   borderRadius: '50%',
-                  background: '#f97316',
+                  background: '#eab308',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -4734,28 +4896,27 @@ function HomeTreatmentGuide({ petData, diagnosisResult, onBack, onGoToHospital }
                   <h4 style={{
                     fontSize: '14px',
                     fontWeight: 'bold',
-                    color: '#9a3412',
+                    color: '#a16207',
                     margin: '0 0 8px 0'
                   }}>
                     주의사항
                   </h4>
-                  <ul style={{
+                  <div style={{
                     margin: 0,
-                    paddingLeft: '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '6px'
                   }}>
-                    <li style={{ fontSize: '13px', color: '#c2410c', lineHeight: '1.5' }}>
+                    <p style={{ fontSize: '13px', color: '#854d0e', lineHeight: '1.5', margin: 0 }}>
                       증상이 악화되거나 새로운 증상이 나타나면 즉시 병원을 방문하세요.
-                    </li>
-                    <li style={{ fontSize: '13px', color: '#c2410c', lineHeight: '1.5' }}>
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#854d0e', lineHeight: '1.5', margin: 0 }}>
                       처방전 없이 사람 약물을 사용하지 마세요.
-                    </li>
-                    <li style={{ fontSize: '13px', color: '#c2410c', lineHeight: '1.5' }}>
+                    </p>
+                    <p style={{ fontSize: '13px', color: '#854d0e', lineHeight: '1.5', margin: 0 }}>
                       응급 상황(호흡 곤란, 의식 저하, 심한 출혈 등)은 즉시 응급실로 가세요.
-                    </li>
-                  </ul>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5307,29 +5468,33 @@ function App() {
         if (userPets.length > 0) {
           setPetData(userPets[0]);
           
+          // 약물 정보 조회는 로그인 시에만 실행 (프로필 사진 등록과 무관)
           // 테스트 계정 보호자이고 약물 처방 정보가 없으면 자동 추가
+          // 단, 약물 정보가 5개 미만일 때만 조회 및 추가 (불필요한 조회 방지)
           if (mode === 'guardian' && (user.email === 'guardian@test.com' || user.email?.includes('test'))) {
-            try {
-              // medicationLogs 컬렉션에서 기존 약물 정보 확인
-              const { collection, query, where, getDocs } = await import('firebase/firestore');
-              const { db } = await import('./src/lib/firebase');
-              const medicationQuery = query(
-                collection(db, 'medicationLogs'),
-                where('userId', '==', user.uid)
-              );
-              const medicationSnapshot = await getDocs(medicationQuery);
-              
-              // 약물 정보가 없으면 자동 추가
-              if (medicationSnapshot.empty) {
-                console.log('💊 테스트 계정: 약물 처방 정보 자동 추가 중...');
-                await seedMedicationData(user.uid);
-                console.log('✅ 약물 처방 정보 추가 완료');
-              } else {
-                console.log(`✅ 기존 약물 처방 정보 ${medicationSnapshot.size}개 확인됨`);
+            // 약물 정보 조회는 백그라운드에서 비동기로 실행 (프로필 등록 블로킹 방지)
+            (async () => {
+              try {
+                const { collection, query, where, getDocs } = await import('firebase/firestore');
+                const { db } = await import('./src/lib/firebase');
+                const medicationQuery = query(
+                  collection(db, 'medicationLogs'),
+                  where('userId', '==', user.uid)
+                );
+                const medicationSnapshot = await getDocs(medicationQuery);
+                
+                // 약물 정보가 5개 미만일 때만 자동 추가 (불필요한 조회 방지)
+                if (medicationSnapshot.size < 5) {
+                  console.log('💊 테스트 계정: 약물 처방 정보 자동 추가 중...');
+                  await seedMedicationData(user.uid);
+                  console.log('✅ 약물 처방 정보 추가 완료');
+                } else {
+                  console.log(`✅ 기존 약물 처방 정보 ${medicationSnapshot.size}개 확인됨`);
+                }
+              } catch (medError) {
+                console.warn('약물 처방 정보 확인/추가 실패:', medError);
               }
-            } catch (medError) {
-              console.warn('약물 처방 정보 확인/추가 실패:', medError);
-            }
+            })();
           }
         } else {
           setPetData(null);
