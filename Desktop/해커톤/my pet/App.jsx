@@ -1303,8 +1303,8 @@ function Dashboard({ petData, pets, onNavigate, onSelectPet, onLogout }) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* PC 레이아웃 (임시 비활성화) */}
-      <div className="hidden">
+      {/* PC 레이아웃 (lg 이상에서 표시) */}
+      <div className="hidden lg:flex lg:min-h-screen">
         {/* 좌측: 모바일 화면 미리보기 */}
         <div className="flex-shrink-0 flex items-center justify-center">
           <div className="relative w-[430px] h-[932px] rounded-[3rem] shadow-2xl border-8 border-gray-800 overflow-hidden bg-white">
@@ -5632,7 +5632,8 @@ function App() {
             
             // 보호자 모드이고 동물 데이터가 없으면 시드 데이터 생성
             // 단, Firestore에서도 확인하여 정말 없을 때만 생성 (중복 생성 방지)
-            if (mode === 'guardian' && userPets.length === 0) {
+            // 시드 데이터 생성은 테스트 계정이 아닌 경우에만 실행 (테스트 계정은 정리 로직에서 처리)
+            if (mode === 'guardian' && userPets.length === 0 && !(user.email === 'guardian@test.com' || user.email?.includes('test'))) {
               // Firestore에서 다시 한 번 확인 (localStorage와 동기화 문제 방지)
               try {
                 const firestoreCheck = await petService.getPetsByUser(user.uid);
@@ -5665,76 +5666,85 @@ function App() {
         // 테스트 계정 보호자: 불필요한 반려동물 자동 정리 (뿌꾸, 몽미, 도마만 유지)
         // 반려동물이 있든 없든 항상 실행 (조건 밖으로 이동)
         if (mode === 'guardian' && (user.email === 'guardian@test.com' || user.email?.includes('test'))) {
-          // 백그라운드에서 비동기로 실행 (UI 블로킹 방지)
-          (async () => {
-            try {
-              const { collection, query, where, getDocs, deleteDoc, doc } = await import('firebase/firestore');
-              const { db } = await import('./src/lib/firebase');
+          // 동기적으로 실행하여 반려동물 상태를 확정한 후 화면 전환
+          try {
+            const { collection, query, where, getDocs, deleteDoc, doc } = await import('firebase/firestore');
+            const { db } = await import('./src/lib/firebase');
+            
+            const KEEP_PETS = ['뿌꾸', '몽미', '도마'];
+            const petsRef = collection(db, 'pets');
+            const petsQuery = query(petsRef, where('userId', '==', user.uid));
+            const petsSnapshot = await getDocs(petsQuery);
+            
+            if (!petsSnapshot.empty) {
+              const petsToDelete = [];
+              petsSnapshot.forEach((petDoc) => {
+                const petData = petDoc.data();
+                const petName = petData.petName || petData.name || '';
+                if (!KEEP_PETS.includes(petName)) {
+                  petsToDelete.push({ id: petDoc.id, name: petName });
+                }
+              });
               
-              const KEEP_PETS = ['뿌꾸', '몽미', '도마'];
-              const petsRef = collection(db, 'pets');
-              const petsQuery = query(petsRef, where('userId', '==', user.uid));
-              const petsSnapshot = await getDocs(petsQuery);
-              
-              if (!petsSnapshot.empty) {
-                const petsToDelete = [];
-                petsSnapshot.forEach((petDoc) => {
-                  const petData = petDoc.data();
-                  const petName = petData.petName || petData.name || '';
-                  if (!KEEP_PETS.includes(petName)) {
-                    petsToDelete.push({ id: petDoc.id, name: petName });
-                  }
-                });
-                
-                if (petsToDelete.length > 0) {
-                  console.log(`🧹 테스트 계정 반려동물 정리: ${petsToDelete.length}마리 삭제 중...`);
-                  for (const pet of petsToDelete) {
-                    try {
-                      await deleteDoc(doc(db, 'pets', pet.id));
-                      console.log(`  ✅ 삭제 완료: ${pet.name}`);
-                    } catch (error) {
-                      console.warn(`  ⚠️ 삭제 실패: ${pet.name}`, error.message);
-                    }
-                  }
-                  console.log(`✅ 반려동물 정리 완료 (뿌꾸, 몽미, 도마만 유지)`);
-                  
-                  // 삭제 후 반려동물 목록 다시 로드
-                  const updatedPetsResult = await petService.getPetsByUser(user.uid);
-                  if (updatedPetsResult.success && updatedPetsResult.data) {
-                    const updatedPets = updatedPetsResult.data;
-                    setPets(updatedPets);
-                    savePetsForUser(user.uid, updatedPets);
-                    if (updatedPets.length > 0) {
-                      setPetData(updatedPets[0]);
-                    } else {
-                      setPetData(null);
-                    }
-                  }
-                } else {
-                  // 삭제할 것이 없으면 기존 데이터 그대로 사용
-                  setPets(userPets);
-                  if (userPets.length > 0) {
-                    setPetData(userPets[0]);
-                  } else {
-                    setPetData(null);
+              if (petsToDelete.length > 0) {
+                console.log(`🧹 테스트 계정 반려동물 정리: ${petsToDelete.length}마리 삭제 중...`);
+                for (const pet of petsToDelete) {
+                  try {
+                    await deleteDoc(doc(db, 'pets', pet.id));
+                    console.log(`  ✅ 삭제 완료: ${pet.name}`);
+                  } catch (error) {
+                    console.warn(`  ⚠️ 삭제 실패: ${pet.name}`, error.message);
                   }
                 }
+                console.log(`✅ 반려동물 정리 완료 (뿌꾸, 몽미, 도마만 유지)`);
+                
+                // 삭제 후 반려동물 목록 다시 로드
+                const updatedPetsResult = await petService.getPetsByUser(user.uid);
+                if (updatedPetsResult.success && updatedPetsResult.data) {
+                  const updatedPets = updatedPetsResult.data;
+                  setPets(updatedPets);
+                  savePetsForUser(user.uid, updatedPets);
+                  if (updatedPets.length > 0) {
+                    setPetData(updatedPets[0]);
+                  } else {
+                    setPetData(null);
+                    // 반려동물이 없으면 등록 화면으로 이동
+                    setCurrentView('registration');
+                  }
+                } else {
+                  setPets([]);
+                  setPetData(null);
+                  setCurrentView('registration');
+                }
               } else {
-                // 반려동물이 없으면 기존 데이터 그대로 사용
+                // 삭제할 것이 없으면 기존 데이터 그대로 사용
                 setPets(userPets);
-                setPetData(null);
+                if (userPets.length > 0) {
+                  setPetData(userPets[0]);
+                } else {
+                  setPetData(null);
+                  // 반려동물이 없으면 등록 화면으로 이동
+                  setCurrentView('registration');
+                }
               }
-            } catch (cleanupError) {
-              console.warn('반려동물 정리 실패:', cleanupError);
-              // 오류 발생 시 기존 데이터 그대로 사용
-              setPets(userPets);
-              if (userPets.length > 0) {
-                setPetData(userPets[0]);
-              } else {
-                setPetData(null);
-              }
+            } else {
+              // 반려동물이 없으면 등록 화면으로 이동
+              setPets([]);
+              setPetData(null);
+              setCurrentView('registration');
             }
-          })();
+          } catch (cleanupError) {
+            console.warn('반려동물 정리 실패:', cleanupError);
+            // 오류 발생 시 기존 데이터 그대로 사용
+            setPets(userPets);
+            if (userPets.length > 0) {
+              setPetData(userPets[0]);
+            } else {
+              setPetData(null);
+              // 반려동물이 없으면 등록 화면으로 이동
+              setCurrentView('registration');
+            }
+          }
         } else {
           // 테스트 계정이 아니면 기존 로직 그대로
           setPets(userPets);
@@ -5742,6 +5752,8 @@ function App() {
             setPetData(userPets[0]);
           } else {
             setPetData(null);
+            // 반려동물이 없으면 등록 화면으로 이동
+            setCurrentView('registration');
           }
         }
         
