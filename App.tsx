@@ -150,7 +150,7 @@ const App: React.FC = () => {
         </div>
 
         {/* 메인 게임 & 발표 영역 */}
-        <div className="flex-1 relative flex flex-col px-12 pb-12 pt-8 min-h-0">
+        <div className="flex-1 relative flex flex-col px-12 pb-8 pt-6 min-h-0">
 
           {/* 캐릭터 우측 상단 배치 */}
           <div className="absolute top-4 right-8 z-20 pointer-events-none scale-75 origin-top-right">
@@ -161,26 +161,26 @@ const App: React.FC = () => {
             />
           </div>
 
-          {/* 메인 슬라이드 본문 (스크롤 가능 영역) */}
+          {/* 메인 슬라이드 본문 (스크롤 가능 영역 - 기본적으로 스크롤 없이 나오도록 크기 축소) */}
           <div className={`flex-1 overflow-y-auto pr-4 relative z-10 transition-all duration-700 ${isLevelingUp ? 'opacity-0 scale-95 blur-md' : 'opacity-100 scale-100 blur-0'}`}>
             <div className="max-w-3xl">
-              <div className="mb-6">
-                <h1 className="text-5xl font-black text-white leading-tight drop-shadow-lg">
+              <div className="mb-4">
+                <h1 className="text-4xl font-black text-white leading-tight drop-shadow-lg">
                   {currentSlide.title}
                 </h1>
                 {currentSlide.subtitle && (
-                  <p className="text-yellow-500/80 mt-2 font-bold tracking-[0.3em] text-sm uppercase">{currentSlide.subtitle}</p>
+                  <p className="text-yellow-500/80 mt-1 font-bold tracking-[0.3em] text-xs uppercase">{currentSlide.subtitle}</p>
                 )}
               </div>
-              <div className="text-slate-200 text-xl leading-relaxed bg-slate-900/40 p-8 rounded-3xl border border-white/5 backdrop-blur-sm">
+              <div className="text-slate-200 text-lg leading-relaxed bg-slate-900/40 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
                 {currentSlide.content}
               </div>
             </div>
           </div>
 
           {/* JRPG 스타일 하단 대화창 (고정 높이) */}
-          <div className="mt-4 relative z-20 shrink-0">
-            <div className="bg-slate-900/95 backdrop-blur-md border-[3px] border-indigo-500/50 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.15)] p-6 min-h-[140px] flex flex-col relative overflow-hidden ring-1 ring-white/10">
+          <div className="mt-2 relative z-20 shrink-0">
+            <div className="bg-slate-900/95 backdrop-blur-md border-[3px] border-indigo-500/50 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.15)] p-5 min-h-[120px] flex flex-col relative overflow-hidden ring-1 ring-white/10">
               {/* Decorative Corner Accents */}
               <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-yellow-500/70 rounded-tl-sm"></div>
               <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-yellow-500/70 rounded-tr-sm"></div>
@@ -191,17 +191,17 @@ const App: React.FC = () => {
               <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
               <div className="flex items-center gap-3 mb-2 pb-2 border-b border-slate-700/50">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_10px_#eab308]"></div>
-                <span className="text-xs font-bold text-yellow-500/90 pixel-font tracking-[0.2em] uppercase">System Message</span>
+                <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_10px_#eab308]"></div>
+                <span className="text-[10px] font-bold text-yellow-500/90 pixel-font tracking-[0.2em] uppercase">System Message</span>
               </div>
 
-              <div className="text-lg font-medium text-slate-200 leading-relaxed font-['Noto_Sans_KR']">
+              <div className="text-base font-medium text-slate-200 leading-relaxed font-['Noto_Sans_KR']">
                 {isAiLoading ? (
                   <div className="flex gap-2 items-center h-full pt-1">
-                    <span className="text-sm text-indigo-400">Analysis...</span>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    <span className="text-xs text-indigo-400">Analysis...</span>
+                    <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce"></div>
+                    <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-1 h-1 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                 ) : (
                   <TypingMessage text={aiTip} speed={30} />
@@ -209,7 +209,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Cursor Animation */}
-              <div className="absolute bottom-4 right-6 text-yellow-500 animate-bounce text-sm opacity-80">
+              <div className="absolute bottom-3 right-5 text-yellow-500 animate-bounce text-xs opacity-80">
                 ▼
               </div>
             </div>
