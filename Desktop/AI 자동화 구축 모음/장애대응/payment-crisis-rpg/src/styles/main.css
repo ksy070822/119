@@ -1,0 +1,992 @@
+:root {
+  --primary: #FFE500;
+  --secondary: #2c1810;
+  --danger: #e74c3c;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --dark: #1a1a2e;
+  --darker: #0f0f1a;
+  --light: #ecf0f1;
+  --jrpg-gold: #d4af37;
+  --jrpg-panel: linear-gradient(180deg, #2c2416 0%, #1a1510 100%);
+  --jrpg-border: rgba(212, 175, 55, 0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--darker);
+  color: var(--light);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 1280px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#game-canvas-wrap {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  margin: 0 auto;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#dom-overlay {
+  pointer-events: none;
+}
+
+#dom-overlay > * {
+  pointer-events: auto;
+}
+
+/* Title scene DOM — 메인 타이틀은 public/assets/ui/title.png만 사용 */
+.title-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.title-screen-character-select {
+  justify-content: space-between;
+}
+.title-screen-character-select .character-grid {
+  flex-shrink: 0;
+}
+.title-screen-character-select .btn-start-village {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+
+.character-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--jrpg-border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.character-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255,229,0,0.15);
+}
+
+.character-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(255,229,0,0.3);
+}
+
+.character-card .character-portrait-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.character-card .character-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.character-card .icon,
+.character-card .fallback-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+.character-card .character-portrait-wrap .icon,
+.character-card .character-portrait-wrap .fallback-icon {
+  margin-bottom: 0;
+}
+
+.character-card .name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 0.95rem;
+  color: var(--jrpg-gold);
+}
+
+.character-card .desc {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.btn-start {
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* 캐릭터 선택 후 시작하기: 아래쪽 배치, 더 크고 눈에 띄게 */
+.btn-start-village {
+  padding: 18px 56px;
+  font-size: 1.35rem;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ffe500, #e6c200);
+  color: #1a1510;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(255, 229, 0, 0.5), 0 0 40px rgba(255, 229, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+.btn-start-village:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 8px 32px rgba(255, 229, 0, 0.6), 0 0 56px rgba(255, 229, 0, 0.3);
+}
+.btn-start-intro {
+  padding: 18px 56px;
+  font-size: 1.35rem;
+  margin-bottom: 48px;
+  background: linear-gradient(135deg, #ffe500, #e6c200);
+  color: #1a1510;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(255, 229, 0, 0.5);
+}
+
+.btn-start:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(212,175,55,0.4);
+}
+
+.btn-start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Game left panel - 캐릭터 + 아이템 */
+.game-left-panel {
+  width: 200px;
+  flex-shrink: 0;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 100%);
+  border-right: 2px solid var(--jrpg-border);
+}
+.character-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.hero-portrait-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--jrpg-border);
+}
+.hero-portrait-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-fallback-icon {
+  font-size: 3rem;
+}
+.hero-name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1rem;
+  color: var(--jrpg-gold);
+  text-align: center;
+}
+.item-slots-label {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 4px;
+}
+.item-slots-hint {
+  font-size: 0.65rem;
+  color: #666;
+  display: block;
+  margin-top: 2px;
+}
+.item-slots {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+.item-slot {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+.item-slot.filled {
+  border-color: var(--jrpg-gold);
+  background: rgba(212,175,55,0.15);
+}
+
+/* Game HUD */
+.game-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stage-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.stage-bar .stage-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.3s;
+}
+
+.stage-bar .stage-dot.active {
+  background: var(--jrpg-gold);
+  box-shadow: 0 0 10px rgba(212,175,55,0.6);
+}
+
+.elapsed-time {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.stage-name {
+  font-size: 0.85rem;
+  color: var(--jrpg-gold);
+}
+
+.risk-hud {
+  display: flex;
+  gap: 20px;
+}
+
+.risk-hud .gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.risk-hud .gauge .label {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.risk-hud .gauge .value {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.risk-hud .gauge .bar-wrap {
+  width: 100px;
+  height: 8px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.risk-hud .gauge .bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.risk-hud .gauge.chaos .bar { background: linear-gradient(90deg, #2ecc71, #e74c3c); }
+.risk-hud .gauge.external .bar { background: linear-gradient(90deg, #f1c40f, #e74c3c); }
+
+/* 하단 문의/선택 패널 */
+.bottom-panel {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(20,18,15,0.95) 100%);
+  border-top: 2px solid var(--jrpg-border);
+}
+.bottom-situation {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.bottom-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.1rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 8px;
+}
+.bottom-desc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--light);
+  margin-bottom: 8px;
+}
+.bottom-meta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 12px;
+}
+.bottom-panel .choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bottom-panel .choice-btn {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+/* 마을: 배경 위에서 캐릭터가 이동하는 영역 */
+.village-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  background: transparent;
+  flex: 1;
+}
+.player-sprite {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--jrpg-gold);
+  box-shadow: 0 0 16px rgba(212,175,55,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: left 0.05s linear, top 0.05s linear;
+}
+.player-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.player-sprite .player-icon {
+  font-size: 1.8rem;
+}
+.player-sprite.moving {
+  animation: playerBob 0.2s ease infinite;
+}
+@keyframes playerBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.ally-npc {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 8;
+  transition: box-shadow 0.3s;
+}
+.ally-npc img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ally-npc .npc-icon {
+  font-size: 1.4rem;
+}
+.ally-npc.unlocked {
+  border-color: var(--success);
+  box-shadow: 0 0 16px rgba(46,204,113,0.5);
+}
+.ally-npc.recruited {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.talk-hint {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid var(--success);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  color: var(--success);
+  margin-bottom: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+.ally-npc.unlocked:not(.recruited) .talk-hint.near {
+  opacity: 1;
+}
+.speech-bubble {
+  position: absolute;
+  max-width: 220px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.9);
+  border: 2px solid var(--jrpg-gold);
+  border-radius: 12px;
+  z-index: 25;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  margin-left: -8px;
+  border: 8px solid transparent;
+  border-top-color: var(--jrpg-gold);
+}
+.speech-bubble-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--light);
+}
+
+/* 말풍선 v3 BEM */
+.speech-bubble__content {
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border: 3px solid #2d3748;
+  border-radius: 20px;
+  padding: 12px 18px;
+  max-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: #2d3748;
+}
+.speech-bubble__name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 4px;
+}
+.speech-bubble__text {
+  font-size: 14px;
+  color: #2d3748;
+  line-height: 1.5;
+}
+.speech-bubble__tail {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 14px solid #2d3748;
+}
+.speech-bubble__tail::after {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -10px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid #ffffff;
+}
+.speech-bubble {
+  transform: translate(-50%, -100%);
+  margin-top: -20px;
+  pointer-events: none;
+}
+.speech-bubble--left { transform: translate(10px, -50%); }
+.speech-bubble--right { transform: translate(calc(-100% - 10px), -50%); }
+
+.village-keys-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  z-index: 5;
+}
+
+/* 아이템 슬롯 이미지 */
+.item-slot .item-slot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.item-slot .item-slot-icon {
+  font-size: 1.2rem;
+}
+
+/* Situation overlay (checkpoint 등) */
+.situation-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.situation-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--jrpg-border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.situation-card .title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+
+.situation-card .desc {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--light);
+  margin-bottom: 20px;
+}
+
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice-btn {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--light);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.choice-btn:hover {
+  background: rgba(255,229,0,0.1);
+  border-color: var(--jrpg-gold);
+}
+
+.checkpoint-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.checkpoint-box {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--warning);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+}
+
+.checkpoint-box .title {
+  font-size: 1.1rem;
+  color: var(--warning);
+  margin-bottom: 12px;
+}
+
+.checkpoint-box .risk-preview {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.checkpoint-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.checkpoint-buttons button {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.checkpoint-buttons .btn-confirm {
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  color: var(--secondary);
+}
+
+.checkpoint-buttons .btn-edit {
+  background: rgba(255,255,255,0.15);
+  color: var(--light);
+}
+
+/* 동료 만남 오버레이 */
+.ally-meeting-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.ally-meeting-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--success);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+.ally-portrait-wrap {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--success);
+}
+.ally-portrait-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ally-fallback-icon {
+  font-size: 2.5rem;
+}
+.ally-meeting-name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+.ally-meeting-message {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--light);
+  margin-bottom: 16px;
+}
+.ally-item-get {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--success);
+  margin-bottom: 16px;
+}
+.ally-item-icon {
+  font-size: 1.5rem;
+}
+.ally-close-btn {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Ending */
+.ending-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, var(--darker) 100%);
+  padding: 40px;
+}
+
+.ending-screen .grade {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 4rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+
+.ending-screen .ending-title {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.ending-screen .ending-message {
+  font-size: 1rem;
+  line-height: 1.8;
+  max-width: 520px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.ending-screen .btn-restart {
+  padding: 14px 40px;
+  font-size: 1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ending-screen .btn-restart:hover {
+  opacity: 0.95;
+}
+
+/* Village scene: 캐릭터 스프라이트(idle/walk) + 그림자 + 이동 시 흔들림 */
+.village-player-sprite {
+  transition: transform 0.08s ease-out;
+}
+.village-player-moving .village-player-sprite {
+  animation: village-player-bob 0.2s ease-in-out infinite alternate;
+}
+@keyframes village-player-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+
+/* ========== 인트로 시네마틱 시퀀스 ========== */
+.intro-sequence {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.intro-fade-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  z-index: 15;
+}
+.intro-fade-black.intro-fade-black-visible {
+  opacity: 1;
+}
+
+.intro-bg-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.intro-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0a0a0f;
+}
+.intro-bg-wrap.intro-bg-fade-in .intro-bg {
+  animation: intro-bg-fade-in 1.2s ease-out forwards;
+}
+@keyframes intro-bg-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.intro-darken {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+}
+.intro-darken.intro-darken-visible {
+  opacity: 1;
+}
+
+.intro-shake-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 80px;
+  pointer-events: none;
+}
+.intro-shake-wrap.intro-shake {
+  animation: intro-screen-shake 0.15s ease-in-out infinite alternate;
+}
+@keyframes intro-screen-shake {
+  from { transform: translateX(-3px); }
+  to { transform: translateX(3px); }
+}
+
+.intro-portraits {
+  display: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0 24px;
+}
+.intro-portrait-item {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  border: 2px solid rgba(255, 229, 0, 0.4);
+}
+.intro-portrait-item.intro-portrait-fade-in {
+  animation: intro-portrait-fade-in 0.6s ease-out forwards;
+}
+@keyframes intro-portrait-fade-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.intro-text-wrap {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 720px;
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+.intro-text {
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
+  line-height: 1.5;
+  margin: 0;
+  min-height: 1.5em;
+}
+
+.intro-title-card {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  pointer-events: auto;
+}
+.intro-title-card .intro-title-heading {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 2.5rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  margin: 0;
+}
+.intro-btn-start {
+  padding: 14px 48px;
+  font-size: 1.25rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.intro-btn-start:hover {
+  opacity: 0.95;
+  transform: scale(1.02);
+}
+
+.intro-skip-btn {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 25;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.intro-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}

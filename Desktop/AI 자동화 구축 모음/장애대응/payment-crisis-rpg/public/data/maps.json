@@ -1,0 +1,66 @@
+{
+  "maps": {
+    "S1": {
+      "id": "S1",
+      "background": "/image/bg_control.png",
+      "width": 800,
+      "height": 600,
+      "playerStart": { "x": 400, "y": 500 },
+      "npcs": [
+        { "id": "s1_first", "name": "상황실", "position": { "x": 200, "y": 280 }, "dialogueId": "S1_FIRST", "interactionRadius": 60 },
+        { "id": "s1_second", "name": "전파담당", "position": { "x": 400, "y": 220 }, "dialogueId": "S1_SECOND", "interactionRadius": 60 },
+        { "id": "tech_comm", "name": "테크커뮤니케이터", "position": { "x": 600, "y": 320 }, "dialogueId": "S1_TECH_COMM", "itemReward": "faq_card", "isGuardian": false, "interactionRadius": 60 }
+      ],
+      "objects": []
+    },
+    "S2": {
+      "id": "S2",
+      "background": "/image/bg_control.png",
+      "width": 800,
+      "height": 600,
+      "playerStart": { "x": 400, "y": 500 },
+      "npcs": [
+        { "id": "s2_first", "name": "공지담당", "position": { "x": 250, "y": 280 }, "dialogueId": "S2_FIRST", "interactionRadius": 60 },
+        { "id": "s2_second", "name": "채널담당", "position": { "x": 550, "y": 260 }, "dialogueId": "S2_SECOND", "interactionRadius": 60 },
+        { "id": "reporter", "name": "리포터", "position": { "x": 350, "y": 380 }, "dialogueId": "S2_REPORTER", "itemReward": "timeline", "isGuardian": false, "interactionRadius": 60 },
+        { "id": "control_tower", "name": "컨트롤타워", "position": { "x": 620, "y": 400 }, "dialogueId": "S2_CONTROL_TOWER", "itemReward": "map", "isGuardian": false, "interactionRadius": 60 }
+      ],
+      "objects": []
+    },
+    "S3": {
+      "id": "S3",
+      "background": "/image/bg_control.png",
+      "width": 800,
+      "height": 600,
+      "playerStart": { "x": 400, "y": 500 },
+      "npcs": [
+        { "id": "s3_main", "name": "법무담당", "position": { "x": 400, "y": 300 }, "dialogueId": "S3_MAIN", "interactionRadius": 60 }
+      ],
+      "objects": []
+    },
+    "S4": {
+      "id": "S4",
+      "background": "/image/bg_control.png",
+      "width": 800,
+      "height": 600,
+      "playerStart": { "x": 400, "y": 500 },
+      "npcs": [
+        { "id": "s4_main", "name": "복구담당", "position": { "x": 400, "y": 300 }, "dialogueId": "S4_MAIN", "interactionRadius": 60 },
+        { "id": "tech_lead", "name": "테크리더", "position": { "x": 300, "y": 380 }, "dialogueId": "S4_TECH_LEAD", "itemReward": "tablet", "isGuardian": false, "interactionRadius": 60 }
+      ],
+      "objects": []
+    },
+    "S5": {
+      "id": "S5",
+      "background": "/image/bg_control.png",
+      "width": 800,
+      "height": 600,
+      "playerStart": { "x": 400, "y": 500 },
+      "npcs": [
+        { "id": "s5_main", "name": "후속담당", "position": { "x": 400, "y": 300 }, "dialogueId": "S5_MAIN", "interactionRadius": 60 },
+        { "id": "biz_lead", "name": "비즈니스리더", "position": { "x": 500, "y": 350 }, "dialogueId": "S5_BIZ_LEAD", "itemReward": "stamp", "isGuardian": false, "interactionRadius": 60 }
+      ],
+      "objects": []
+    }
+  }
+}
