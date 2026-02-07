@@ -1,0 +1,22 @@
+{
+  "choices": [
+    { "id": "S1_C1", "stageId": "S1", "text": "CS 인입 유형·규모만 수집해 공유한다", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 }, "scopeClarity": 1 },
+    { "id": "S1_C2", "stageId": "S1", "text": "\"확인 중\" 수준의 최소 공지를 준비한다(게시 X)", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+    { "id": "S1_C3", "stageId": "S1", "text": "아직 아무 것도 하지 않는다", "checkpoint": true, "riskPreview": { "internalChaos": "▲ 상승", "externalRisk": "유지" }, "effects": { "internalChaos": 15, "externalRisk": 0 } },
+    { "id": "S1_C4", "stageId": "S1", "text": "현상(결제 실패) + 다음 업데이트 시간", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 }, "scopeClarity": 1 },
+    { "id": "S1_C5", "stageId": "S1", "text": "원인 단정(\"외부 결제사 확정\")", "checkpoint": true, "effects": { "internalChaos": 0, "externalRisk": 20, "promiseRisk": true } },
+    { "id": "S1_C6", "stageId": "S1", "text": "확인 중인 범위(내부/외부 동시 점검) 안내", "checkpoint": false, "effects": { "internalChaos": -5, "externalRisk": 0 }, "scopeClarity": 1 },
+    { "id": "S2_C1", "stageId": "S2", "text": "공지하지 않는다. CS 가이드만 준비한다", "checkpoint": false, "effects": { "internalChaos": 10, "externalRisk": 0 } },
+    { "id": "S2_C2", "stageId": "S2", "text": "최소 공지(현상만) 게시한다", "checkpoint": false, "effects": { "internalChaos": -5, "externalRisk": 10 } },
+    { "id": "S2_C3", "stageId": "S2", "text": "상세 공지를 바로 게시한다", "checkpoint": true, "effects": { "internalChaos": -10, "externalRisk": 25, "promiseRisk": true } },
+    { "id": "S2_C4", "stageId": "S2", "text": "T앱/내비 비로그인 공지 + SNS", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 5 } },
+    { "id": "S2_C5", "stageId": "S2", "text": "공지 없이 복구만 기다린다", "checkpoint": false, "effects": { "internalChaos": 20, "externalRisk": 0 } },
+    { "id": "S3_C1", "stageId": "S3", "text": "심화 공지 초안 요청(원인/범위/복구현황/상담채널)", "checkpoint": false, "effects": { "internalChaos": -5, "externalRisk": -5 }, "scopeClarity": 1 },
+    { "id": "S3_C2", "stageId": "S3", "text": "아직 초기공지 유지, 심화공지 보류", "checkpoint": true, "effects": { "internalChaos": 10, "externalRisk": 15 } },
+    { "id": "S4_C1", "stageId": "S4", "text": "등급 하향 검토 후 복구 선언 합의하고 공지", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+    { "id": "S4_C2", "stageId": "S4", "text": "바로 복구 공지 게시", "checkpoint": true, "effects": { "internalChaos": 5, "externalRisk": 10 } },
+    { "id": "S5_C1", "stageId": "S5", "text": "VOC 취합, 피해 규모 파악, 보상안 검토", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+    { "id": "S5_C2", "stageId": "S5", "text": "테크리더에게 재발방지·장애 리포트 요청", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+    { "id": "S5_C3", "stageId": "S5", "text": "아무 것도 남기지 않는다", "checkpoint": false, "effects": { "internalChaos": 10, "externalRisk": 0 } }
+  ]
+}
