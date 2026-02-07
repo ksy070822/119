@@ -298,69 +298,113 @@ export class IntroScene {
     container.style.cssText = `
       display: flex;
       justify-content: center;
-      gap: 16px;
+      align-items: flex-end;
+      gap: 20px;
       position: absolute;
-      bottom: 200px;
+      bottom: 160px;
       left: 50%;
       transform: translateX(-50%);
+      padding: 24px 32px;
     `;
 
-    const delay = 800;
+    // 먼저 빈 원형 슬롯 5개를 배치
+    const slots = [];
     portraitIds.forEach((charId, i) => {
+      const char = CHARACTERS[charId];
+      const slot = document.createElement('div');
+      slot.className = 'intro-portrait-slot';
+      slot.style.cssText = `
+        width: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      `;
+
+      // 빈 원형 테두리
+      const circle = document.createElement('div');
+      circle.className = 'intro-portrait-circle';
+      circle.style.cssText = `
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 3px solid rgba(212, 175, 55, 0.3);
+        background: rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.6s ease;
+      `;
+      slot.appendChild(circle);
+
+      // 이름 자리 (빈 상태)
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = `
+        color: transparent;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        text-shadow: 1px 1px 2px #000;
+        min-height: 20px;
+        transition: color 0.4s ease;
+      `;
+      slot.appendChild(nameEl);
+
+      // 클래스/소개 자리
+      const infoEl = document.createElement('div');
+      infoEl.style.cssText = `
+        color: transparent;
+        font-size: 11px;
+        text-align: center;
+        line-height: 1.4;
+        min-height: 32px;
+        transition: color 0.4s ease;
+      `;
+      slot.appendChild(infoEl);
+
+      container.appendChild(slot);
+      slots.push({ slot, circle, nameEl, infoEl, charId, char });
+    });
+
+    // 한 명씩 채워나가기 (2초 간격)
+    const delay = 2000;
+    slots.forEach(({ circle, nameEl, infoEl, charId, char }, i) => {
       const id = setTimeout(() => {
-        const char = CHARACTERS[charId];
         const skillInfo = HERO_SKILL_LINES[charId] || {};
         const url = getPortraitUrl(charId);
+        const color = char?.color || '#FFD700';
 
-        const wrap = document.createElement('div');
-        wrap.className = 'intro-portrait-item intro-portrait-fade-in';
-        wrap.style.cssText = `
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          animation: fadeInUp 0.5s ease-out;
-        `;
-
+        // 원형에 초상화 채우기
+        circle.style.border = `3px solid ${color}`;
+        circle.style.boxShadow = `0 0 20px ${color}, 0 0 40px ${color}40`;
+        circle.style.background = 'rgba(0, 0, 0, 0.5)';
         if (url) {
-          const img = document.createElement('div');
-          img.style.cssText = `
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid ${char?.color || '#FFD700'};
-            background-image: url(${url});
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 0 15px ${char?.color || '#FFD700'};
-          `;
-          wrap.appendChild(img);
+          circle.style.backgroundImage = `url(${url})`;
+          circle.style.backgroundSize = 'cover';
+          circle.style.backgroundPosition = 'center';
         }
+        circle.style.animation = 'intro-portrait-fade-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
 
-        const name = document.createElement('div');
-        name.textContent = char?.name || charId;
-        name.style.cssText = `
-          color: ${char?.color || '#fff'};
-          font-size: 12px;
-          margin-top: 4px;
-          text-shadow: 1px 1px 2px #000;
-        `;
-        wrap.appendChild(name);
+        // 이름 표시
+        nameEl.textContent = char?.name || charId;
+        nameEl.style.color = color;
 
+        // 클래스 + 설명
+        const descParts = [];
+        if (char?.class) descParts.push(char.class);
+        if (char?.description) descParts.push(char.description.replace(/\n/g, '<br>'));
+        infoEl.innerHTML = descParts.join('<br>');
+        infoEl.style.color = '#ccc';
+
+        // 스킬 대사 (하단 텍스트에 표시)
         if (showSkillLines && skillInfo.skillLine) {
-          const skillLine = document.createElement('div');
-          skillLine.textContent = `"${skillInfo.skillLine}"`;
-          skillLine.style.cssText = `
-            color: #FFD700;
-            font-size: 10px;
-            font-style: italic;
-            max-width: 100px;
-            text-align: center;
-            margin-top: 4px;
-          `;
-          wrap.appendChild(skillLine);
+          const textEl = document.getElementById('intro-text');
+          if (textEl) {
+            textEl.textContent = '';
+            this._typeText(textEl, `"${skillInfo.skillLine}"`);
+          }
         }
-
-        container.appendChild(wrap);
       }, i * delay);
       this._timeoutIds.push(id);
     });

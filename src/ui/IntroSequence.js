@@ -86,7 +86,7 @@ export const INTRO_SCENES = [
   // 장면 4: 다섯 영웅의 소집
   {
     id: 3,
-    duration: 10000,  // 10초 (영웅들 등장 시간)
+    duration: 14000,  // 14초 (영웅들 등장 시간, 2초 간격 × 5명 + 여유)
     background: getGuildBg(1),
     text: '위기의 순간,\n다섯 영웅이 나타났습니다.',
     effect: 'portraits',

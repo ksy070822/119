@@ -45,11 +45,11 @@ export class CharacterSelect {
     grid.className = 'character-select-grid';
     grid.style.cssText = `
       display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
+      gap: 16px;
+      flex-wrap: nowrap;
       justify-content: center;
-      align-items: flex-end;
-      max-width: 1000px;
+      align-items: stretch;
+      max-width: 1100px;
       padding: 20px 0;
     `;
 
@@ -96,9 +96,9 @@ export class CharacterSelect {
     card.className = 'character-card';
     card.dataset.charId = char.id;
     card.style.cssText = `
-      width: 160px;
-      min-width: 160px;
-      max-width: 160px;
+      width: 180px;
+      min-width: 180px;
+      max-width: 180px;
       padding: 16px;
       background: rgba(30, 30, 50, 0.9);
       border: 3px solid #444;
@@ -109,6 +109,7 @@ export class CharacterSelect {
       transform: translateY(0) scale(1);
       transform-origin: center bottom;
       flex-shrink: 0;
+      flex-grow: 0;
     `;
 
     // 아이콘/이모지
@@ -172,11 +173,11 @@ export class CharacterSelect {
     // 설명
     const desc = document.createElement('div');
     desc.className = 'character-desc';
-    desc.textContent = char.description || '';
+    desc.innerHTML = (char.description || '').replace(/\n/g, '<br>');
     desc.style.cssText = `
       font-size: 11px;
       color: #888;
-      line-height: 1.4;
+      line-height: 1.5;
     `;
     card.appendChild(desc);
 
