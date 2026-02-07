@@ -127,7 +127,8 @@ export class GameScene {
     const stageId = 'S' + stageNum;
     let mapLoadError = false;
     try {
-      const res = await fetch('/data/maps.json');
+      const base = import.meta.env.BASE_URL || '/';
+      const res = await fetch(`${base}data/maps.json`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.mapsData = await res.json();
     } catch (err) {
@@ -161,7 +162,8 @@ export class GameScene {
 
     let dialogueLoadError = false;
     try {
-      const dialRes = await fetch('/data/dialogues.json');
+      const dialBase = import.meta.env.BASE_URL || '/';
+      const dialRes = await fetch(`${dialBase}data/dialogues.json`);
       if (!dialRes.ok) throw new Error(`HTTP ${dialRes.status}`);
       this.dialoguesData = await dialRes.json();
     } catch (err) {
@@ -207,7 +209,8 @@ export class GameScene {
     g.drawRect(0, 0, this.engine.width, this.engine.height);
     this.bgContainer.addChild(g);
     try {
-      const bg = Sprite.from('/assets/backgrounds/village-bg.png');
+      const bgBase = import.meta.env.BASE_URL || '/';
+      const bg = Sprite.from(`${bgBase}assets/backgrounds/village-bg.png`);
       bg.anchor.set(0.5);
       bg.x = this.engine.width / 2;
       bg.y = this.engine.height / 2;

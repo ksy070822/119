@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: process.env.NODE_ENV === 'production' ? '/game/' : '/',
+  base: process.env.NODE_ENV === 'production' ? '/119/' : '/',
   root: '.',
   publicDir: 'public',
   build: {
