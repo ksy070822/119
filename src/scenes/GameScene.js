@@ -144,7 +144,8 @@ export class GameScene {
     this.player.container.x = this.player.x;
     this.player.container.y = this.player.y;
     this.gameMap.playerLayer.addChild(this.player.container);
-    this.camera = new Camera(this.engine.width, this.engine.height);
+    const LEFT_PANEL_WIDTH = 200;
+    this.camera = new Camera(this.engine.width, this.engine.height, LEFT_PANEL_WIDTH);
     this.camera.x = this.player.x;
     this.camera.y = this.player.y;
     this.camera.applyTo(this.gameMap.container);
@@ -726,7 +727,6 @@ export class GameScene {
   _startVillageLoop() {
     const loop = () => {
       this._villLoopId = requestAnimationFrame(loop);
-      if (this.engine.input) this.engine.input.clearJustPressed();
       if (this.gameMap && this.player && this.camera) {
         this.player.update(this.engine.input);
         const mw = this.gameMap.width;
@@ -771,6 +771,8 @@ export class GameScene {
         this._playerEl.classList.toggle('moving', isMoving);
         this._updateNearHint();
       }
+      // justPressed 초기화는 프레임 끝에서 수행 (읽기 전에 지우면 Space 대화가 안 됨)
+      if (this.engine.input) this.engine.input.clearJustPressed();
     };
     loop();
   }

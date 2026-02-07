@@ -29,10 +29,9 @@ export class Player {
 
     this.sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
     this.sprite.anchor.set(0.5, 1);
-    this.sprite.width = 32;
-    this.sprite.height = 48;
     this.container.addChild(this.sprite);
 
+    this._targetScale = 1;
     this._textures = {};
     this._loadTextures();
   }
@@ -54,6 +53,22 @@ export class Player {
     this._textures.walk_left = PIXI.Texture.from(walkLeft);
     this._textures.walk_right = PIXI.Texture.from(walkRight);
     this.sprite.texture = this._textures.idle;
+    // 비율 유지하며 높이 기준 스케일링
+    const TARGET_HEIGHT = 64;
+    const tex = this._textures.idle;
+    if (tex.valid && tex.height > 0) {
+      this._targetScale = TARGET_HEIGHT / tex.height;
+      this.sprite.scale.set(this._targetScale);
+    } else {
+      const onUpdate = () => {
+        if (tex.height > 0) {
+          this._targetScale = TARGET_HEIGHT / tex.height;
+          this.sprite.scale.set(this._targetScale);
+        }
+        tex.off('update', onUpdate);
+      };
+      tex.on('update', onUpdate);
+    }
   }
 
   _getPose() {
@@ -66,8 +81,9 @@ export class Player {
   _setPose(pose) {
     const tex = this._textures[pose] || this._textures.idle;
     if (this.sprite.texture !== tex) this.sprite.texture = tex;
-    if (pose === 'walk_left') this.sprite.scale.x = -1;
-    else this.sprite.scale.x = 1;
+    const s = this._targetScale || 1;
+    if (pose === 'walk_left') this.sprite.scale.set(-s, s);
+    else this.sprite.scale.set(s, s);
   }
 
   update(input) {
