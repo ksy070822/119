@@ -15,7 +15,7 @@ export class NPC {
     this.itemReward = npcData?.itemReward ?? null;
     this.isGuardian = npcData?.isGuardian ?? false;
     this.guardianCondition = npcData?.guardianCondition ?? null;
-    this.interactionRadius = npcData?.interactionRadius ?? 60;
+    this.interactionRadius = npcData?.interactionRadius ?? 90;
     this.hasSpoken = false;
 
     this.sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
@@ -23,7 +23,7 @@ export class NPC {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
-    const TARGET_HEIGHT = 64;
+    const TARGET_HEIGHT = 96;
     if (this.characterId && CHARACTERS[this.characterId]?.sprites?.idle) {
       const tex = PIXI.Texture.from(CHARACTERS[this.characterId].sprites.idle);
       this.sprite.texture = tex;
@@ -43,8 +43,9 @@ export class NPC {
         tex.on('update', onUpdate);
       }
     } else {
-      this.sprite.width = 32;
-      this.sprite.height = 48;
+      this.sprite.width = 48;
+      this.sprite.height = 72;
+      this.sprite.tint = 0xccccff;
     }
   }
 

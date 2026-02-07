@@ -138,6 +138,32 @@ export class GameScene {
     }
     const mapData = this.mapsData?.maps?.[stageId] ?? this.mapsData?.maps?.S1 ?? { width: 800, height: 600, playerStart: { x: 400, y: 500 }, npcs: [], objects: [] };
     mapData.background = getVillageBg(stageNum);
+
+    // 맵 크기를 캔버스에 맞게 확장 (NPC/플레이어 위치도 중앙 보정)
+    const LEFT_PANEL_WIDTH = 200;
+    const origW = mapData.width || 800;
+    const origH = mapData.height || 600;
+    const targetW = this.engine.width;
+    const targetH = this.engine.height;
+    const offsetX = Math.round((targetW - origW) / 2);
+    const offsetY = Math.round((targetH - origH) / 2);
+    mapData.width = targetW;
+    mapData.height = targetH;
+    if (mapData.playerStart) {
+      mapData.playerStart = {
+        x: (mapData.playerStart.x ?? 400) + offsetX,
+        y: (mapData.playerStart.y ?? 500) + offsetY,
+      };
+    }
+    (mapData.npcs || []).forEach((npc) => {
+      if (npc.position) {
+        npc.position = {
+          x: (npc.position.x ?? 0) + offsetX,
+          y: (npc.position.y ?? 0) + offsetY,
+        };
+      }
+    });
+
     this.gameMap = new GameMap(mapData);
     this.player = new Player(4, job);
     this.player.x = mapData.playerStart?.x ?? 400;
@@ -145,7 +171,6 @@ export class GameScene {
     this.player.container.x = this.player.x;
     this.player.container.y = this.player.y;
     this.gameMap.playerLayer.addChild(this.player.container);
-    const LEFT_PANEL_WIDTH = 200;
     this.camera = new Camera(this.engine.width, this.engine.height, LEFT_PANEL_WIDTH);
     this.camera.x = this.player.x;
     this.camera.y = this.player.y;
@@ -635,6 +660,29 @@ export class GameScene {
     this.engine.state.set({ elapsedMinutes: Math.max(elapsed, nextElapsed), stage: nextNum });
     const stageNumForBg = this.stageManager.getCurrentStage();
     mapData.background = getVillageBg(stageNumForBg);
+
+    // 맵 크기를 캔버스에 맞게 확장
+    const stOrigW = mapData.width || 800;
+    const stOrigH = mapData.height || 600;
+    const stOffX = Math.round((this.engine.width - stOrigW) / 2);
+    const stOffY = Math.round((this.engine.height - stOrigH) / 2);
+    mapData.width = this.engine.width;
+    mapData.height = this.engine.height;
+    if (mapData.playerStart) {
+      mapData.playerStart = {
+        x: (mapData.playerStart.x ?? 400) + stOffX,
+        y: (mapData.playerStart.y ?? 500) + stOffY,
+      };
+    }
+    (mapData.npcs || []).forEach((npc) => {
+      if (npc.position) {
+        npc.position = {
+          x: (npc.position.x ?? 0) + stOffX,
+          y: (npc.position.y ?? 0) + stOffY,
+        };
+      }
+    });
+
     const oldMap = this.gameMap;
     this.gameMap = new GameMap(mapData);
     if (oldMap?.container?.parent) oldMap.container.parent.removeChild(oldMap.container);

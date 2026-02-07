@@ -35,25 +35,40 @@ export class GameMap {
   _setBackground() {
     const w = this.width;
     const h = this.height;
+
+    // 배경색 (이미지 로드 전/실패 시 보임)
+    const fill = new PIXI.Graphics();
+    fill.beginFill(0x1a1a2e);
+    fill.drawRect(0, 0, w, h);
+    this.backgroundLayer.addChild(fill);
+
     const url = this.mapData.background;
-    if (url) {
-      try {
-        const bg = PIXI.Sprite.from(url);
-        bg.anchor.set(0, 0);
-        bg.width = w;
-        bg.height = h;
-        this.backgroundLayer.addChild(bg);
-      } catch (_) {
-        const g = new PIXI.Graphics();
-        g.beginFill(0x1a1a2e);
-        g.drawRect(0, 0, w, h);
-        this.backgroundLayer.addChild(g);
+    if (!url) return;
+    try {
+      const bg = PIXI.Sprite.from(url);
+      bg.anchor.set(0.5, 0.5);
+      bg.x = w / 2;
+      bg.y = h / 2;
+
+      // 텍스처 로드 후 비율 유지하며 cover 방식으로 스케일
+      const applyCover = () => {
+        const tex = bg.texture;
+        if (!tex || !tex.valid || tex.width <= 1) return;
+        const scaleX = w / tex.width;
+        const scaleY = h / tex.height;
+        const s = Math.max(scaleX, scaleY);
+        bg.scale.set(s);
+      };
+
+      const tex = bg.texture;
+      if (tex.valid && tex.width > 1) {
+        applyCover();
+      } else {
+        tex.on('update', applyCover);
       }
-    } else {
-      const g = new PIXI.Graphics();
-      g.beginFill(0x1a1a2e);
-      g.drawRect(0, 0, w, h);
-      this.backgroundLayer.addChild(g);
+      this.backgroundLayer.addChild(bg);
+    } catch (_) {
+      // fill 이미 추가됨
     }
   }
 }

@@ -54,7 +54,7 @@ export class Player {
     this._textures.walk_right = PIXI.Texture.from(walkRight);
     this.sprite.texture = this._textures.idle;
     // 비율 유지하며 높이 기준 스케일링
-    const TARGET_HEIGHT = 64;
+    const TARGET_HEIGHT = 96;
     const tex = this._textures.idle;
     if (tex.valid && tex.height > 0) {
       this._targetScale = TARGET_HEIGHT / tex.height;
