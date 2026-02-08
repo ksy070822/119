@@ -4,6 +4,7 @@
  */
 import { CHARACTERS, INTRO_ORDER } from '../data/characters.js';
 import { getVillageBg } from '../data/assetPaths.js';
+import { ScreenEffects } from '../effects/ScreenEffects.js';
 
 const BOSS_DIALOGUES = [
   { speaker: '결제 대란', text: '크윽... 영웅들... 네놈들...' },
@@ -234,10 +235,12 @@ export class BossScene {
         }, i * 200);
       });
     } else if (phase === 4) {
-      // 영웅들의 외침
+      // 영웅들의 외침 + 필살기 연출
       textEl.textContent = '';
       shoutEl.style.display = 'block';
       shoutEl.textContent = `"${HERO_SHOUT}"`;
+      const screenEffects = new ScreenEffects(document.body);
+      screenEffects.playSkillEffect(window.innerWidth / 2, window.innerHeight / 2);
 
       // 보스 공격 효과
       monsterEl.style.animation = 'none';

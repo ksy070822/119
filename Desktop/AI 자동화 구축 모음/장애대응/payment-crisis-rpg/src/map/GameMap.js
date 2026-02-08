@@ -4,6 +4,7 @@
  * mapData는 maps.json의 S1 등.
  */
 import * as PIXI from 'pixi.js';
+import { Assets } from 'pixi.js';
 
 export class GameMap {
   constructor(mapData) {
@@ -16,6 +17,7 @@ export class GameMap {
     this.effectLayer = new PIXI.Container();
 
     this.container.addChild(this.backgroundLayer);
+    this._parallaxFactor = 0.15;
     this.container.addChild(this.objectLayer);
     this.container.addChild(this.npcLayer);
     this.container.addChild(this.playerLayer);
@@ -32,23 +34,39 @@ export class GameMap {
     return this.mapData.height || 600;
   }
 
+  updateParallax(cameraX, cameraY) {
+    const cx = this.width / 2;
+    const cy = this.height / 2;
+    this.backgroundLayer.x = (cameraX - cx) * this._parallaxFactor;
+    this.backgroundLayer.y = (cameraY - cy) * this._parallaxFactor;
+  }
+
   _setBackground() {
     const w = this.width;
     const h = this.height;
     const url = this.mapData.background;
     if (url) {
-      try {
-        const bg = PIXI.Sprite.from(url);
-        bg.anchor.set(0, 0);
-        bg.width = w;
-        bg.height = h;
-        this.backgroundLayer.addChild(bg);
-      } catch (_) {
-        const g = new PIXI.Graphics();
-        g.beginFill(0x1a1a2e);
-        g.drawRect(0, 0, w, h);
-        this.backgroundLayer.addChild(g);
-      }
+      const fullUrl = url.startsWith('/') && typeof window !== 'undefined' ? window.location.origin + url : url;
+      Assets.load(fullUrl)
+        .then((tex) => {
+          const bg = new PIXI.Sprite(tex);
+          bg.anchor.set(0, 0);
+          bg.width = w;
+          bg.height = h;
+          this.backgroundLayer.removeChildren();
+          this.backgroundLayer.addChild(bg);
+        })
+        .catch(() => {
+          const g = new PIXI.Graphics();
+          g.beginFill(0x1a1a2e);
+          g.drawRect(0, 0, w, h);
+          this.backgroundLayer.removeChildren();
+          this.backgroundLayer.addChild(g);
+        });
+      const g = new PIXI.Graphics();
+      g.beginFill(0x1a1a2e);
+      g.drawRect(0, 0, w, h);
+      this.backgroundLayer.addChild(g);
     } else {
       const g = new PIXI.Graphics();
       g.beginFill(0x1a1a2e);

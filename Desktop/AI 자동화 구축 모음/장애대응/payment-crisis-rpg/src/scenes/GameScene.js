@@ -10,6 +10,7 @@ import { DialogueManager } from '../dialogue/DialogueManager.js';
 import { DialogueBox } from '../dialogue/DialogueBox.js';
 import { ChoicePanel } from '../dialogue/ChoicePanel.js';
 import { EffectManager } from '../effects/EffectManager.js';
+import { ScreenEffects } from '../effects/ScreenEffects.js';
 import { StageManager } from '../systems/StageManager.js';
 import { RiskGauge } from '../systems/RiskGauge.js';
 import { ChoiceSystem } from '../systems/ChoiceSystem.js';
@@ -22,8 +23,24 @@ import { getItemImage, getVillageBg } from '../data/assetPaths.js';
 import { CHARACTERS } from '../data/characters.js';
 
 const PLAYER_SPEED = 10;
-const PLAYER_HALF = 26;
+const PLAYER_HALF = 40;
 const NEAR_DISTANCE = 90;
+
+const STAGE_COLOR_OVERLAYS = {
+  1: 'rgba(46, 204, 113, 0.06)',
+  2: 'rgba(241, 196, 15, 0.1)',
+  3: 'rgba(230, 126, 34, 0.12)',
+  4: 'rgba(231, 76, 60, 0.14)',
+  5: 'rgba(46, 204, 113, 0.04)',
+};
+
+const STAGE_FADE_COLORS = {
+  1: '#1a2a1a',
+  2: '#2a2a1a',
+  3: '#2a1f1a',
+  4: '#2a1a1a',
+  5: '#1a2a1a',
+};
 
 export class GameScene {
   constructor(engine) {
@@ -156,6 +173,7 @@ export class GameScene {
       const npc = new NPC({ ...npcData, characterId });
       this.gameMap.npcLayer.addChild(npc.sprite);
       this.npcs.push(npc);
+      this._setupNPCClick(npc);
     });
 
     let dialogueLoadError = false;
@@ -176,7 +194,8 @@ export class GameScene {
     this.dialogueManager = new DialogueManager(this.dialoguesData, this.engine.state);
     this.dialogueBox = new DialogueBox(null);
     this.choicePanel = new ChoicePanel(null);
-    this.effectManager = new EffectManager(null);
+    this.effectManager = new EffectManager(this.gameMap?.effectLayer ?? null);
+    this.screenEffects = new ScreenEffects(document.getElementById('dom-overlay') || document.body);
 
     this._setupPixi();
     this._setupDOM();
@@ -263,10 +282,17 @@ export class GameScene {
     this._rightArea = rightArea;
 
     if (this.gameMap) {
+      const stageOverlay = document.createElement('div');
+      stageOverlay.className = 'stage-color-overlay';
+      stageOverlay.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:1;';
+      this.domRoot.insertBefore(stageOverlay, this.domRoot.firstChild);
+      this._stageColorOverlay = stageOverlay;
+      this._updateStageColorOverlay();
+
       const hint = document.createElement('div');
       hint.className = 'interaction-hint';
       hint.style.cssText = 'position:fixed;bottom:180px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:8px 16px;border-radius:8px;font-size:14px;display:none;pointer-events:none;z-index:20;';
-      hint.textContent = 'Space: 대화';
+      hint.textContent = '클릭 또는 Space: 대화';
       this.domRoot.appendChild(hint);
       this._interactionHintEl = hint;
     }
@@ -436,6 +462,23 @@ export class GameScene {
     };
   }
 
+  _setupNPCClick(npc) {
+    if (!npc?.sprite) return;
+    npc.sprite.eventMode = 'static';
+    npc.sprite.cursor = 'pointer';
+    npc.sprite.on('pointertap', () => this._onNPCClick(npc));
+  }
+
+  _onNPCClick(npc) {
+    if (!this.gameMap || !this.player) return;
+    if (this.player.isWalkingToTarget()) return;
+    if (!this.player.canMove) return;
+    if (npc.hasSpoken) return;
+    if (npc.isGuardian && !this._guardianConditionMet(npc)) return;
+    const targetY = npc.y + 40;
+    this.player.walkTo(npc.x, targetY, () => this._startDialogue(npc));
+  }
+
   _guardianConditionMet(npc) {
     const cond = npc.guardianCondition;
     if (!cond) return true;
@@ -475,7 +518,7 @@ export class GameScene {
     this._nearestNPC = nearest;
     if (this._interactionHintEl) {
       this._interactionHintEl.style.display = nearest ? 'block' : 'none';
-      if (nearest) this._interactionHintEl.textContent = `Space: ${nearest.name}와 대화`;
+      if (nearest) this._interactionHintEl.textContent = `클릭 또는 Space: ${nearest.name}와 대화`;
     }
   }
 
@@ -544,6 +587,8 @@ export class GameScene {
           dm.selectChoice(choice);
           if (choice?.effects && (choice.effects.internalChaos > 0 || choice.effects.externalRisk > 0)) {
             this.effectManager?.play('DANGER_SPARK');
+            this.screenEffects?.shake(300);
+            this.screenEffects?.redFlash(250);
           }
           step = dm.currentStep();
           if (step?.type === 'response') {
@@ -575,6 +620,7 @@ export class GameScene {
         if (step.type === 'item_reward') {
           const itemId = step.itemId;
           const text = step.text ?? '아이템을 획득했습니다.';
+          this.screenEffects?.playSkillEffect();
           box.showTextInstant(npc.name, text, this._getPortraitForSpeaker(npc.name));
           await box.waitForAdvance();
           box.hide();
@@ -617,15 +663,24 @@ export class GameScene {
       this._goToEnding();
       return;
     }
+    const fadeColor = STAGE_FADE_COLORS[nextNum] ?? '#1a2a1a';
     const fadeEl = document.createElement('div');
-    fadeEl.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;transition:opacity 0.4s;z-index:100;pointer-events:none;';
+    fadeEl.style.cssText = `position:fixed;inset:0;background:${fadeColor};opacity:0;z-index:100;pointer-events:none;`;
     this.domRoot?.appendChild(fadeEl);
-    fadeEl.style.opacity = '1';
-    await new Promise((r) => setTimeout(r, 500));
+
+    if (typeof gsap !== 'undefined') {
+      await gsap.to(fadeEl, { opacity: 1, duration: 0.5, ease: 'power2.inOut' });
+    } else {
+      fadeEl.style.transition = 'opacity 0.5s ease';
+      fadeEl.style.opacity = '1';
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
     const label = document.createElement('div');
     label.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:24px;z-index:101;pointer-events:none;';
     label.textContent = `Stage ${nextNum} · ${this.stageManager.getStageName(nextNum)}`;
     this.domRoot?.appendChild(label);
+
     const elapsed = this.engine.state.get('elapsedMinutes') ?? 0;
     const nextElapsed = nextNum === 2 ? 15 : nextNum === 3 ? 50 : nextNum === 4 ? 95 : 200;
     this.engine.state.set({ elapsedMinutes: Math.max(elapsed, nextElapsed), stage: nextNum });
@@ -652,14 +707,23 @@ export class GameScene {
       const npc = new NPC({ ...npcData, characterId });
       this.gameMap.npcLayer.addChild(npc.sprite);
       this.npcs.push(npc);
+      this._setupNPCClick(npc);
     });
     this.engine.pixi.stage.removeChildren();
     this.engine.pixi.stage.addChild(this.gameMap.container);
+    if (this.effectManager) this.effectManager.container = this.gameMap.effectLayer;
     this._updateRiskBars();
-    await new Promise((r) => setTimeout(r, 800));
+    this.effectManager?.play('STAGE_DUST', this.gameMap.width / 2, this.gameMap.height / 2);
+
+    if (typeof gsap !== 'undefined') {
+      await gsap.to(fadeEl, { opacity: 0, duration: 0.7, ease: 'power2.inOut' });
+    } else {
+      await new Promise((r) => setTimeout(r, 400));
+      fadeEl.style.transition = 'opacity 0.7s ease';
+      fadeEl.style.opacity = '0';
+      await new Promise((r) => setTimeout(r, 700));
+    }
     label.remove();
-    fadeEl.style.opacity = '0';
-    await new Promise((r) => setTimeout(r, 400));
     fadeEl.remove();
   }
 
@@ -726,13 +790,12 @@ export class GameScene {
   _startVillageLoop() {
     const loop = () => {
       this._villLoopId = requestAnimationFrame(loop);
-      if (this.engine.input) this.engine.input.clearJustPressed();
       if (this.gameMap && this.player && this.camera) {
         this.player.update(this.engine.input);
         const mw = this.gameMap.width;
         const mh = this.gameMap.height;
-        const halfW = 12;
-        const halfH = 32;
+        const halfW = 32;
+        const halfH = 48;
         this.player.x = Math.max(halfW, Math.min(mw - halfW, this.player.x));
         this.player.y = Math.max(halfH, Math.min(mh - halfH, this.player.y));
         this.player.container.x = this.player.x;
@@ -740,11 +803,13 @@ export class GameScene {
         this.camera.follow(this.player.x, this.player.y);
         this.camera.clamp(mw, mh);
         this.camera.applyTo(this.gameMap.container);
+        this.gameMap.updateParallax(this.camera.x, this.camera.y);
         this._updateNearestNPC();
         if (this.engine.input?.isKeyJustPressed('Space') && this._nearestNPC) {
           this._startDialogue(this._nearestNPC);
         }
       }
+      if (this.engine.input) this.engine.input.clearJustPressed();
       if (this._villageWrap && this._playerEl) {
         const w = this._villageWrap.offsetWidth || 400;
         const h = this._villageWrap.offsetHeight || 300;
@@ -850,7 +915,16 @@ export class GameScene {
     }, 3000);
   }
 
+  _updateStageColorOverlay() {
+    if (!this._stageColorOverlay) return;
+    const stageNum = this.stageManager.getCurrentStage();
+    const color = STAGE_COLOR_OVERLAYS[stageNum] ?? STAGE_COLOR_OVERLAYS[1];
+    this._stageColorOverlay.style.transition = 'background-color 0.8s ease';
+    this._stageColorOverlay.style.backgroundColor = color;
+  }
+
   _updateRiskBars() {
+    this._updateStageColorOverlay();
     const c = this.engine.state.get('internalChaos') ?? 0;
     const e = this.engine.state.get('externalRisk') ?? 0;
     const chaosLabel = document.getElementById('risk-chaos-label');
@@ -971,6 +1045,10 @@ export class GameScene {
       });
     }
     this.riskGauge.applyDelta(internalDelta, externalDelta, promiseRisk);
+    if ((internalDelta ?? 0) > 0 || (externalDelta ?? 0) > 0) {
+      this.screenEffects?.shake(300);
+      this.screenEffects?.redFlash(250);
+    }
     this.stageManager.advanceTime(5);
     this._updateRiskBars();
 
@@ -990,6 +1068,9 @@ export class GameScene {
       this.allySystem.recruit(ally.id);
       if (ally.effect?.internalChaos) this.riskGauge.applyDelta(ally.effect.internalChaos, 0, false);
       if (ally.effect?.externalRisk) this.riskGauge.applyDelta(0, ally.effect.externalRisk, false);
+      if ((ally.effect?.internalChaos ?? 0) < 0 || (ally.effect?.externalRisk ?? 0) < 0) {
+        this.screenEffects?.calmGlow(400);
+      }
       this._updateRiskBars();
       this._updateItemSlots();
       await this._showAllyMeeting(ally);

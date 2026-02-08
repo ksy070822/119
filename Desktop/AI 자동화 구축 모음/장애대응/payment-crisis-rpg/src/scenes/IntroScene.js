@@ -3,6 +3,7 @@
  * 프롤로그 → 캐릭터 선택 → 컨트롤센터 집결
  */
 import { INTRO_SCENES, getPortraitUrl, FADE_BLACK_MS, TYPING_SPEED_MS, HERO_SKILL_LINES, VILLAGER_LINES } from '../ui/IntroSequence.js';
+import { CLOUD_OVERLAY } from '../data/assetPaths.js';
 import { CharacterSelect } from '../ui/CharacterSelect.js';
 import { CHARACTERS, INTRO_ORDER } from '../data/characters.js';
 
@@ -39,6 +40,7 @@ export class IntroScene {
       <div class="intro-bg-wrap" id="intro-bg-wrap">
         <div class="intro-bg" id="intro-bg"></div>
         <div class="intro-darken" id="intro-darken"></div>
+        <div class="intro-cloud-overlay" id="intro-cloud-overlay" style="display:none;"></div>
       </div>
       <div class="intro-shake-wrap" id="intro-shake-wrap">
         <div class="intro-boss" id="intro-boss" style="display:none;"></div>
@@ -178,6 +180,11 @@ export class IntroScene {
     darkenEl.classList.remove('intro-darken-visible');
     shakeWrap.classList.remove('intro-shake');
     bgWrap.classList.remove('intro-bg-fade-in');
+    const cloudEl = document.getElementById('intro-cloud-overlay');
+    if (cloudEl) {
+      cloudEl.style.display = 'none';
+      cloudEl.style.backgroundImage = '';
+    }
 
     // 캐릭터 선택 화면
     if (scene.isCharacterSelect) {
@@ -230,6 +237,18 @@ export class IntroScene {
     }
     if (scene.effect === 'darken') {
       darkenEl.classList.add('intro-darken-visible');
+    }
+    if (scene.effect === 'darken' || scene.effect === 'shake' || scene.showBoss) {
+      const cloudEl = document.getElementById('intro-cloud-overlay');
+      if (cloudEl) {
+        cloudEl.style.display = 'block';
+        cloudEl.style.cssText = `
+          display: block; position: absolute; inset: 0; pointer-events: none;
+          background-image: url(${CLOUD_OVERLAY}), linear-gradient(180deg, rgba(20,10,10,0.25) 0%, rgba(40,20,20,0.45) 100%);
+          background-size: cover, auto; background-position: center;
+          opacity: 0.55;
+        `;
+      }
     }
     if (scene.effect === 'shake') {
       shakeWrap.classList.add('intro-shake');

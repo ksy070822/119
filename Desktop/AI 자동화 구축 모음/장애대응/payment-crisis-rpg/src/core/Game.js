@@ -54,7 +54,6 @@ export class Game {
       if (this._overlayEl) {
         this._overlayEl.style.position = 'absolute';
         this._overlayEl.style.inset = '0';
-        this._overlayEl.style.pointerEvents = 'auto';
         this._overlayEl.style.zIndex = '10';
       }
     }

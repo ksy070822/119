@@ -1,8 +1,12 @@
 /**
  * NPC — npcData 기반, characterId 있으면 characters/{folder}/idle.png 사용.
+ * 비율 유지 스케일(SPRITE_HEIGHT=96), 로드 실패 시 64x96 기본.
  */
 import * as PIXI from 'pixi.js';
+import { Assets } from 'pixi.js';
 import { CHARACTERS } from '../data/characters.js';
+
+const SPRITE_HEIGHT = 96;
 
 export class NPC {
   constructor(npcData) {
@@ -20,13 +24,40 @@ export class NPC {
 
     this.sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
     this.sprite.anchor.set(0.5, 1);
-    this.sprite.width = 32;
-    this.sprite.height = 48;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     if (this.characterId && CHARACTERS[this.characterId]?.sprites?.idle) {
-      this.sprite.texture = PIXI.Texture.from(CHARACTERS[this.characterId].sprites.idle);
+      const url = CHARACTERS[this.characterId].sprites.idle;
+      const fullUrl = url.startsWith('/') && typeof window !== 'undefined' ? window.location.origin + url : url;
+      Assets.load(fullUrl)
+        .then((tex) => {
+          this.sprite.texture = tex;
+          this._applyTextureScale(tex);
+        })
+        .catch(() => {
+          this.sprite.width = 64;
+          this.sprite.height = SPRITE_HEIGHT;
+        });
+      this.sprite.width = 64;
+      this.sprite.height = SPRITE_HEIGHT;
+    } else {
+      this.sprite.width = 64;
+      this.sprite.height = SPRITE_HEIGHT;
     }
+  }
+
+  _applyTextureScale(tex) {
+    if (!tex || !this.sprite) return;
+    const tw = tex?.width ?? 64;
+    const th = tex?.height ?? 96;
+    if (tw <= 1 || th <= 1) {
+      this.sprite.width = 64;
+      this.sprite.height = SPRITE_HEIGHT;
+      return;
+    }
+    const ratio = th / SPRITE_HEIGHT;
+    this.sprite.width = Math.round(tw / ratio);
+    this.sprite.height = SPRITE_HEIGHT;
   }
 
   isPlayerInRange(px, py) {

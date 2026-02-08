@@ -13,7 +13,7 @@ function buildSprites(charId) {
     idle: `${dir}/idle.png`,
     portrait: `${dir}/portrait.png`,
     walkUp: `${dir}/walk_up.png`,
-    walkDown: `${dir}/idle.png`,
+    walkDown: `${dir}/walk_down.png`,
     walkLeft: hasWalkLeft ? `${dir}/walk_left.png` : `${dir}/walk_right.png`,
     walkRight: `${dir}/walk_right.png`,
   };

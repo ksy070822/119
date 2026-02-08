@@ -48,31 +48,31 @@ export function getCharacterSpriteUrl(charId, pose) {
   return `${dir}/${file}`;
 }
 
-/** stageLevel 1–5: 배경 이미지 (public/image/캐릭터/배경/) */
+/** stageLevel 1–5: 배경 이미지 (public/assets/maps/village/) */
 const VILLAGE_BG_FILES = {
-  1: 'green_실내.jpeg',      // 평화로운 상태
-  2: 'yellow_실내.jpeg',     // 주의 상태
-  3: 'orenge_실내.jpeg',     // 위기 상태
-  4: 'red_실내.jpeg',        // 심각 상태
-  5: 'green-2_실내.jpeg',    // 복구 완료
+  1: 'stage_1_green.png',
+  2: 'stage_2_yellow.png',
+  3: 'stage_3_orange.png',
+  4: 'stage_4_red.png',
+  5: 'stage_5_recovering.png',
 };
 
 export function getVillageBg(stageLevel = 1) {
-  const file = VILLAGE_BG_FILES[Math.min(5, Math.max(1, stageLevel))] || 'green_실내.jpeg';
-  return `${IMG}/캐릭터/배경/${file}`;
+  const file = VILLAGE_BG_FILES[Math.min(5, Math.max(1, stageLevel))] || 'stage_1_green.png';
+  return `${A}/maps/village/${file}`;
 }
 
-/** stageLevel 1–4 for guild (인트로용 배경) */
+/** stageLevel 1–4 for guild (public/assets/maps/guild/) */
 const GUILD_BG_FILES = {
-  1: 'Green.jpg',
-  2: 'yellow.jpeg',
-  3: 'orenge.jpeg',
-  4: 'red.jpeg',
+  1: 'stage_1_green.png',
+  2: 'stage_2_yellow.png',
+  3: 'stage_3_orange.png',
+  4: 'stage_4_red.png',
 };
 
 export function getGuildBg(stageLevel = 1) {
-  const file = GUILD_BG_FILES[Math.min(4, Math.max(1, stageLevel))] || 'Green.jpg';
-  return `${IMG}/캐릭터/배경/${file}`;
+  const file = GUILD_BG_FILES[Math.min(4, Math.max(1, stageLevel))] || 'stage_1_green.png';
+  return `${A}/maps/guild/${file}`;
 }
 
 /** riskLevel 0–3: idle, angry, weakened, defeated */
@@ -124,6 +124,11 @@ export function getItemImage(charId, slotIndex) {
 
 /** 타이틀 화면 메인 이미지 — public/assets/ui/title.png */
 export const TITLE_IMAGE = `${A}/ui/title.png`;
+
+/** 연출 에셋 — public/assets/effects/ */
+export const CLOUD_OVERLAY = `${A}/effects/cloud_overlay.png`;
+export const MAGIC_CIRCLE = `${A}/effects/magic_circle.png`;
+export const PARTICLE_SPARK = `${A}/effects/particle_spark.png`;
 
 /** 테크리더 move 폴더 내 GLB (public/assets/characters/tech_leader/move/*.glb) — 추후 3D 렌더 시 사용, 현재는 PNG 스프라이트 사용 */
 export function getTechLeaderMoveGlbPath(filename = 'character.glb') {
