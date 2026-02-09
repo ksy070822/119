@@ -4,6 +4,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [gh-pages]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,9 +27,11 @@ jobs:
           cache-dependency-path: payment-crisis-rpg/package-lock.json
 
       - name: Install and Build
+        env:
+          NODE_ENV: production
         run: |
           cd payment-crisis-rpg
-          npm ci
+          npm ci --no-audit --no-fund || npm install
           npm run build
 
       - name: Setup Pages
