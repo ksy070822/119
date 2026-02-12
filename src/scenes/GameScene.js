@@ -20,7 +20,7 @@ import { ItemSystem } from '../systems/ItemSystem.js';
 import { EndingEvaluator } from '../systems/EndingEvaluator.js';
 import { SCENARIO_STEPS } from '../data/scenarioSteps.js';
 import { ROLES, ALLY_POSITIONS } from '../data/roles.js';
-import { getItemImage, getGuildBg, getGuardianIdle, getGuardianPortrait } from '../data/assetPaths.js';
+import { getItemImage, getGuildBg, getGuardianIdle, getGuardianPortrait, getMapsJsonUrl, getDialoguesJsonUrl } from '../data/assetPaths.js';
 import { CHARACTERS, ALLY_ORDER } from '../data/characters.js';
 
 const PLAYER_SPEED = 10;
@@ -160,7 +160,7 @@ export class GameScene {
     const stageId = 'S' + stageNum;
     let mapLoadError = false;
     try {
-      const res = await fetch('/data/maps.json');
+      const res = await fetch(getMapsJsonUrl());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.mapsData = await res.json();
     } catch (err) {
@@ -186,7 +186,7 @@ export class GameScene {
 
     let dialogueLoadError = false;
     try {
-      const dialRes = await fetch('/data/dialogues.json');
+      const dialRes = await fetch(getDialoguesJsonUrl());
       if (!dialRes.ok) throw new Error(`HTTP ${dialRes.status}`);
       this.dialoguesData = await dialRes.json();
     } catch (err) {

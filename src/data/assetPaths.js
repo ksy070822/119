@@ -224,3 +224,11 @@ export function getBGMUrl(key) {
   const file = BGM_FILES[key];
   return file ? `${getA()}/music/${file}` : null;
 }
+
+/** Data JSON files — public/data/ */
+export function getMapsJsonUrl() {
+  return `${getBase()}/data/maps.json`;
+}
+export function getDialoguesJsonUrl() {
+  return `${getBase()}/data/dialogues.json`;
+}
