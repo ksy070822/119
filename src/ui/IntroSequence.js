@@ -83,13 +83,13 @@ export const INTRO_SCENES = [
     villagerLines: VILLAGER_LINES.scene3,
     showBoss: true,
   },
-  // 장면 4: 다섯 영웅의 소집 (새 배경 이미지 + 타이틀)
+  // 장면 4: 영웅 소집 (길드홀 배경만, 텍스트 없음)
   {
     id: 3,
     duration: 3500,
     background: getHeroesSummonImage(),
-    text: '다섯 영웅의 소집',
-    effect: 'titleOnly',
+    text: '',
+    effect: 'fadeIn',
   },
   // 장면 5: 캐릭터 선택 화면
   {
