@@ -29,7 +29,120 @@ body {
   max-width: 1280px;
   box-shadow: 0 0 60px rgba(0,0,0,0.6);
   border-radius: 12px;
+  overflow: visible; /* 좌측 선택캐릭터 패널이 화면 바깥으로 노출되도록 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 화면 바깥 최상단 — 조직혼란/대외위험 게이지 (게임 화면 이분할) */
+#game-risk-top-bar {
+  display: none; /* GameScene에서 flex로 전환 */
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 72px;
+  flex-direction: row;
+  background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(20,15,10,0.95) 100%);
+  border-bottom: 3px solid var(--jrpg-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 30;
+}
+
+#game-risk-top-bar .risk-half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-right: 2px solid rgba(255,255,255,0.08);
+}
+
+#game-risk-top-bar .risk-half:last-child {
+  border-right: none;
+}
+
+#game-risk-top-bar .risk-half .risk-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--jrpg-gold);
+  letter-spacing: 0.05em;
+}
+
+#game-risk-top-bar .risk-half .risk-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  transition: color 0.3s;
+}
+
+#game-risk-top-bar .risk-half .risk-bar-wrap {
+  width: 100%;
+  max-width: 280px;
+  height: 12px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 6px;
   overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+#game-risk-top-bar .risk-half .risk-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s ease;
+}
+#game-risk-top-bar .risk-half .risk-bar.risk-bar-just-changed {
+  animation: risk-bar-pulse 0.6s ease-out;
+}
+@keyframes risk-bar-pulse {
+  0% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.5); }
+  50% { filter: brightness(1.4); box-shadow: 0 0 12px 4px rgba(231, 76, 60, 0.4); }
+  100% { filter: brightness(1); box-shadow: none; }
+}
+#game-risk-top-bar .risk-half .risk-bar.risk-bar-just-down {
+  animation: risk-bar-pulse-down 0.6s ease-out;
+}
+@keyframes risk-bar-pulse-down {
+  0% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5); }
+  50% { filter: brightness(1.35); box-shadow: 0 0 12px 4px rgba(46, 204, 113, 0.4); }
+  100% { filter: brightness(1); box-shadow: none; }
+}
+
+#game-risk-top-bar .risk-half.chaos .risk-bar {
+  background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
+}
+
+#game-risk-top-bar .risk-half.external .risk-bar {
+  background: linear-gradient(90deg, #f1c40f, #e67e22, #e74c3c);
+}
+
+/* 리스크 변화량 +/- 눈에 띄게 표시 */
+#game-risk-top-bar .risk-delta {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 1.35rem;
+  font-weight: 900;
+  animation: risk-delta-pop 0.4s ease-out, risk-delta-blink 0.6s ease-in-out 4 0.3s;
+  text-shadow: 0 0 8px currentColor;
+}
+#game-risk-top-bar .risk-delta-up { color: #ff6b6b; }
+#game-risk-top-bar .risk-delta-down { color: #2ecc71; }
+
+#game-risk-top-bar .risk-delta-out {
+  animation: risk-delta-fade 1s ease-out forwards;
+}
+
+@keyframes risk-delta-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes risk-delta-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes risk-delta-fade {
+  to { opacity: 0; transform: scale(1.05); }
 }
 
 #game-canvas-wrap {
@@ -37,6 +150,7 @@ body {
   width: 1280px;
   height: 720px;
   margin: 0 auto;
+  overflow: visible; /* 좌측 패널이 화면 바깥으로 나가도록 */
 }
 
 #game-canvas {
@@ -174,7 +288,7 @@ body {
 .btn-start-intro {
   padding: 18px 56px;
   font-size: 1.35rem;
-  margin-bottom: 48px;
+  margin-bottom: 16px;
   background: linear-gradient(135deg, #ffe500, #e6c200);
   color: #1a1510;
   border-radius: 12px;
@@ -192,23 +306,40 @@ body {
   transform: none;
 }
 
-/* Game left panel - 캐릭터 + 아이템 */
+/* 대화창 포트레이트 — CCO 등 PNG 검은 배경이 있으면 검정 대화창과 블렌드되어 덜 튀게 */
+#dom-overlay .dialogue-portrait {
+  mix-blend-mode: screen;
+  isolation: isolate;
+}
+
+/* Game left panel - 선택캐릭터 창, 좌측 화면 바깥, 조직혼란/대외위험 바로 아래 라인부터 */
 .game-left-panel {
-  width: 200px;
-  flex-shrink: 0;
-  padding: 12px;
-  background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 100%);
+  position: absolute;
+  left: -260px;
+  top: 0;
+  width: 260px;
+  min-height: 280px;
+  padding: 16px 18px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 100%);
   border-right: 2px solid var(--jrpg-border);
+  border-radius: 0 12px 0 0;
+  z-index: 25;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 .character-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .hero-portrait-wrap {
-  width: 100%;
-  aspect-ratio: 1;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
   border-radius: 12px;
   overflow: hidden;
   background: rgba(0,0,0,0.4);
@@ -242,25 +373,48 @@ body {
   display: block;
   margin-top: 2px;
 }
+/* 획득 아이템 — 세로 배치, 아이템+이름 나란히 */
 .item-slots {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
+  max-width: 240px;
+  margin-top: 4px;
 }
 .item-slot {
-  aspect-ratio: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
   border-radius: 8px;
   background: rgba(0,0,0,0.4);
   border: 1px solid rgba(255,255,255,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 1.2rem;
 }
 .item-slot.filled {
   border-color: var(--jrpg-gold);
   background: rgba(212,175,55,0.15);
+}
+.item-slot-icon-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+}
+.item-slot-name {
+  flex: 1;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.3;
+  word-break: keep-all;
 }
 
 /* Game HUD */
@@ -304,6 +458,15 @@ body {
 .stage-name {
   font-size: 0.85rem;
   color: var(--jrpg-gold);
+}
+
+/* 초기 공지 판단 · 심화 공지 판단 — 눈에 띄게 강조 */
+.stage-name[data-stage-num="2"],
+.stage-name[data-stage-num="3"] {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
 }
 
 .risk-hud {
@@ -607,7 +770,7 @@ body {
   z-index: 5;
 }
 
-/* 아이템 슬롯 이미지 */
+/* 아이템 슬롯 이미지/아이콘 */
 .item-slot .item-slot-img {
   width: 100%;
   height: 100%;
@@ -856,6 +1019,97 @@ body {
   opacity: 0.95;
 }
 
+/* 엔딩 하단 검정 영역 — 게임 대화창과 동일한 공간에 나레이션 표시, 가로로 넓게 */
+.ending-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  min-height: 160px;
+  max-width: 100%;
+  width: 100%;
+  background: linear-gradient(0deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.9) 100%);
+  color: #fff;
+  padding: 20px 40px 28px;
+  pointer-events: auto;
+  z-index: 30;
+  border-top: 2px solid rgba(212,175,55,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ending-bar-text {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.7;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  transition: opacity 0.4s ease;
+  max-width: 95%;
+  width: 100%;
+}
+
+.ending-bar-text--peace .ending-peace-sparkle {
+  display: block;
+  color: #fff9c4;
+  font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(255,235,59,0.8), 0 2px 6px rgba(0,0,0,0.8);
+  animation: ending-peace-glow 2.5s ease-in-out infinite;
+}
+
+.ending-screen .grade {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95), 0 0 30px rgba(255,215,0,0.45);
+}
+
+.ending-screen .ending-title {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+}
+
+/* 엔딩 나레이션 (레거시 클래스 유지) */
+.ending-screen .ending-narration.ending-narration--peace {
+  max-width: 640px;
+  padding: 20px 28px;
+  border-radius: 12px;
+}
+
+.ending-screen .ending-narration-main {
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  letter-spacing: 0.02em;
+}
+
+.ending-screen .ending-peace-sparkle {
+  display: block;
+  color: #fff9c4;
+  text-shadow: 0 0 24px rgba(255,235,59,0.9), 0 0 48px rgba(255,235,59,0.4);
+  animation: ending-peace-glow 2.5s ease-in-out infinite;
+}
+
+.ending-screen .ending-narration-final {
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  line-height: 1.7;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+@keyframes ending-peace-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
 /* Village scene: 캐릭터 스프라이트(idle/walk) + 그림자 + 이동 시 흔들림 */
 .village-player-sprite {
   transition: transform 0.08s ease-out;
@@ -958,6 +1212,19 @@ body {
   to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+@keyframes all-items-glow-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 80px rgba(255,215,0,0.6), 0 0 120px rgba(255,165,0,0.3);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 0 100px rgba(255,215,0,0.8), 0 0 160px rgba(255,165,0,0.45);
+  }
+}
+
 @keyframes screen-shake {
   0%, 100% { transform: translate(0, 0); }
   15% { transform: translate(-4px, 2px); }
@@ -980,17 +1247,34 @@ body {
   border-radius: 20px;
   position: relative;
 }
+/* 다섯 영웅 카드 — 컨트롤타워 포함 모든 카드 동일 너비·세로 높이 유지 */
+.intro-hero-card {
+  flex: 0 0 200px !important;
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  min-height: 320px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  align-items: stretch !important;
+}
+
 .intro-portraits::before {
   content: '다섯 영웅의 소집';
   position: absolute;
-  top: -40px;
+  top: -52px;
   left: 50%;
   transform: translateX(-50%);
   font-family: 'Black Han Sans', sans-serif;
-  font-size: 1.5rem;
-  color: var(--jrpg-gold);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 2px 4px rgba(0,0,0,1),
+    0 4px 12px rgba(0,0,0,0.9);
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 .intro-portrait-item {
   width: 100px;
@@ -1042,9 +1326,11 @@ body {
   font-size: 24px;
   color: #fff;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
   min-height: 1.5em;
+  white-space: pre-line;
+  word-break: keep-all;
 }
 
 .intro-title-card {
@@ -1063,6 +1349,39 @@ body {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
   margin: 0;
+}
+
+/* 다섯 영웅의 소집 — 마을이 멈춘 날 스타일 (크림베이지 + 굵은 테두리 + 3D 그림자) */
+.intro-title-only {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.intro-title-only-heading {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 900;
+  color: #f5e6c8;
+  margin: 0;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  /* 굵은 어두운 테두리 + 우하단 적갈색 3D 그림자 */
+  text-shadow:
+    2px 2px 0 #2a1810,
+    -2px -2px 0 #2a1810,
+    2px -2px 0 #2a1810,
+    -2px 2px 0 #2a1810,
+    1px 1px 0 #2a1810,
+    -1px -1px 0 #2a1810,
+    1px -1px 0 #2a1810,
+    -1px 1px 0 #2a1810,
+    3px 3px 0 #4a2520,
+    4px 4px 0 #3a1c18,
+    5px 5px 6px rgba(0,0,0,0.7);
 }
 .intro-btn-start {
   padding: 14px 48px;
@@ -1115,12 +1434,12 @@ body {
 
 @keyframes bossPulse {
   0%, 100% {
-    box-shadow: 0 0 60px #FF0000;
-    transform: translateX(-50%) scale(1);
+    filter: drop-shadow(0 0 30px #FF0000) drop-shadow(0 0 60px rgba(255,0,0,0.5));
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 100px #FF0000, 0 0 40px #8B0000;
-    transform: translateX(-50%) scale(1.05);
+    filter: drop-shadow(0 0 50px #FF0000) drop-shadow(0 0 80px rgba(255,0,0,0.7));
+    transform: scale(1.05);
   }
 }
 
@@ -1171,4 +1490,118 @@ body {
 .ending-screen .villager-text {
   font-size: 12px;
   color: rgba(255,255,255,0.7);
+}
+
+/* 엔딩 주민 말풍선 — 작은 크기, 진한 말풍선, 세로 배치 */
+.ending-villager-bubble.villager-line::after,
+.ending-villager-bubble.villager-line::before {
+  display: none;
+}
+
+.ending-villager-bubble {
+  max-width: 220px;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+}
+
+/* ========== 보스씬 강화 스타일 ========== */
+.boss-scene {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.boss-hero-entry {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.boss-hero-entry:hover {
+  transform: translateY(-4px);
+}
+
+/* 보스 몬스터 미니 인카운터 */
+.boss-monsters > div {
+  transition: transform 0.2s ease;
+}
+.boss-monsters > div:hover {
+  transform: scale(1.1);
+}
+
+/* 보스 이미지 깜빡임 (보스 등장 시) */
+@keyframes bossFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 보스 격파 시 흔들림 */
+@keyframes bossDefeat {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(0.9) rotate(-3deg); }
+  50% { transform: scale(0.7) rotate(3deg); }
+  75% { transform: scale(0.5) rotate(-2deg); }
+  100% { transform: scale(0.3) rotate(0deg); opacity: 0; }
+}
+
+/* 파티클 떠오르기 (향상된 버전) */
+@keyframes particleFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(0.3);
+  }
+}
+
+/* NPC 느낌표 마크 CSS fallback (DOM 모드용) */
+.npc-exclamation {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 24px;
+  background: #FFD700;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: #1a1a2e;
+  animation: npcExclamationBounce 0.8s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255,215,0,0.6);
+}
+
+@keyframes npcExclamationBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* 아이템 슬롯 획득 시 반짝임 */
+@keyframes itemSlotAcquire {
+  0% { box-shadow: 0 0 0 rgba(212,175,55,0); }
+  50% { box-shadow: 0 0 20px rgba(212,175,55,0.8); }
+  100% { box-shadow: 0 0 8px rgba(212,175,55,0.3); }
+}
+
+.item-slot.filled.just-acquired {
+  animation: itemSlotAcquire 0.6s ease-out;
+}
+
+/* 리스크 게이지 위험 시 깜빡임 */
+@keyframes riskPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.risk-hud .gauge .bar[style*="width: 7"],
+.risk-hud .gauge .bar[style*="width: 8"],
+.risk-hud .gauge .bar[style*="width: 9"],
+.risk-hud .gauge .bar[style*="width:7"],
+.risk-hud .gauge .bar[style*="width:8"],
+.risk-hud .gauge .bar[style*="width:9"] {
+  animation: riskPulse 1s ease-in-out infinite;
 }

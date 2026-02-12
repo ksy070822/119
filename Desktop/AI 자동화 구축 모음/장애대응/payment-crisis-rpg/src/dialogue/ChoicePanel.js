@@ -15,7 +15,7 @@ export class ChoicePanel {
     (choices || []).forEach((c) => {
       const btn = document.createElement('button');
       btn.style.cssText = 'display:block;width:100%;margin:6px 0;padding:10px 16px;text-align:left;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;color:#fff;cursor:pointer;';
-      btn.textContent = c.text + (c.preview ? ` — ${c.preview}` : '');
+      btn.textContent = c.text;
       btn.addEventListener('click', () => this.onChoiceSelected && this.onChoiceSelected(c));
       this.el.appendChild(btn);
     });

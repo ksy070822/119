@@ -7,9 +7,9 @@ import { CHARACTERS } from './characters.js';
 function buildRoles() {
   const ids = ['communicator', 'techLeader', 'techCommunicator', 'controlTower', 'reporter'];
   const roleMeta = [
-    { id: 'communicator', name: '커뮤니케이터', role: '공지·고객 전파', icon: '📜', item: '공지 스크롤' },
+    { id: 'communicator', name: '커뮤니케이터', role: '공지·마을주민 전파', icon: '📜', item: '공지 스크롤' },
     { id: 'techLeader', name: '테크리더', role: '기술 복구', icon: '⚙️', item: '복구 태블릿' },
-    { id: 'techCommunicator', name: '테크커뮤니케이터', role: '기술→고객 언어', icon: '🔍', item: '번역 수정구' },
+    { id: 'techCommunicator', name: '테크커뮤니케이터', role: '기술→마을주민 언어', icon: '🔍', item: '번역 수정구' },
     { id: 'controlTower', name: '컨트롤타워', role: '의사결정·계약', icon: '🧭', item: '계약 지도' },
     { id: 'reporter', name: '리포터', role: '타임라인·기준', icon: '🕰️', item: '황금 시계' },
   ];

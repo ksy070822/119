@@ -21,7 +21,7 @@ export const VILLAGER_LINES = {
   ],
   scene3: [
     { speaker: '결제 대란', text: '크르르르... 모든 거래를... 멈춰라...' },
-    { speaker: '주민들', text: '뭐야 저거?! / 도망쳐! / 택시가 안 잡혀! / 결제가 안 돼!' },
+    { speaker: '주민들', text: '뭐야 저거?!\n도망쳐!\n택시가 안 잡혀!\n결제가 안 돼!' },
   ],
 };
 
@@ -83,15 +83,13 @@ export const INTRO_SCENES = [
     villagerLines: VILLAGER_LINES.scene3,
     showBoss: true,
   },
-  // 장면 4: 다섯 영웅의 소집
+  // 장면 4: 다섯 영웅의 소집 (타이틀만 표시 후 캐릭터 선택)
   {
     id: 3,
-    duration: 10000,  // 10초 (영웅들 등장 시간)
+    duration: 3500,
     background: getGuildBg(1),
-    text: '위기의 순간,\n다섯 영웅이 나타났습니다.',
-    effect: 'portraits',
-    portraitIds: INTRO_PORTRAIT_ORDER,
-    showSkillLines: true,
+    text: '다섯 영웅의 소집',
+    effect: 'titleOnly',
   },
   // 장면 5: 캐릭터 선택 화면
   {

@@ -53,11 +53,11 @@ export class TitleScene {
   _renderStartIntro() {
     const content = document.createElement('div');
     content.className = 'title-screen-content title-screen-start-intro';
-    content.style.cssText = 'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:48px;min-height:100%;';
+    content.style.cssText = 'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:48px;padding-bottom:32px;min-height:100%;';
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn-start btn-start-intro';
-    btn.textContent = '스토리 보기';
+    btn.textContent = '스토리 참여하기';
     btn.addEventListener('click', () => this.game.switchScene('intro'));
     content.appendChild(btn);
     this.domRoot.appendChild(content);

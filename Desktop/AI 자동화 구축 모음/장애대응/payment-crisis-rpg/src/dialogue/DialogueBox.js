@@ -81,14 +81,18 @@ export class DialogueBox {
   _create() {
     this.el = document.createElement('div');
     this.el.className = 'dialogue-box';
-    this.el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;min-height:120px;background:rgba(0,0,0,0.9);color:#fff;padding:16px;display:none;pointer-events:auto;z-index:30;';
+    this.el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;min-height:160px;background:linear-gradient(0deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 100%);color:#fff;padding:20px 28px;display:none;pointer-events:auto;z-index:30;border-top:2px solid rgba(212,175,55,0.3);';
     this.el.innerHTML = `
-      <div class="dialogue-portrait" style="width:64px;height:64px;border-radius:8px;background-size:cover;display:none;float:left;margin-right:12px;"></div>
-      <div class="dialogue-speaker" style="font-weight:700;margin-bottom:8px;"></div>
-      <div class="dialogue-text" style="line-height:1.5;min-height:1.5em;"></div>
-      <div class="dialogue-hint" style="margin-top:8px;font-size:12px;opacity:0.8;">클릭 또는 Space로 진행</div>
+      <div class="dialogue-portrait" style="width:96px;height:96px;border-radius:10px;background-size:cover;background-position:center;display:none;float:left;margin-right:20px;border:2px solid rgba(212,175,55,0.5);"></div>
+      <div class="dialogue-speaker" style="font-size:20px;font-weight:700;margin-bottom:8px;color:#FFD700;"></div>
+      <div class="dialogue-text" style="font-size:18px;line-height:1.7;min-height:1.7em;white-space:pre-line;word-break:keep-all;"></div>
+      <div class="dialogue-footer" style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span class="dialogue-hint" style="font-size:12px;opacity:0.6;">클릭 또는 Space로 진행</span>
+        <button type="button" class="dialogue-skip-btn" style="margin-left:auto;padding:6px 14px;font-size:13px;font-weight:600;color:#1a1510;background:linear-gradient(135deg,#d4af37,#b8860b);border:none;border-radius:8px;cursor:pointer;">스킵</button>
+      </div>
     `;
-    this.el.addEventListener('click', () => this.advance());
+    this.el.addEventListener('click', (e) => { if (!e.target.closest('.dialogue-skip-btn')) this.advance(); });
+    this.el.querySelector('.dialogue-skip-btn').addEventListener('click', (e) => { e.stopPropagation(); this.advance(); });
     this.container.appendChild(this.el);
   }
 }

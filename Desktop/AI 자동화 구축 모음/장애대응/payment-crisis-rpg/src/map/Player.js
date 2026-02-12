@@ -3,12 +3,12 @@
  * 발 기준 anchor (0.5, 1). container = shadow + sprite.
  */
 import * as PIXI from 'pixi.js';
-import { Assets } from 'pixi.js';
+import { Assets, ALPHA_MODES } from 'pixi.js';
 import { CHARACTERS } from '../data/characters.js';
 
-const SPRITE_HEIGHT = 96;
-const SHADOW_WIDTH = 40;
-const SHADOW_HEIGHT = 12;
+const SPRITE_HEIGHT = 170;
+const SHADOW_WIDTH = 52;
+const SHADOW_HEIGHT = 16;
 const BOB_AMPLITUDE = 4;
 const BOB_SPEED = 0.25;
 
@@ -25,6 +25,7 @@ export class Player {
     this.bobPhase = 0;
     this._moving = false;
     this._walkToTarget = null;
+    this._lastPose = 'idle';
 
     this.container = new PIXI.Container();
 
@@ -76,7 +77,12 @@ export class Player {
       )
     ).then((texs) => {
       keys.forEach((k, i) => {
-        this._textures[k] = texs[i];
+        const tex = texs[i];
+        if (tex?.baseTexture && tex !== PIXI.Texture.WHITE) {
+          // NO_PREMULTIPLIED_ALPHA: 투명 PNG의 배경을 올바르게 처리 (검은색/흰색 매트 제거)
+          tex.baseTexture.alphaMode = ALPHA_MODES.NO_PREMULTIPLIED_ALPHA;
+        }
+        this._textures[k] = tex;
       });
       this.sprite.texture = this._textures.idle;
       this._applyTextureScale(this.sprite.texture);
@@ -92,9 +98,17 @@ export class Player {
 
   _setPose(pose) {
     const tex = this._textures[pose] || this._textures.idle;
-    if (this.sprite.texture !== tex) this.sprite.texture = tex;
-    if (pose === 'walk_left') this.sprite.scale.x = -1;
-    else this.sprite.scale.x = 1;
+    if (this.sprite.texture !== tex) {
+      this.sprite.texture = tex;
+      this._applyTextureScale(tex);
+    }
+    // 같은 텍스처를 쓰는 캐릭터: 오른쪽 이미지(walk_right) 쓸 때는 왼쪽 이동 시 반전, 왼쪽 이미지(walk_left) 쓸 때는 오른쪽 이동 시 반전
+    const absScaleX = Math.abs(this.sprite.scale.x) || 1;
+    const sameTex = this._textures['walk_left'] === this._textures['walk_right'];
+    const useLeftForBoth = sameTex && this.characterId === 'reporter'; // 리포터는 walk_left 이미지로 양쪽 사용 후 오른쪽일 때 반전
+    const needsFlip = sameTex && (useLeftForBoth ? pose === 'walk_right' : pose === 'walk_left');
+    if (needsFlip) this.sprite.scale.x = -absScaleX;
+    else if (this.sprite.scale.x < 0) this.sprite.scale.x = absScaleX;
   }
 
   /** targetX, targetY로 걸어가며, 도착 시 onArrive 콜백 호출 */
@@ -114,7 +128,7 @@ export class Player {
       this._walkToTarget = null;
       this.canMove = true;
       this._moving = false;
-      this._setPose('idle');
+      this._setPose(this._lastPose);
       this.sprite.y = 0;
       if (typeof onArrive === 'function') onArrive();
       return;
@@ -122,7 +136,8 @@ export class Player {
     const len = Math.sqrt(dx * dx + dy * dy) || 1;
     this.direction = { x: dx / len, y: dy / len };
     this._moving = true;
-    this._setPose(this._getPose());
+    this._lastPose = this._getPose();
+    this._setPose(this._lastPose);
     this.x += (dx / len) * this.speed * Math.min(1.5, delta);
     this.y += (dy / len) * this.speed * Math.min(1.5, delta);
     this.bobPhase += BOB_SPEED;
@@ -161,11 +176,13 @@ export class Player {
       this.direction = { x: dx / len, y: dy / len };
       this.bobPhase += BOB_SPEED;
       this.sprite.y = Math.sin(this.bobPhase) * BOB_AMPLITUDE;
+      this._lastPose = this._getPose();
+      this._setPose(this._lastPose);
     } else {
-      this._setPose('idle');
+      // 정지 시 마지막 이동 방향의 스프라이트 유지 (바운스만 제거)
+      this._setPose(this._lastPose);
       this.sprite.y = 0;
     }
-    this._setPose(this._getPose());
     this.container.x = this.x;
     this.container.y = this.y;
   }

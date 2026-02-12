@@ -28,6 +28,19 @@ export class ControlCenterScene {
     const overlay = this.game.uiContainer;
     overlay.innerHTML = '';
     overlay.appendChild(this.domRoot);
+    this._resolveWait = null;
+    const skipBtn = document.createElement('button');
+    skipBtn.type = 'button';
+    skipBtn.className = 'scene-skip-btn';
+    skipBtn.textContent = '스킵';
+    skipBtn.style.cssText = 'position:absolute;top:16px;right:16px;z-index:50;padding:8px 18px;font-size:14px;font-weight:600;color:#1a1510;background:linear-gradient(135deg,#d4af37,#b8860b);border:none;border-radius:8px;cursor:pointer;';
+    skipBtn.addEventListener('click', () => {
+      if (this._resolveWait) {
+        this._resolveWait();
+        this._resolveWait = null;
+      }
+    });
+    this.domRoot.appendChild(skipBtn);
     this.placeCharacters();
     if (!this.introComplete) {
       await this.playIntroDialogue();
@@ -39,10 +52,10 @@ export class ControlCenterScene {
   placeCharacters() {
     const positions = {
       communicator: { x: 400, y: 300 },
-      techLeader: { x: 250, y: 400 },
+      techLeader: { x: 250, y: 460 },
       techCommunicator: { x: 550, y: 400 },
       controlTower: { x: 200, y: 550 },
-      reporter: { x: 600, y: 550 },
+      reporter: { x: 600, y: 620 },
     };
     const selectedJob = this.game.state.get('selectedJob');
     const container = document.createElement('div');
@@ -65,11 +78,11 @@ export class ControlCenterScene {
       img.style.objectFit = 'cover';
       img.onerror = () => { div.style.background = char.color; };
       div.appendChild(img);
-      const exclamation = document.createElement('span');
-      exclamation.className = 'npc-exclamation';
-      exclamation.textContent = '!';
-      exclamation.style.cssText = 'position:absolute;top:-8px;right:-8px;width:24px;height:24px;background:#e74c3c;color:#fff;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:bold;font-size:14px;';
-      div.appendChild(exclamation);
+      const speechBubble = document.createElement('span');
+      speechBubble.className = 'npc-exclamation npc-speech-bubble';
+      speechBubble.textContent = '💬';
+      speechBubble.style.cssText = 'position:absolute;top:-12px;right:-8px;width:28px;height:28px;background:rgba(255,255,255,0.95);border-radius:50%;display:none;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+      div.appendChild(speechBubble);
       container.appendChild(div);
       if (id === selectedJob) {
         this.game.player.x = pos.x;
@@ -78,7 +91,7 @@ export class ControlCenterScene {
       } else {
         const npc = this.game.createNPC(id, pos.x, pos.y);
         npc.element = div;
-        npc.setExclamationElement(exclamation);
+        npc.setExclamationElement(speechBubble);
         this.npcs[id] = npc;
       }
     });
@@ -253,7 +266,11 @@ export class ControlCenterScene {
         await this.handleChoice(allyId, choice);
       }
     }
-    await this.acquireItem(allyId);
+    // 아이템 획득: 심화공지판단(S3)·복구판단(S4)에서 가능 (S3에서 2개, S4에서 2개 설계)
+    const stage = this._getCurrentStage();
+    if (stage === 3 || stage === 4) {
+      await this.acquireItem(allyId);
+    }
     this._refreshItemSlots();
     this.currentAllyIndex++;
     const allyOrder = ALLY_ORDER[this.game.state.get('selectedJob')];
@@ -314,11 +331,9 @@ export class ControlCenterScene {
       overlay.className = 'checkpoint-overlay';
       overlay.style.cssText =
         'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:40;pointer-events:auto;';
-      const preview = choice.preview || '예상 리스크 변화를 확인하세요.';
       overlay.innerHTML = `
         <div class="checkpoint-box" style="background:#222;padding:24px;border-radius:12px;max-width:400px;">
           <div class="title" style="font-weight:700;margin-bottom:12px;">결정 확인</div>
-          <p class="risk-preview" style="margin-bottom:8px;">${preview}</p>
           <p class="desc" style="font-size:14px;opacity:0.9;">이대로 진행할까요? 수정해도 불이익은 없습니다.</p>
           <div class="checkpoint-buttons" style="margin-top:16px;display:flex;gap:8px;">
             <button class="btn-edit" id="checkpoint-edit">다른 선택 검토</button>
@@ -336,6 +351,16 @@ export class ControlCenterScene {
         resolve(true);
       };
     });
+  }
+
+  /** StageManager와 동일한 경과시간→스테이지 계산 */
+  _getCurrentStage() {
+    const elapsed = this.game.state.get('elapsedMinutes') ?? 0;
+    if (elapsed < 10) return 1;
+    if (elapsed < 40) return 2;
+    if (elapsed < 130) return 3;
+    if (elapsed < 200) return 4;
+    return 5;
   }
 
   async acquireItem(allyId) {
@@ -365,11 +390,15 @@ export class ControlCenterScene {
 
   waitForInput() {
     return new Promise((resolve) => {
+      this._resolveWait = resolve;
       const handler = (e) => {
         if (e.code === 'Space' || e.type === 'click') {
           document.removeEventListener('keydown', handler);
           document.removeEventListener('click', handler);
-          resolve();
+          if (this._resolveWait) {
+            this._resolveWait();
+            this._resolveWait = null;
+          }
         }
       };
       document.addEventListener('keydown', handler);

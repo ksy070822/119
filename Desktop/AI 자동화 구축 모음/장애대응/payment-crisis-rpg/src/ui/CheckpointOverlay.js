@@ -10,13 +10,9 @@ export class CheckpointOverlay {
 
   show(choice) {
     if (!this.el) this._create();
-    const riskPreview = choice?.riskPreview
-      ? `조직 혼란: ${choice.riskPreview.internalChaos ?? '-'} / 대외 위험: ${choice.riskPreview.externalRisk ?? '-'}`
-      : '예상 리스크 변화를 확인하세요.';
     this.el.innerHTML = `
       <div class="checkpoint-box" style="background:#222;padding:24px;border-radius:12px;max-width:400px;">
         <div class="title" style="font-weight:700;margin-bottom:12px;">결정 확인</div>
-        <p class="risk-preview" style="margin-bottom:8px;">${riskPreview}</p>
         <p class="desc" style="font-size:14px;opacity:0.9;">이대로 진행할까요? 수정해도 불이익은 없습니다.</p>
         <div class="checkpoint-buttons" style="margin-top:16px;display:flex;gap:8px;">
           <button class="btn-edit" id="checkpoint-edit">다른 선택 검토</button>

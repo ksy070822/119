@@ -14,7 +14,7 @@ export class ChoicePanel {
     (choices || []).forEach((c) => {
       const btn = document.createElement('button');
       btn.className = 'choice-panel__btn';
-      btn.innerHTML = c.preview ? `<span class="choice-text">${c.text}</span><span class="choice-preview">${c.preview}</span>` : c.text;
+      btn.textContent = c.text;
       btn.addEventListener('click', () => {
         if (this._onSelect) this._onSelect(c);
       });

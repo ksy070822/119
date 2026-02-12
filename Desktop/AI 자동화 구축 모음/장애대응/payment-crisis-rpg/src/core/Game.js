@@ -6,6 +6,7 @@ import { StateManager } from './StateManager.js';
 import { AssetLoader } from './AssetLoader.js';
 import { InputManager } from './InputManager.js';
 import { SceneManager } from './SceneManager.js';
+import { BGMManager } from '../audio/BGMManager.js';
 import { Player } from '../entities/Player.js';
 import { NPC } from '../entities/NPC.js';
 
@@ -60,8 +61,15 @@ export class Game {
 
     this.input = new InputManager();
     this.player = new Player();
+    this.bgm = new BGMManager();
     this.sceneManager = new SceneManager(this);
     await this.sceneManager.init();
+    if (typeof document !== 'undefined') {
+      const unlock = () => this.bgm?.unlock();
+      document.addEventListener('click', unlock, { once: true, capture: true });
+      document.addEventListener('touchstart', unlock, { once: true, capture: true });
+      document.addEventListener('keydown', unlock, { once: true, capture: true });
+    }
     return this;
   }
 

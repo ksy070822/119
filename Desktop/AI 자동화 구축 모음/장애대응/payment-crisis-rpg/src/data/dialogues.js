@@ -82,7 +82,7 @@ export const DIALOGUES = {
   techLeader_to_techCommunicator: {
     stage: 2,
     steps: [
-      { type: 'dialogue', text: '고객 문의 답변용으로 기술 요약 부탁해요.' },
+      { type: 'dialogue', text: '마을 주민 문의 답변용으로 기술 요약 부탁해요.' },
       { type: 'dialogue', text: '원인·영향 범위·예상 복구 시간을 한 문단으로 정리해 드릴게요.' },
       {
         type: 'choice',
@@ -147,7 +147,7 @@ export const DIALOGUES = {
       {
         type: 'choice',
         choices: [
-          { id: 'tc2_1', text: '그걸로 고객 답변 준비할게요', preview: '대외 ▼', checkpoint: false, effects: { internalChaos: 0, externalRisk: -10 }, response: '좋아요.' },
+          { id: 'tc2_1', text: '그걸로 마을 주민 답변 준비할게요', preview: '대외 ▼', checkpoint: false, effects: { internalChaos: 0, externalRisk: -10 }, response: '좋아요.' },
           { id: 'tc2_2', text: '추가로 기술 용어 설명도 부탁해요', preview: '조직 ▼', checkpoint: false, effects: { internalChaos: -5, externalRisk: 0 }, response: '알겠어요.' },
         ],
       },
@@ -277,7 +277,7 @@ export const DIALOGUES = {
   reporter_to_techCommunicator: {
     stage: 3,
     steps: [
-      { type: 'dialogue', text: '고객 답변 기록도 타임라인에 넣을까요?' },
+      { type: 'dialogue', text: '마을 주민 답변 기록도 타임라인에 넣을까요?' },
       { type: 'dialogue', text: '네. 첫 답변 시점이랑 주요 업데이트만 넣으면 돼요.' },
       {
         type: 'choice',

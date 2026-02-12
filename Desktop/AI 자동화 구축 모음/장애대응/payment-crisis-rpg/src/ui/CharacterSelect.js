@@ -48,7 +48,7 @@ export class CharacterSelect {
       gap: 20px;
       flex-wrap: wrap;
       justify-content: center;
-      align-items: flex-end;
+      align-items: stretch;
       max-width: 1000px;
       padding: 20px 0;
     `;
@@ -109,6 +109,9 @@ export class CharacterSelect {
       transform: translateY(0) scale(1);
       transform-origin: center bottom;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     `;
 
     // 아이콘/이모지
@@ -176,7 +179,9 @@ export class CharacterSelect {
     desc.style.cssText = `
       font-size: 11px;
       color: #888;
-      line-height: 1.4;
+      line-height: 1.5;
+      word-break: keep-all;
+      overflow-wrap: break-word;
     `;
     card.appendChild(desc);
 

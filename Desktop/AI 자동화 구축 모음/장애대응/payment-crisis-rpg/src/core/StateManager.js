@@ -37,14 +37,16 @@ export class StateManager {
     Object.keys(updates).forEach((k) => this._emit(`change:${k}`, updates[k]));
   }
 
-  /** 인벤토리에 아이템 추가 (동료 상담 후). sourceCharId = 아이템을 준 동료 캐릭터 id (getItemImage용) */
+  /** 인벤토리에 아이템 추가 (동료 상담 후). sourceCharId = 아이템을 준 동료 캐릭터 id. 같은 캐릭터는 1회만 추가(중복 방지). */
   addItem(itemId, sourceCharId) {
-    const items = [...(this._state.items ?? [true, false, false, false, false])];
+    const charId = sourceCharId ?? itemId;
     const sources = [...(this._state.itemSources ?? [this._state.selectedJob, null, null, null, null])];
+    if (sources.includes(charId)) return; // 이미 이 캐릭터에게서 획득함
+    const items = [...(this._state.items ?? [true, false, false, false, false])];
     const idx = items.findIndex((filled, i) => !filled && i > 0);
     if (idx !== -1) {
       items[idx] = true;
-      sources[idx] = sourceCharId ?? itemId;
+      sources[idx] = charId;
       this.set({ items, itemSources: sources });
     }
   }
@@ -64,6 +66,35 @@ export class StateManager {
       promiseRiskCount: pr,
       confusionPeak: newPeak,
     });
+  }
+
+  /**
+   * 단계별 기본 드리프트
+   * 초기→심화(S1~S3): 혼란·위험이 거의 풀(고위험)까지 상승
+   * 심화 이후(S4,S5): 점차 하락해 해소
+   */
+  applyStageBaseDrift(stageNum) {
+    let dc = 0;
+    let de = 0;
+    if (stageNum === 1) {
+      dc = 25;
+      de = 25;
+    } else if (stageNum === 2) {
+      dc = 25;
+      de = 25;
+    } else if (stageNum === 3) {
+      dc = 15;
+      de = 15;
+    } else if (stageNum === 4 || stageNum === 5) {
+      dc = -25;
+      de = -25;
+    }
+    if (dc !== 0 || de !== 0) {
+      this.applyEffects({
+        internalChaos: dc,
+        externalRisk: de,
+      });
+    }
   }
 
   on(event, fn) {

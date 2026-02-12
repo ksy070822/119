@@ -38,11 +38,9 @@ export class StageManager {
     return stage;
   }
 
-  /** 맵의 비관장자 NPC 전원 대화 완료 시 true */
+  /** 맵의 모든 NPC(영웅+관장자) 전원 대화 완료 시 true */
   checkStageComplete(npcs) {
     if (!npcs?.length) return false;
-    const required = npcs.filter((n) => !n.isGuardian);
-    if (required.length === 0) return true;
-    return required.every((n) => n.hasSpoken);
+    return npcs.every((n) => n.hasSpoken);
   }
 }

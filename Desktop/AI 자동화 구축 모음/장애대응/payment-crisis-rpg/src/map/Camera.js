@@ -18,8 +18,17 @@ export class Camera {
   clamp(mapWidth, mapHeight) {
     const halfW = this.viewWidth / 2;
     const halfH = this.viewHeight / 2;
-    this.x = Math.max(halfW, Math.min(mapWidth - halfW, this.x));
-    this.y = Math.max(halfH, Math.min(mapHeight - halfH, this.y));
+    // 맵이 뷰포트보다 작으면 중앙에 고정
+    if (mapWidth <= this.viewWidth) {
+      this.x = mapWidth / 2;
+    } else {
+      this.x = Math.max(halfW, Math.min(mapWidth - halfW, this.x));
+    }
+    if (mapHeight <= this.viewHeight) {
+      this.y = mapHeight / 2;
+    } else {
+      this.y = Math.max(halfH, Math.min(mapHeight - halfH, this.y));
+    }
   }
 
   applyTo(container) {

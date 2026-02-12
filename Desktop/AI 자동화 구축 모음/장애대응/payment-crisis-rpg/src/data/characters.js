@@ -7,15 +7,21 @@ import { getCharacterAssetDir } from './assetPaths.js';
 
 function buildSprites(charId) {
   const dir = getCharacterAssetDir(charId);
-  // walk_left가 없는 캐릭터는 walk_right를 fallback으로 사용
-  const hasWalkLeft = !['communicator', 'techLeader'].includes(charId);
+  // walk_left가 없는 캐릭터는 walk_right를 좌측 이동 시 반전하여 사용
+  // reporter는 walk_right에 마법 효과가 있어 walk_left를 쓰고, 오른쪽 이동 시 좌우반전
+  const useRightForBoth = ['communicator', 'techLeader'].includes(charId);
+  const useLeftForBoth = charId === 'reporter';
+  const hasWalkLeft = !useRightForBoth && !useLeftForBoth;
+  const walkUpFile = charId === 'controlTower' ? 'idle.png' : 'walk_up.png';
+  const walkLeftUrl = useLeftForBoth ? `${dir}/walk_left.png` : (hasWalkLeft ? `${dir}/walk_left.png` : `${dir}/walk_right.png`);
+  const walkRightUrl = useLeftForBoth ? `${dir}/walk_left.png` : `${dir}/walk_right.png`;
   return {
     idle: `${dir}/idle.png`,
     portrait: `${dir}/portrait.png`,
-    walkUp: `${dir}/walk_up.png`,
-    walkDown: `${dir}/walk_down.png`,
-    walkLeft: hasWalkLeft ? `${dir}/walk_left.png` : `${dir}/walk_right.png`,
-    walkRight: `${dir}/walk_right.png`,
+    walkUp: `${dir}/${walkUpFile}`,
+    walkDown: `${dir}/idle.png`,  // walk_down 없음 → idle 사용
+    walkLeft: walkLeftUrl,
+    walkRight: walkRightUrl,
   };
 }
 
@@ -50,7 +56,7 @@ export const CHARACTERS = {
     class: '마법사',
     gender: 'male',
     age: '40대',
-    description: '기술 언어를 고객 언어로 번역하는 마법사',
+    description: '기술 언어를 마을 주민 언어로 번역하는 마법사',
     mainItem: '번역의 수정구',
     color: '#2ECC71',
     introLine: '함께 원인을 분석해보고 제가 시민들을 안심시킬 수 있게 도와드릴게요.',

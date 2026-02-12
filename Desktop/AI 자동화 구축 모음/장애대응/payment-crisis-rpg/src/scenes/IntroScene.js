@@ -3,7 +3,7 @@
  * 프롤로그 → 캐릭터 선택 → 컨트롤센터 집결
  */
 import { INTRO_SCENES, getPortraitUrl, FADE_BLACK_MS, TYPING_SPEED_MS, HERO_SKILL_LINES, VILLAGER_LINES } from '../ui/IntroSequence.js';
-import { CLOUD_OVERLAY } from '../data/assetPaths.js';
+import { CLOUD_OVERLAY, getBossSprite } from '../data/assetPaths.js';
 import { CharacterSelect } from '../ui/CharacterSelect.js';
 import { CHARACTERS, INTRO_ORDER } from '../data/characters.js';
 
@@ -45,6 +45,9 @@ export class IntroScene {
       <div class="intro-shake-wrap" id="intro-shake-wrap">
         <div class="intro-boss" id="intro-boss" style="display:none;"></div>
         <div class="intro-portraits" id="intro-portraits"></div>
+        <div class="intro-title-only" id="intro-title-only" style="display:none;">
+          <h1 class="intro-title-only-heading">다섯 영웅의 소집</h1>
+        </div>
         <div class="intro-villager-lines" id="intro-villager-lines"></div>
         <div class="intro-text-wrap" id="intro-text-wrap">
           <p class="intro-text" id="intro-text"></p>
@@ -116,12 +119,26 @@ export class IntroScene {
 
   _skipToCharacterSelect() {
     this._clearTimeouts();
-    // 캐릭터 선택 장면으로 바로 이동
     const charSelectIndex = INTRO_SCENES.findIndex(s => s.isCharacterSelect);
-    if (charSelectIndex >= 0) {
-      this.currentScene = charSelectIndex;
-      this._showScene(charSelectIndex);
+    if (charSelectIndex < 0) return;
+
+    // 캐릭터가 이미 선택된 경우 (컨트롤센터 집결 씬 등) → 바로 게임 시작
+    const selectedJob = this.game.state.get('selectedJob');
+    if (selectedJob) {
+      this._goToGame();
+      return;
     }
+
+    // 이미 캐릭터 선택 화면에 있으면 → 스킵 = 기본 캐릭터로 다음 장면 진행
+    if (this.currentScene === charSelectIndex) {
+      const defaultCharId = INTRO_ORDER[0] || 'communicator';
+      this._onCharacterSelected(defaultCharId);
+      return;
+    }
+
+    // 인트로 중이면 → 캐릭터 선택 장면으로 바로 이동
+    this.currentScene = charSelectIndex;
+    this._showScene(charSelectIndex);
   }
 
   _goToGame() {
@@ -172,6 +189,8 @@ export class IntroScene {
     titleCard.style.display = 'none';
     charSelectEl.style.display = 'none';
     textWrap.style.display = 'block';
+    const titleOnlyWrap = document.getElementById('intro-title-only');
+    if (titleOnlyWrap) titleOnlyWrap.style.display = 'none';
     portraitsEl.style.display = 'none';
     portraitsEl.innerHTML = '';
     villagerLinesEl.innerHTML = '';
@@ -254,22 +273,43 @@ export class IntroScene {
       shakeWrap.classList.add('intro-shake');
     }
 
-    // 보스 표시
+    // 보스 표시 — weakened 이미지 사용
     if (scene.showBoss) {
       bossEl.style.display = 'block';
       bossEl.style.cssText = `
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         position: absolute;
         top: 10%;
         left: 50%;
         transform: translateX(-50%);
-        width: 200px;
-        height: 200px;
-        background: radial-gradient(circle, #8B0000 0%, #000 70%);
-        border-radius: 50%;
-        box-shadow: 0 0 60px #FF0000;
-        animation: bossPulse 2s infinite;
+        width: 240px;
+        height: 240px;
       `;
+      bossEl.innerHTML = `<img src="${getBossSprite(2)}" alt="결제 대란" style="
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 0 30px #FF0000) drop-shadow(0 0 60px rgba(255,0,0,0.5));
+        animation: bossPulse 2s infinite;
+      " onerror="this.style.display='none';this.parentElement.style.background='radial-gradient(circle, #8B0000 0%, #000 70%)';this.parentElement.style.borderRadius='50%';this.parentElement.style.boxShadow='0 0 60px #FF0000';">`;
+    } else {
+      bossEl.innerHTML = '';
+    }
+
+    // 다섯 영웅의 소집 — 타이틀만 (마을이 멈춘 날 스타일)
+    if (scene.effect === 'titleOnly') {
+      textWrap.style.display = 'none';
+      const titleOnlyWrap = document.getElementById('intro-title-only');
+      if (titleOnlyWrap) {
+        titleOnlyWrap.style.display = 'block';
+        const heading = titleOnlyWrap.querySelector('.intro-title-only-heading');
+        if (heading) heading.textContent = scene.text || '다섯 영웅의 소집';
+      }
+    } else {
+      const titleOnlyWrap = document.getElementById('intro-title-only');
+      if (titleOnlyWrap) titleOnlyWrap.style.display = 'none';
     }
 
     // 영웅 초상화 + 스킬 대사
@@ -314,73 +354,142 @@ export class IntroScene {
   }
 
   _showPortraitsWithSkillLines(container, portraitIds, showSkillLines) {
+    container.innerHTML = '';
     container.style.cssText = `
       display: flex;
-      justify-content: center;
-      gap: 16px;
+      flex-direction: column;
+      align-items: center;
       position: absolute;
-      bottom: 200px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%);
+      width: 95%;
+      max-width: 1200px;
     `;
 
-    const delay = 800;
-    portraitIds.forEach((charId, i) => {
-      const id = setTimeout(() => {
-        const char = CHARACTERS[charId];
-        const skillInfo = HERO_SKILL_LINES[charId] || {};
-        const url = getPortraitUrl(charId);
+    const cardsWrap = document.createElement('div');
+    cardsWrap.style.cssText = `
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: nowrap;
+      width: 100%;
+      min-width: min(100%, 1080px);
+    `;
+    container.appendChild(cardsWrap);
 
-        const wrap = document.createElement('div');
-        wrap.className = 'intro-portrait-item intro-portrait-fade-in';
-        wrap.style.cssText = `
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          animation: fadeInUp 0.5s ease-out;
+    const CARD_DELAY = 2500;
+    const HERO_FIRST_DELAY = 3500;  // "다섯 영웅이 나타났습니다" 타이핑 + 1.5초 후 등장
+
+    // 모든 카드를 미리 생성하되 투명하게 숨겨놓음
+    const cards = portraitIds.map((charId) => {
+      const char = CHARACTERS[charId];
+      const skillInfo = HERO_SKILL_LINES[charId] || {};
+      const url = getPortraitUrl(charId);
+
+      const card = document.createElement('div');
+      card.className = 'intro-hero-card';
+      card.style.cssText = `
+        flex: 0 0 200px;
+        flex-shrink: 0;
+        width: 200px;
+        min-width: 200px;
+        max-width: 200px;
+        min-height: 320px;
+        box-sizing: border-box;
+        padding: 24px 16px;
+        background: rgba(30, 30, 50, 0.92);
+        border: 3px solid #333;
+        border-radius: 14px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+        transition: none;
+      `;
+
+      // 초상화
+      if (url) {
+        const portrait = document.createElement('div');
+        // 컨트롤타워는 이미지 위치를 아래로 조정하여 상반신이 보이도록
+        const bgSize = charId === 'controlTower' ? '110%' : 'cover';
+        const bgPosition = charId === 'controlTower' ? 'center 30%' : 'center';
+        portrait.style.cssText = `
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 3px solid ${char?.color || '#FFD700'};
+          background-image: url(${url});
+          background-size: ${bgSize};
+          background-position: ${bgPosition};
+          margin-bottom: 14px;
         `;
+        card.appendChild(portrait);
+      }
 
-        if (url) {
-          const img = document.createElement('div');
-          img.style.cssText = `
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 3px solid ${char?.color || '#FFD700'};
-            background-image: url(${url});
-            background-size: cover;
-            background-position: center;
-            box-shadow: 0 0 15px ${char?.color || '#FFD700'};
-          `;
-          wrap.appendChild(img);
-        }
+      // 이름
+      const name = document.createElement('div');
+      name.textContent = char?.name || charId;
+      name.style.cssText = `
+        font-size: 18px;
+        font-weight: bold;
+        color: ${char?.color || '#fff'};
+        margin-bottom: 4px;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+      `;
+      card.appendChild(name);
 
-        const name = document.createElement('div');
-        name.textContent = char?.name || charId;
-        name.style.cssText = `
-          color: ${char?.color || '#fff'};
+      // 클래스
+      if (char?.class) {
+        const cls = document.createElement('div');
+        cls.textContent = char.class;
+        cls.style.cssText = `
+          font-size: 13px;
+          color: #aaa;
+          margin-bottom: 10px;
+        `;
+        card.appendChild(cls);
+      }
+
+      // 스킬 대사
+      if (showSkillLines && skillInfo.introLine) {
+        const line = document.createElement('div');
+        line.textContent = `"${skillInfo.introLine}"`;
+        line.style.cssText = `
+          color: #FFD700;
           font-size: 12px;
-          margin-top: 4px;
-          text-shadow: 1px 1px 2px #000;
+          font-style: italic;
+          line-height: 1.5;
+          word-break: keep-all;
+          overflow-wrap: break-word;
+          max-width: 160px;
         `;
-        wrap.appendChild(name);
+        card.appendChild(line);
+      }
 
-        if (showSkillLines && skillInfo.skillLine) {
-          const skillLine = document.createElement('div');
-          skillLine.textContent = `"${skillInfo.skillLine}"`;
-          skillLine.style.cssText = `
-            color: #FFD700;
-            font-size: 10px;
-            font-style: italic;
-            max-width: 100px;
-            text-align: center;
-            margin-top: 4px;
-          `;
-          wrap.appendChild(skillLine);
-        }
+      cardsWrap.appendChild(card);
+      return { card, char };
+    });
 
-        container.appendChild(wrap);
-      }, i * delay);
+    // "다섯 영웅이 나타났습니다" 후 커뮤니케이터부터 순차 등장
+    cards.forEach(({ card, char }, i) => {
+      const id = setTimeout(() => {
+        // 등장 애니메이션
+        card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out, border-color 0.4s, box-shadow 0.4s';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0) scale(1)';
+        card.style.borderColor = char?.color || '#FFD700';
+        card.style.boxShadow = `0 0 20px ${char?.color || '#FFD700'}44`;
+
+        // 글로우 강조 후 약하게 전환 (다음 캐릭터 등장 전)
+        const dimId = setTimeout(() => {
+          card.style.boxShadow = `0 0 8px ${char?.color || '#FFD700'}22`;
+        }, CARD_DELAY - 600);
+        this._timeoutIds.push(dimId);
+      }, HERO_FIRST_DELAY + i * CARD_DELAY);
       this._timeoutIds.push(id);
     });
   }
@@ -399,6 +508,8 @@ export class IntroScene {
           background: rgba(0, 0, 0, 0.7);
           border-radius: 8px;
           animation: fadeInUp 0.3s ease-out;
+          white-space: pre-line;
+          word-break: keep-all;
         `;
         lineEl.innerHTML = `<strong style="color:#FFD700">${line.speaker}:</strong> "${line.text}"`;
         container.appendChild(lineEl);

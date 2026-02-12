@@ -12,7 +12,7 @@ export class NPC {
 
   showExclamation() {
     if (this._exclamationEl) {
-      this._exclamationEl.style.display = 'block';
+      this._exclamationEl.style.display = 'flex';
       this._exclamationEl.classList.add('npc-exclamation--show');
     }
   }

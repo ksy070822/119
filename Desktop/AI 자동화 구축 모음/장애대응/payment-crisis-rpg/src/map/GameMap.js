@@ -27,11 +27,11 @@ export class GameMap {
   }
 
   get width() {
-    return this.mapData.width || 800;
+    return this.mapData.width || 1280;
   }
 
   get height() {
-    return this.mapData.height || 600;
+    return this.mapData.height || 720;
   }
 
   updateParallax(cameraX, cameraY) {
@@ -45,33 +45,43 @@ export class GameMap {
     const w = this.width;
     const h = this.height;
     const url = this.mapData.background;
-    if (url) {
-      const fullUrl = url.startsWith('/') && typeof window !== 'undefined' ? window.location.origin + url : url;
-      Assets.load(fullUrl)
-        .then((tex) => {
-          const bg = new PIXI.Sprite(tex);
-          bg.anchor.set(0, 0);
-          bg.width = w;
-          bg.height = h;
-          this.backgroundLayer.removeChildren();
-          this.backgroundLayer.addChild(bg);
-        })
-        .catch(() => {
-          const g = new PIXI.Graphics();
-          g.beginFill(0x1a1a2e);
-          g.drawRect(0, 0, w, h);
-          this.backgroundLayer.removeChildren();
-          this.backgroundLayer.addChild(g);
-        });
+
+    // 초기 어두운 배경 (로딩 중 표시)
+    const placeholder = new PIXI.Graphics();
+    placeholder.beginFill(0x1a1a2e);
+    placeholder.drawRect(0, 0, w, h);
+    this.backgroundLayer.addChild(placeholder);
+
+    if (!url) return;
+
+    // 후속조치(S5) 옐로우-그린 그라데이션 (엔딩과 동일 톤: #b8d84d → #7cb342 → #558b2f → #33691e)
+    if (url === 'gradient:yellowgreen') {
       const g = new PIXI.Graphics();
-      g.beginFill(0x1a1a2e);
-      g.drawRect(0, 0, w, h);
+      const colors = [0xb8d84d, 0x7cb342, 0x558b2f, 0x33691e];
+      const bandH = h / 4;
+      for (let i = 0; i < 4; i++) {
+        g.beginFill(colors[i]);
+        g.drawRect(0, i * bandH, w, bandH + 1);
+        g.endFill();
+      }
       this.backgroundLayer.addChild(g);
-    } else {
-      const g = new PIXI.Graphics();
-      g.beginFill(0x1a1a2e);
-      g.drawRect(0, 0, w, h);
-      this.backgroundLayer.addChild(g);
+      return;
     }
+
+    const fullUrl = url.startsWith('/') && typeof window !== 'undefined'
+      ? window.location.origin + url : url;
+    Assets.load(fullUrl)
+      .then((tex) => {
+        const bg = new PIXI.Sprite(tex);
+        bg.anchor.set(0.5, 0.5);
+        bg.x = w / 2;
+        bg.y = h / 2;
+        const texW = tex.width || 1;
+        const texH = tex.height || 1;
+        const scale = Math.max(w / texW, h / texH);
+        bg.scale.set(scale);
+        this.backgroundLayer.addChild(bg);
+      })
+      .catch(() => {});
   }
 }
