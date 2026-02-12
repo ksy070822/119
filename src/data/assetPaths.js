@@ -18,9 +18,6 @@ function getBase() {
     else if (path && path !== '/') base = path.startsWith('/') ? path : '/' + path;
   }
   _base = base;
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/3def15e8-4d22-4fa5-97c7-7eb6176139cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assetPaths.js:getBase',message:'getBase computed',data:{pathname,baseUrlEnv,baseResult:base},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
   return base;
 }
 function getA() {
@@ -41,11 +38,7 @@ const CHAR_ID_TO_FOLDER = {
 
 export function getCharacterAssetDir(id) {
   const folder = CHAR_ID_TO_FOLDER[id] || id;
-  const path = `${getA()}/characters/${folder}`;
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/3def15e8-4d22-4fa5-97c7-7eb6176139cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'assetPaths.js:getCharacterAssetDir',message:'character asset dir',data:{charId:id,path},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
-  // #endregion
-  return path;
+  return `${getA()}/characters/${folder}`;
 }
 
 /** 캐릭터 메인 이미지 (idle.png - 서 있는 모습). 리포터는 walk_left를 좌우반전해 사용(마법 효과 없는 깔끔한 연출) */

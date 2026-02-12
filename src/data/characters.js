@@ -29,11 +29,7 @@ function buildSprites(charId) {
 const spriteCache = {};
 function getSprites(charId) {
   if (!spriteCache[charId]) spriteCache[charId] = buildSprites(charId);
-  const sprites = spriteCache[charId];
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/3def15e8-4d22-4fa5-97c7-7eb6176139cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'characters.js:getSprites',message:'sprites built',data:{charId,portraitUrl:sprites?.portrait},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-  // #endregion
-  return sprites;
+  return spriteCache[charId];
 }
 
 export const CHARACTERS = {
