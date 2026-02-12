@@ -237,3 +237,8 @@ export function getDialoguesJsonUrl() {
 export function getHeroesSummonImage() {
   return `${getA()}/ui/intro.png`;
 }
+
+/** 몬스터 이미지 — public/assets/characters/monsters/ */
+export function getMonsterImage(filename) {
+  return `${getA()}/characters/monsters/${filename}`;
+}

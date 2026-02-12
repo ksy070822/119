@@ -15,6 +15,7 @@ import {
   getCharacterMainImage,
   getItemImage,
   getMagicVideoUrl,
+  getMonsterImage,
   MAGIC_CIRCLE,
   CLOUD_OVERLAY,
 } from '../data/assetPaths.js';
