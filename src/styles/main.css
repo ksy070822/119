@@ -1605,3 +1605,15 @@ body {
 .risk-hud .gauge .bar[style*="width:9"] {
   animation: riskPulse 1s ease-in-out infinite;
 }
+
+/* 보스전 아이템 합체 펄스 효과 */
+@keyframes itemPulse {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    box-shadow: 0 0 24px rgba(255,215,0,0.8), inset 0 0 16px rgba(255,255,255,0.3);
+  }
+  50% { 
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 36px rgba(255,215,0,1), inset 0 0 24px rgba(255,255,255,0.5);
+  }
+}

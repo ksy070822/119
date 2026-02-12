@@ -344,6 +344,8 @@ export class BossScene {
         video.pause();
         video.src = '';
         if (videoWrap.parentNode) videoWrap.remove();
+        // 영상 종료: BGM 재개 (ending)
+        this.game.bgm?.play('ending', true);
         if (this._phase !== 2) return;
         if (!document.getElementById('boss-text')) return;
         this._canAdvance = true;
@@ -355,10 +357,12 @@ export class BossScene {
       videoWrap.appendChild(video);
       videoWrap.appendChild(skipBtn);
       overlay.appendChild(videoWrap);
+      // 영상 시작: BGM 정지
+      this.game.bgm?.stop(false);
       video.play().catch(() => {});
 
     } else if (phase === 3) {
-      // 빛의 검으로 합쳐집니다 (아이템 합체)
+      // 빛의 검으로 합쳐집니다 (아이템 합체 강화)
       monsterEl.style.display = 'none';
       if (bgEl) {
         bgEl.style.backgroundImage = `url('${getVillageBg(5)}')`;
@@ -368,51 +372,84 @@ export class BossScene {
       textEl.textContent = '아이템들이 빛의 검으로 합쳐집니다!';
       textEl.style.display = 'block';
       itemsEl.style.display = 'flex';
+      itemsEl.style.position = 'relative';
 
       if (magicCircle) {
         magicCircle.style.display = 'block';
         magicCircle.style.top = '50%';
         magicCircle.style.left = '50%';
-        magicCircle.style.transform = 'translate(-50%, -50%)';
+        magicCircle.style.transform = 'translate(-50%, -50%) scale(1.5)';
+        magicCircle.style.opacity = '0.8';
       }
 
+      // 아이템 등장 (확대·회전·빛)
+      const itemDivs = [];
       INTRO_ORDER.forEach((charId, i) => {
         setTimeout(() => {
           const itemDiv = document.createElement('div');
+          itemDiv.className = 'boss-item-merge';
           itemDiv.style.cssText = `
-            width: 48px;
-            height: 48px;
-            background: rgba(255,215,0,0.15);
-            border: 2px solid #FFD700;
-            border-radius: 8px;
+            width: 64px;
+            height: 64px;
+            background: radial-gradient(circle, rgba(255,215,0,0.3), rgba(255,215,0,0.05));
+            border: 3px solid #FFD700;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            animation: fadeInUp 0.3s ease-out;
-            box-shadow: 0 0 12px rgba(255,215,0,0.4);
+            animation: itemPulse 0.8s ease-in-out infinite;
+            box-shadow: 0 0 24px rgba(255,215,0,0.8), inset 0 0 16px rgba(255,255,255,0.3);
             overflow: hidden;
+            position: relative;
+            transform: scale(0);
           `;
           const itemImg = getItemImage(charId, 0);
           if (itemImg) {
             const img = document.createElement('img');
             img.src = itemImg;
             img.alt = '';
-            img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
+            img.style.cssText = 'width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 8px #FFD700);';
             img.onerror = () => {
               img.style.display = 'none';
               itemDiv.textContent = this._getItemEmoji(i);
-              itemDiv.style.fontSize = '20px';
+              itemDiv.style.fontSize = '28px';
             };
             itemDiv.appendChild(img);
           } else {
             itemDiv.textContent = this._getItemEmoji(i);
-            itemDiv.style.fontSize = '20px';
+            itemDiv.style.fontSize = '28px';
           }
           itemsEl.appendChild(itemDiv);
-        }, i * 200);
+          itemDivs.push(itemDiv);
+          // 등장 애니메이션
+          requestAnimationFrame(() => {
+            itemDiv.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            itemDiv.style.transform = 'scale(1) rotate(0deg)';
+          });
+        }, i * 250);
       });
 
-      this._screenEffects?.playSkillEffect(window.innerWidth / 2, window.innerHeight / 2);
+      // 모든 아이템 등장 후 (1.5초) → 중앙으로 수렴 + 폭발
+      setTimeout(() => {
+        this._screenEffects?.shake(300);
+        this._screenEffects?.flash('rgba(255,215,0,0.6)', 400);
+        itemDivs.forEach((div, idx) => {
+          div.style.transition = 'all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55)';
+          div.style.transform = 'translate(0, -80px) scale(0.3) rotate(720deg)';
+          div.style.opacity = '0';
+        });
+        // 중앙 집결 후 빛 폭발
+        setTimeout(() => {
+          this._screenEffects?.flash('rgba(255,255,255,0.9)', 200);
+          this._screenEffects?.playSkillEffect(window.innerWidth / 2, window.innerHeight / 2 - 80);
+          this._screenEffects?.shake(500);
+          if (magicCircle) {
+            magicCircle.style.transform = 'translate(-50%, -50%) scale(2.5)';
+            magicCircle.style.opacity = '0';
+            magicCircle.style.transition = 'all 0.6s ease-out';
+          }
+        }, 800);
+      }, 1500);
 
     } else if (phase === 4) {
       // 영웅들의 외침 + 필살기 (보스 weakened 표시)
