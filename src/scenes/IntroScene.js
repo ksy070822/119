@@ -263,7 +263,7 @@ export class IntroScene {
         cloudEl.style.display = 'block';
         cloudEl.style.cssText = `
           display: block; position: absolute; inset: 0; pointer-events: none;
-          background-image: url(${CLOUD_OVERLAY}), linear-gradient(180deg, rgba(20,10,10,0.25) 0%, rgba(40,20,20,0.45) 100%);
+          background-image: url(${CLOUD_OVERLAY()}), linear-gradient(180deg, rgba(20,10,10,0.25) 0%, rgba(40,20,20,0.45) 100%);
           background-size: cover, auto; background-position: center;
           opacity: 0.55;
         `;

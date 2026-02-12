@@ -2,11 +2,11 @@
  * 타이틀 화면 (v3) — 초기: 스토리 보기 → 인트로 / 인트로 후: 캐릭터 선택 → 마을
  */
 import { CHARACTERS } from '../data/characters.js';
-import { TITLE_IMAGE } from '../data/assetPaths.js';
+import { getTitleImage } from '../data/assetPaths.js';
 
 /** 개발 중에는 캐시 무시해서 바뀐 타이틀 이미지가 바로 보이도록 */
 function titleImageUrl() {
-  const base = TITLE_IMAGE;
+  const base = getTitleImage();
   const dev = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV;
   return dev ? `${base}?t=${Date.now()}` : base;
 }

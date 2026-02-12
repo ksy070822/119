@@ -25,6 +25,13 @@ function buildSprites(charId) {
   };
 }
 
+// sprites는 첫 접근 시 생성 (배포 시 base path가 확정된 뒤)
+const spriteCache = {};
+function getSprites(charId) {
+  if (!spriteCache[charId]) spriteCache[charId] = buildSprites(charId);
+  return spriteCache[charId];
+}
+
 export const CHARACTERS = {
   communicator: {
     id: 'communicator',
@@ -36,7 +43,7 @@ export const CHARACTERS = {
     mainItem: '황금 스크롤',
     color: '#FFD700',
     introLine: '큰일이에요. 시민들의 문의가 증가하고 있어요.',
-    sprites: buildSprites('communicator'),
+    get sprites() { return getSprites('communicator'); },
   },
   techLeader: {
     id: 'techLeader',
@@ -48,7 +55,7 @@ export const CHARACTERS = {
     mainItem: '복구의 태블릿',
     color: '#4A90A4',
     introLine: '원인을 분석해봐야겠어요.',
-    sprites: buildSprites('techLeader'),
+    get sprites() { return getSprites('techLeader'); },
   },
   techCommunicator: {
     id: 'techCommunicator',
@@ -60,7 +67,7 @@ export const CHARACTERS = {
     mainItem: '번역의 수정구',
     color: '#2ECC71',
     introLine: '함께 원인을 분석해보고 제가 시민들을 안심시킬 수 있게 도와드릴게요.',
-    sprites: buildSprites('techCommunicator'),
+    get sprites() { return getSprites('techCommunicator'); },
   },
   controlTower: {
     id: 'controlTower',
@@ -72,7 +79,7 @@ export const CHARACTERS = {
     mainItem: '계약의 지도',
     color: '#8E44AD',
     introLine: '다른 도시 시민들도 불안해하지 않게 필요한 조치를 준비해야겠어요.',
-    sprites: buildSprites('controlTower'),
+    get sprites() { return getSprites('controlTower'); },
   },
   reporter: {
     id: 'reporter',
@@ -84,7 +91,7 @@ export const CHARACTERS = {
     mainItem: '황금 시계',
     color: '#D68910',
     introLine: '제가 상황을 살펴보고 올게요.',
-    sprites: buildSprites('reporter'),
+    get sprites() { return getSprites('reporter'); },
   },
 };
 

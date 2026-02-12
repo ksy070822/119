@@ -142,7 +142,7 @@ export class ScreenEffects {
       display: flex; align-items: center; justify-content: center;
     `;
     const circle = document.createElement('img');
-    circle.src = MAGIC_CIRCLE;
+    circle.src = MAGIC_CIRCLE();
     circle.alt = '';
     circle.style.cssText = `
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);

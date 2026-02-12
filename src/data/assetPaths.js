@@ -3,22 +3,29 @@
  * Character IDs: communicator, techLeader, techCommunicator, controlTower, reporter.
  * Folder names: communicator, tech_leader, tech_communicator, control_tower, reporter.
  * 기본 이미지: idle.png (서 있는 모습)
- * 배포(base path) 시 BASE가 비면 런타임에 location에서 보정 (GitHub Pages /119/ 등)
+ * 배포 시 base는 첫 사용 시점에 계산 (GitHub Pages /119/ 등)
  */
+let _base = null;
 function getBase() {
+  if (_base !== null) return _base;
   let base = '';
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) {
     base = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
   }
   if (!base && typeof window !== 'undefined' && window.location) {
-    const path = window.location.pathname || '';
+    const path = (window.location.pathname || '').replace(/\/index\.html$/i, '').replace(/\/$/, '') || '';
     if (path.startsWith('/119')) base = '/119';
+    else if (path && path !== '/') base = path.startsWith('/') ? path : '/' + path;
   }
+  _base = base;
   return base;
 }
-const BASE = getBase();
-const A = `${BASE}/assets`;
-const IMG = `${BASE}/image`;
+function getA() {
+  return `${getBase()}/assets`;
+}
+function getIMG() {
+  return `${getBase()}/image`;
+}
 
 // 영문 ID → 영문 폴더명 매핑
 const CHAR_ID_TO_FOLDER = {
@@ -31,7 +38,7 @@ const CHAR_ID_TO_FOLDER = {
 
 export function getCharacterAssetDir(id) {
   const folder = CHAR_ID_TO_FOLDER[id] || id;
-  return `${A}/characters/${folder}`;
+  return `${getA()}/characters/${folder}`;
 }
 
 /** 캐릭터 메인 이미지 (idle.png - 서 있는 모습). 리포터는 walk_left를 좌우반전해 사용(마법 효과 없는 깔끔한 연출) */
@@ -39,7 +46,7 @@ export function getCharacterMainImage(charId) {
   const folder = CHAR_ID_TO_FOLDER[charId];
   if (!folder) return null;
   const file = charId === 'reporter' ? 'walk_left.png' : 'idle.png';
-  return `${A}/characters/${folder}/${file}`;
+  return `${getA()}/characters/${folder}/${file}`;
 }
 
 /** 엔딩 후 '수고하셨습니다.' 클릭 시 재생 — 캐릭터별 마술/액션 동영상
@@ -47,7 +54,7 @@ export function getCharacterMainImage(charId) {
 export function getCharacterActionMovie(charId) {
   const folder = CHAR_ID_TO_FOLDER[charId];
   if (!folder) return null;
-  return `${A}/characters/action_move/${folder}_skill.mp4`;
+  return `${getA()}/characters/action_move/${folder}_skill.mp4`;
 }
 
 /** 캐릭터 포즈별 스프라이트 URL */
@@ -76,7 +83,7 @@ const VILLAGE_BG_FILES = {
 
 export function getVillageBg(stageLevel = 1) {
   const file = VILLAGE_BG_FILES[Math.min(5, Math.max(1, stageLevel))] || 'stage_1_green.png';
-  return `${A}/maps/village/${file}`;
+  return `${getA()}/maps/village/${file}`;
 }
 
 /** stageLevel 1–5 for guild (public/assets/maps/guild/)
@@ -93,7 +100,7 @@ export function getGuildBg(stageLevel = 1) {
   const key = Math.min(5, Math.max(1, stageLevel));
   const file = GUILD_BG_FILES[key];
   if (file === 'yellowgreen') return 'gradient:yellowgreen';
-  return `${A}/maps/guild/${file || 'stage_1_green.png'}`;
+  return `${getA()}/maps/guild/${file || 'stage_1_green.png'}`;
 }
 
 /** riskLevel 0–3: idle, angry, weakened, defeated */
@@ -101,7 +108,7 @@ const BOSS_SPRITES = ['idle', 'angry', 'weakened', 'defeated'];
 
 export function getBossSprite(riskLevel = 0) {
   const idx = Math.min(3, Math.max(0, Math.floor(riskLevel)));
-  return `${A}/characters/boss/${BOSS_SPRITES[idx]}.png`;
+  return `${getA()}/characters/boss/${BOSS_SPRITES[idx]}.png`;
 }
 
 /** Compute risk level 0–3 from state (internalChaos + externalRisk). */
@@ -138,23 +145,27 @@ export function getItemImage(charId, slotIndex) {
   const folder = CHAR_ID_TO_ITEM_FOLDER[charId] || charId;
   if (slotIndex === 0) {
     const base = ITEM_BASE_NAMES[folder] || 'base_scroll';
-    return `${A}/items/${folder}/${base}.png`;
+    return `${getA()}/items/${folder}/${base}.png`;
   }
-  return `${A}/items/${folder}/sub${Math.min(4, slotIndex)}.png`;
+  return `${getA()}/items/${folder}/sub${Math.min(4, slotIndex)}.png`;
 }
 
 /** 타이틀 화면 메인 이미지 — public/assets/ui/title.png */
-export const TITLE_IMAGE = `${A}/ui/title.png`;
+export function getTitleImage() {
+  return `${getA()}/ui/title.png`;
+}
+/** 문자열 필요 시 getTitleImage() 사용 (base 반영) */
+export const TITLE_IMAGE = getTitleImage();
 
 /** 보스전 직전 마법 시전 영상 — public/assets/magic/magic.mp4 (약 1분 30초) */
 export function getMagicVideoUrl() {
-  return `${A}/magic/magic.mp4`;
+  return `${getA()}/magic/magic.mp4`;
 }
 
 /** 연출 에셋 — public/assets/effects/ */
-export const CLOUD_OVERLAY = `${A}/effects/cloud_overlay.png`;
-export const MAGIC_CIRCLE = `${A}/effects/magic_circle.png`;
-export const PARTICLE_SPARK = `${A}/effects/particle_spark.png`;
+export const CLOUD_OVERLAY = () => `${getA()}/effects/cloud_overlay.png`;
+export const MAGIC_CIRCLE = () => `${getA()}/effects/magic_circle.png`;
+export const PARTICLE_SPARK = () => `${getA()}/effects/particle_spark.png`;
 
 /**
  * 관장자 에셋 — public/assets/characters/guardians/
@@ -177,19 +188,19 @@ export function getGuardianIdle(guardianName) {
   const id = GUARDIAN_ID_MAP[guardianName];
   if (!id) return null;
   const fallback = GUARDIAN_IDLE_FALLBACK[id];
-  if (fallback) return `${A}/characters/guardians/${fallback}`;
-  return `${A}/characters/guardians/${id}_idle.png`;
+  if (fallback) return `${getA()}/characters/guardians/${fallback}`;
+  return `${getA()}/characters/guardians/${id}_idle.png`;
 }
 
 export function getGuardianPortrait(guardianName) {
   const id = GUARDIAN_ID_MAP[guardianName];
   if (!id) return null;
-  return `${A}/characters/guardians/${id}_portrait.png`;
+  return `${getA()}/characters/guardians/${id}_portrait.png`;
 }
 
 /** 테크리더 move 폴더 내 GLB (public/assets/characters/tech_leader/move/*.glb) — 추후 3D 렌더 시 사용, 현재는 PNG 스프라이트 사용 */
 export function getTechLeaderMoveGlbPath(filename = 'character.glb') {
-  return `${A}/characters/tech_leader/move/${filename}`;
+  return `${getA()}/characters/tech_leader/move/${filename}`;
 }
 
 /** BGM — 파일 4개: peace, tension, crisis, ending (public/assets/music/) */
@@ -204,5 +215,5 @@ export const BGM_FILES = {
 };
 export function getBGMUrl(key) {
   const file = BGM_FILES[key];
-  return file ? `${A}/music/${file}` : null;
+  return file ? `${getA()}/music/${file}` : null;
 }

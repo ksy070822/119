@@ -2,7 +2,7 @@
  * 인트로 시네마틱 시퀀스 설정 — 장면별 배경, 텍스트, 효과, 지속 시간
  * GAME_SCRIPT.md 기반 6개 장면 구현
  */
-import { getVillageBg, getGuildBg, TITLE_IMAGE } from '../data/assetPaths.js';
+import { getVillageBg, getGuildBg, getTitleImage } from '../data/assetPaths.js';
 import { CHARACTERS } from '../data/characters.js';
 
 const INTRO_PORTRAIT_ORDER = ['communicator', 'techLeader', 'techCommunicator', 'controlTower', 'reporter'];

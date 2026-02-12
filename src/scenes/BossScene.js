@@ -180,7 +180,7 @@ export class BossScene {
         z-index: 2;
         pointer-events: none;
       ">
-        <img src="${MAGIC_CIRCLE}" alt="" style="width:100%;height:100%;opacity:0.6;animation:skill-magic-circle-spin 2s linear infinite;" onerror="this.parentElement.style.display='none';">
+        <img src="${MAGIC_CIRCLE()}" alt="" style="width:100%;height:100%;opacity:0.6;animation:skill-magic-circle-spin 2s linear infinite;" onerror="this.parentElement.style.display='none';">
       </div>
       <div class="boss-shout" id="boss-shout" style="
         display: none;
@@ -494,7 +494,7 @@ export class BossScene {
 
   _showCloudOverlay() {
     const img = document.createElement('img');
-    img.src = CLOUD_OVERLAY;
+    img.src = CLOUD_OVERLAY();
     img.alt = '';
     img.style.cssText = `
       position: absolute;
