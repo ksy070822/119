@@ -1,0 +1,356 @@
+{
+  "dialogues": {
+    "S1_communicator": {
+      "id": "S1_communicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "커뮤니케이터", "text": "결제대란이 다가오고 있나봐요. 주민들의 문의가 빗발치고 있어요. 어떤 상황인거죠??" }
+      ]
+    },
+    "S1_techLeader": {
+      "id": "S1_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "시스템 전체를 점검하고 있습니다. 아직 원인이 불명확한 상태입니다. 내부/외부 모두 확인 중이에요." },
+        { "type": "item_reward", "itemSlot": 1, "itemName": "시스템 점검 리포트", "itemDesc": "기술 분석 역량이 향상됩니다!", "text": "📋 [시스템 점검 리포트]를 획득했습니다!\n기술 분석 역량이 향상됩니다!" }
+      ]
+    },
+    "S1_techCommunicator": {
+      "id": "S1_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "기술적인 상황을 마을주민이 이해할 수 있는 언어로 번역해서 전달하겠습니다. 지금은 '점검 중'이라고 안내하면 됩니다." },
+        { "type": "item_reward", "itemSlot": 1, "itemName": "FAQ 번역 카드", "itemDesc": "기술→마을주민 소통 역량이 향상됩니다!", "text": "📋 [FAQ 번역 카드]를 획득했습니다!\n기술→마을주민 소통 역량이 향상됩니다!" }
+      ]
+    },
+    "S1_controlTower": {
+      "id": "S1_controlTower",
+      "steps": [
+        { "type": "dialogue", "speaker": "컨트롤타워", "text": "원인이 불명확한 상황입니다. 우선 영향 범위부터 파악하는 게 중요합니다. 성급한 판단은 금물이에요." },
+        { "type": "item_reward", "itemSlot": 1, "itemName": "타겟 커뮤니케이션 전략", "itemDesc": "범위 판단 역량이 향상됩니다!", "text": "📋 [타겟 커뮤니케이션 전략]을 획득했습니다!\n범위 판단 역량이 향상됩니다!" }
+      ]
+    },
+    "S1_reporter": {
+      "id": "S1_reporter",
+      "steps": [
+        { "type": "dialogue", "speaker": "리포터", "text": "타임라인 기록을 시작합니다. 장애 발생 시각, 인지 시각, 초동 조치 시각... 모두 기록해둬야 합니다." },
+        { "type": "item_reward", "itemSlot": 1, "itemName": "타임라인 기록부", "itemDesc": "시간 관리 역량이 향상됩니다!", "text": "📋 [타임라인 기록부]를 획득했습니다!\n시간 관리 역량이 향상됩니다!" }
+      ]
+    },
+
+    "S1_FINAL_techCommunicator": {
+      "id": "S1_FINAL_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "아직 복구는 어려워요." }
+      ]
+    },
+    "S1_FINAL_techLeader": {
+      "id": "S1_FINAL_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "아직 복구는 어려워요." }
+      ]
+    },
+
+    "S1_DECISION": {
+      "id": "S1_DECISION",
+      "steps": [
+        { "type": "dialogue", "speaker": "시스템", "text": "주민 문의 100건 초과, 공지를 내보낼까요?" },
+        {
+          "type": "choice",
+          "choices": [
+            { "id": "S1_C1", "text": "CS 인입 취합 + 최소 공지 초안 준비 (게시 X)", "preview": "BEST — 리스크 변화 없음", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+            { "id": "S1_C2", "text": "CS 인입 취합만 하고, 공지는 나중에", "preview": "조직 혼란 +5", "checkpoint": false, "effects": { "internalChaos": 5, "externalRisk": 0 } },
+            { "id": "S1_C3", "text": "아직 아무것도 하지 않는다", "preview": "조직 혼란 +15", "checkpoint": true, "riskPreview": { "internalChaos": "+15", "externalRisk": "유지" }, "effects": { "internalChaos": 15, "externalRisk": 0 } }
+          ]
+        },
+        {
+          "type": "response",
+          "conditions": {
+            "S1_C1": { "speaker": "시스템", "text": "신중한 선택입니다. 취합과 공지 초안을 동시에 준비합니다." },
+            "S1_C2": { "speaker": "시스템", "text": "취합부터 시작합니다. 공지는 다음 단계에서 판단하겠습니다." },
+            "S1_C3": { "speaker": "시스템", "text": "아무 조치도 취하지 않았습니다. 조직 내 혼란이 커지고 있습니다." }
+          }
+        }
+      ]
+    },
+
+    "S1_GUARDIAN": {
+      "id": "S1_GUARDIAN",
+      "steps": [
+        { "type": "dialogue", "speaker": "CCO", "text": "초기공지는 빠르게 하는 것보다 신중함이 중요합니다." },
+        { "type": "dialogue", "speaker": "CCO", "text": "마을 주민의 문의는 얼만큼 많나요? 다른 마을에는 영향이 없나요?" },
+        { "type": "dialogue", "speaker": "CCO", "text": "곧 문제가 해결되기 어렵나요?" },
+        { "type": "dialogue", "speaker": "CCO", "text": "테크영웅의 의견을 참고해서 신중히 의사결정을 하세요." }
+      ]
+    },
+
+    "S2_communicator": {
+      "id": "S2_communicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "커뮤니케이터", "text": "마을 주민 문의가 100건을 넘었습니다. 공지를 내보낼지 판단해야 할 시점이에요." }
+      ]
+    },
+    "S2_techLeader": {
+      "id": "S2_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "아직 원인이 특정되지 않았습니다. 내부 시스템 문제일 수도, 외부 결제사 이슈일 수도 있어요." },
+        { "type": "item_reward", "itemSlot": 2, "itemName": "시스템 점검 리포트", "itemDesc": "기술 분석 역량이 향상됩니다!", "text": "📋 [시스템 점검 리포트]를 획득했습니다!\n기술 분석 역량이 향상됩니다!" }
+      ]
+    },
+    "S2_techCommunicator": {
+      "id": "S2_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "아직 구체적인 원인이나 복구시점을 알 수가 없어요." },
+        { "type": "item_reward", "itemSlot": 2, "itemName": "FAQ 번역 카드", "itemDesc": "기술→마을주민 소통 역량이 향상됩니다!", "text": "📋 [FAQ 번역 카드]를 획득했습니다!\n기술→마을주민 소통 역량이 향상됩니다!" }
+      ]
+    },
+    "S2_controlTower": {
+      "id": "S2_controlTower",
+      "steps": [
+        { "type": "dialogue", "speaker": "컨트롤타워", "text": "큰일이네요. 다른 마을까지 영향이 가면 안될텐데.. 마을 평판이 나빠질까봐 걱정이예요." },
+        { "type": "item_reward", "itemSlot": 2, "itemName": "타겟 커뮤니케이션 전략", "itemDesc": "범위 판단 역량이 향상됩니다!", "text": "📋 [타겟 커뮤니케이션 전략]을 획득했습니다!\n범위 판단 역량이 향상됩니다!" }
+      ]
+    },
+    "S2_reporter": {
+      "id": "S2_reporter",
+      "steps": [
+        { "type": "dialogue", "speaker": "리포터", "text": "현재는 법적 의무 공지 시간 이전입니다. 아직 선택의 여지는 남아 있어요." },
+        { "type": "item_reward", "itemSlot": 2, "itemName": "타임라인 기록부", "itemDesc": "시간 관리 역량이 향상됩니다!", "text": "📋 [타임라인 기록부]를 획득했습니다!\n시간 관리 역량이 향상됩니다!" }
+      ]
+    },
+
+    "S2_DECISION": {
+      "id": "S2_DECISION",
+      "steps": [
+        { "type": "dialogue", "speaker": "시스템", "text": "모든 영웅의 의견을 들었습니다. 이제 공지 여부를 결정해야 합니다.\n\n마을 주민센터 전화문의 대기 100건 초과. 공지를 내보낼까요?" },
+        {
+          "type": "choice",
+          "choices": [
+            { "id": "S2_C1", "text": "최소 공지(현상만) 게시한다", "preview": "BEST — 혼란 -5, 대외 +5", "checkpoint": false, "effects": { "internalChaos": -5, "externalRisk": 5 } },
+            { "id": "S2_C2", "text": "공지하지 않고 CS 가이드만 준비한다", "preview": "조직 혼란 +10", "checkpoint": false, "effects": { "internalChaos": 10, "externalRisk": 0 } },
+            { "id": "S2_C3", "text": "상세 공지를 즉시 게시한다", "preview": "혼란·대외위험 맥스", "checkpoint": true, "riskPreview": { "internalChaos": "맥스", "externalRisk": "맥스" }, "effects": { "internalChaos": 100, "externalRisk": 100, "promiseRisk": true } }
+          ]
+        },
+        {
+          "type": "response",
+          "conditions": {
+            "S2_C1": { "speaker": "시스템", "text": "최소 공지를 게시합니다. 현상만 전달하여 불필요한 약속을 피했습니다." },
+            "S2_C2": { "speaker": "시스템", "text": "공지 없이 CS 가이드만 준비합니다. 조직 내 혼란이 커질 수 있습니다." },
+            "S2_C3": { "speaker": "시스템", "text": "상세 공지를 즉시 게시합니다. 확인되지 않은 내용이 포함될 위험이 있습니다." }
+          }
+        }
+      ]
+    },
+
+    "S2_GUARDIAN": {
+      "id": "S2_GUARDIAN",
+      "steps": [
+        { "type": "dialogue", "speaker": "대외협력", "text": "지금은 빠른 공지보다 신중한 판단이 중요합니다." },
+        { "type": "dialogue", "speaker": "대외협력", "text": "마을주민의 혼란이 심각한가요? 다른 마을에도 피해가 있나요?" },
+        { "type": "dialogue", "speaker": "대외협력", "text": "복구까지는 시간이 얼마나 걸리는지 테크 영웅의 의견을 참고해서 결정하세요." }
+      ]
+    },
+
+    "S2_FINAL_techCommunicator": {
+      "id": "S2_FINAL_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "빠른 시간 내에 복구는 어려울 것 같습니다." }
+      ]
+    },
+    "S2_FINAL_techLeader": {
+      "id": "S2_FINAL_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "빠른 시간 내에 복구는 어려울 것 같습니다." }
+      ]
+    },
+
+    "S3_communicator": {
+      "id": "S3_communicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "커뮤니케이터", "text": "장애가 100분 넘게 지속되고 있습니다. 마을 주민들의 불안이 점점 커지고 있어요." }
+      ]
+    },
+    "S3_techLeader": {
+      "id": "S3_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "내부 시스템 수정은 거의 완료되었습니다. 하지만 외부 결제사 쪽이 아직 불안정합니다." },
+        { "type": "item_reward", "itemSlot": 3, "itemName": "시스템 점검 리포트", "itemDesc": "기술 분석 역량이 향상됩니다!", "text": "📋 [시스템 점검 리포트]를 획득했습니다!\n기술 분석 역량이 향상됩니다!" }
+      ]
+    },
+    "S3_techCommunicator": {
+      "id": "S3_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "마을주민들에게는 내부와 외부 문제를 구분해서 설명하는 것이 좋겠습니다. '내부 시스템은 정상화, 일부 외부 연동 복구 중'이라고요." },
+        { "type": "item_reward", "itemSlot": 3, "itemName": "FAQ 번역 카드", "itemDesc": "기술→마을주민 소통 역량이 향상됩니다!", "text": "📋 [FAQ 번역 카드]를 획득했습니다!\n기술→마을주민 소통 역량이 향상됩니다!" }
+      ]
+    },
+    "S3_controlTower": {
+      "id": "S3_controlTower",
+      "steps": [
+        { "type": "dialogue", "speaker": "컨트롤타워", "text": "이 시점에서 심화 공지는 불가피합니다. 초기 공지만으로는 마을 주민들의 신뢰를 유지하기가 어렵습니다." },
+        { "type": "item_reward", "itemSlot": 3, "itemName": "타겟 커뮤니케이션 전략", "itemDesc": "범위 판단 역량이 향상됩니다!", "text": "📋 [타겟 커뮤니케이션 전략]을 획득했습니다!\n범위 판단 역량이 향상됩니다!" }
+      ]
+    },
+    "S3_reporter": {
+      "id": "S3_reporter",
+      "steps": [
+        { "type": "dialogue", "speaker": "리포터", "text": "타임라인 정리가 완료되었습니다. 법적 고지 시점이 임박했으니 심화 공지 준비가 필요합니다." },
+        { "type": "item_reward", "itemSlot": 3, "itemName": "타임라인 기록부", "itemDesc": "시간 관리 역량이 향상됩니다!", "text": "📋 [타임라인 기록부]를 획득했습니다!\n시간 관리 역량이 향상됩니다!" }
+      ]
+    },
+
+    "S3_DECISION": {
+      "id": "S3_DECISION",
+      "steps": [
+        { "type": "dialogue", "speaker": "시스템", "text": "영웅들의 조언을 모두 들었습니다. 심화 공지 여부를 결정해야 합니다.\n\n장애 지속 100분 초과, 법적 고지 시점 임박." },
+        {
+          "type": "choice",
+          "choices": [
+            { "id": "S3_C1", "text": "심화 공지 작성 (원인/범위/복구현황/상담채널)", "preview": "BEST — 혼란 -5, 대외 -5", "checkpoint": false, "effects": { "internalChaos": -5, "externalRisk": -5 } },
+            { "id": "S3_C2", "text": "초기 공지 유지, 심화 공지 보류", "preview": "혼란 +10, 대외 +15", "checkpoint": true, "riskPreview": { "internalChaos": "+10", "externalRisk": "+15" }, "effects": { "internalChaos": 10, "externalRisk": 15 } },
+            { "id": "S3_C3", "text": "공지를 내리지 않는다", "preview": "혼란 +20, 대외 +25", "checkpoint": true, "riskPreview": { "internalChaos": "+20", "externalRisk": "+25" }, "effects": { "internalChaos": 20, "externalRisk": 25 } }
+          ]
+        },
+        {
+          "type": "response",
+          "conditions": {
+            "S3_C1": { "speaker": "시스템", "text": "심화 공지 초안을 작성합니다. 사실 기반의 투명한 공지로 신뢰를 유지합니다." },
+            "S3_C2": { "speaker": "시스템", "text": "초기 공지를 유지합니다. 마을 주민들은 더 많은 정보를 원하고 있습니다." },
+            "S3_C3": { "speaker": "시스템", "text": "공지 없이 진행합니다. 조직과 대외 리스크 모두 크게 상승합니다." }
+          }
+        }
+      ]
+    },
+
+    "S3_GUARDIAN": {
+      "id": "S3_GUARDIAN",
+      "steps": [
+        { "type": "dialogue", "speaker": "PR", "text": "외부에서 문의가 오면 어떻게 소통할지 정리가 필요해요." },
+        { "type": "dialogue", "speaker": "PR", "text": "장애가 110분 내 해결되지 못한다면 법적의무에 따라 심화공지를 꼭 해야합니다. 컨트롤타워의 의견을 참고해서 의사결정을 해보세요." }
+      ]
+    },
+
+    "S4_communicator": {
+      "id": "S4_communicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "커뮤니케이터", "text": "등급 하향 공지를 준비하고 있습니다. 마을 주민들에게 상황이 나아지고 있다는 안내가 필요해요." }
+      ]
+    },
+    "S4_techLeader": {
+      "id": "S4_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "기술적으로는 문제가 없습니다. 등급 하향은 가능한 상태입니다." },
+        { "type": "item_reward", "itemSlot": 4, "itemName": "시스템 점검 리포트", "itemDesc": "기술 분석 역량이 향상됩니다!", "text": "📋 [시스템 점검 리포트]를 획득했습니다!\n기술 분석 역량이 향상됩니다!" }
+      ]
+    },
+    "S4_techCommunicator": {
+      "id": "S4_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "마을 주민에게는 '상황이 나아지고 있습니다'라는 톤으로 안내하면 좋겠습니다." },
+        { "type": "item_reward", "itemSlot": 4, "itemName": "FAQ 번역 카드", "itemDesc": "기술→마을주민 소통 역량이 향상됩니다!", "text": "📋 [FAQ 번역 카드]를 획득했습니다!\n기술→마을주민 소통 역량이 향상됩니다!" }
+      ]
+    },
+    "S4_controlTower": {
+      "id": "S4_controlTower",
+      "steps": [
+        { "type": "dialogue", "speaker": "컨트롤타워", "text": "오렌지에서 옐로우로의 등급 하향에 동의합니다. 하지만 완전 복구 선언은 아직 이릅니다." },
+        { "type": "item_reward", "itemSlot": 4, "itemName": "타겟 커뮤니케이션 전략", "itemDesc": "범위 판단 역량이 향상됩니다!", "text": "📋 [타겟 커뮤니케이션 전략]을 획득했습니다!\n범위 판단 역량이 향상됩니다!" }
+      ]
+    },
+    "S4_reporter": {
+      "id": "S4_reporter",
+      "steps": [
+        { "type": "dialogue", "speaker": "리포터", "text": "등급 하향 검토를 제안합니다. '복구'와 '안정'은 다릅니다. 기록을 근거로 판단해야 합니다." },
+        { "type": "item_reward", "itemSlot": 4, "itemName": "타임라인 기록부", "itemDesc": "시간 관리 역량이 향상됩니다!", "text": "📋 [타임라인 기록부]를 획득했습니다!\n시간 관리 역량이 향상됩니다!" }
+      ]
+    },
+
+    "S4_DECISION": {
+      "id": "S4_DECISION",
+      "steps": [
+        { "type": "dialogue", "speaker": "시스템", "text": "영웅들의 의견이 모였습니다. 복구 관련 결정을 내려야 합니다.\n\n테크에서 '일부 정상화' 전달. 복구 공지할까요?" },
+        {
+          "type": "choice",
+          "choices": [
+            { "id": "S4_C1", "text": "등급 하향 검토 후 합의하여 공지", "preview": "BEST — 리스크 변화 없음", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+            { "id": "S4_C2", "text": "바로 '복구 완료' 공지 게시", "preview": "혼란 +5, 대외 +10", "checkpoint": true, "riskPreview": { "internalChaos": "+5", "externalRisk": "+10" }, "effects": { "internalChaos": 5, "externalRisk": 10 } }
+          ]
+        },
+        {
+          "type": "response",
+          "conditions": {
+            "S4_C1": { "speaker": "시스템", "text": "등급 검토 후 합의를 거쳐 공지합니다. 신중한 복구 선언입니다." },
+            "S4_C2": { "speaker": "시스템", "text": "즉시 복구 공지를 게시합니다. 섣부른 '복구 완료'는 재발 시 더 큰 신뢰 손상을 야기할 수 있습니다." }
+          }
+        }
+      ]
+    },
+
+    "S4_GUARDIAN": {
+      "id": "S4_GUARDIAN",
+      "steps": [
+        { "type": "dialogue", "speaker": "CTO", "text": "복구와 안정의 차이를 이해해야 합니다. 섣부른 '복구 완료'는 위험합니다." },
+        { "type": "dialogue", "speaker": "CTO", "text": "기술 지표가 안정 범위 내에 들어왔는지 확인하고, 모니터링 기간을 거친 후에 복구를 선언하세요." }
+      ]
+    },
+
+    "S5_GUARDIAN": {
+      "id": "S5_GUARDIAN",
+      "steps": [
+        { "type": "dialogue", "speaker": "법무", "text": "마을 주민과 옆마을에 손해가 있다면 보상안을 검토하세요." },
+        { "type": "dialogue", "speaker": "법무", "text": "그리고 같은 문제가 재발하지 않도록 함께 상의해보세요." }
+      ]
+    },
+
+    "S5_communicator": {
+      "id": "S5_communicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "커뮤니케이터", "text": "마을 주민들에게 피해는 없는지 접수내용을 정리하고 있어요." }
+      ]
+    },
+    "S5_techLeader": {
+      "id": "S5_techLeader",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크리더", "text": "재발방지 리포트를 작성하겠습니다. 원인, 대응 과정, 개선 사항을 정리합니다." }
+      ]
+    },
+    "S5_techCommunicator": {
+      "id": "S5_techCommunicator",
+      "steps": [
+        { "type": "dialogue", "speaker": "테크커뮤니케이터", "text": "마을 주민에게 재발 방지 노력을 안내하겠습니다. 기술적 언어가 어렵다면 주민들이 이해할 수 있는 표현으로 바꿔드릴게요." }
+      ]
+    },
+    "S5_controlTower": {
+      "id": "S5_controlTower",
+      "steps": [
+        { "type": "dialogue", "speaker": "컨트롤타워", "text": "외부 마을과의 신뢰를 유지하기 위해 추가 소통을 하고 올게요." }
+      ]
+    },
+    "S5_reporter": {
+      "id": "S5_reporter",
+      "steps": [
+        { "type": "dialogue", "speaker": "리포터", "text": "이번 경험을 기록으로 남겨서 다음 대응에 활용해야 합니다. 재발방지대책을 수립하거나 외부와 소통이 필요할 때 제 리포트를 활용해보세요." }
+      ]
+    },
+
+    "S5_DECISION": {
+      "id": "S5_DECISION",
+      "steps": [
+        { "type": "dialogue", "speaker": "시스템", "text": "장애가 종료되었습니다. 마지막 후속 조치를 결정해야 합니다." },
+        {
+          "type": "choice",
+          "choices": [
+            { "id": "S5_C1", "text": "VOC 취합 + 피해 규모 파악 + 보상안 검토", "preview": "BEST — 리스크 변화 없음", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+            { "id": "S5_C2", "text": "재발방지 리포트 작성 요청", "preview": "BEST — 리스크 변화 없음", "checkpoint": false, "effects": { "internalChaos": 0, "externalRisk": 0 } },
+            { "id": "S5_C3", "text": "아무것도 남기지 않는다", "preview": "조직 혼란 +10", "checkpoint": false, "effects": { "internalChaos": 10, "externalRisk": 0 } }
+          ]
+        },
+        {
+          "type": "response",
+          "conditions": {
+            "S5_C1": { "speaker": "시스템", "text": "VOC와 보상안 검토를 진행합니다. 마을 주민 신뢰 회복의 첫걸음입니다." },
+            "S5_C2": { "speaker": "시스템", "text": "재발방지 리포트를 작성합니다. 같은 실수를 반복하지 않겠다는 의지입니다." },
+            "S5_C3": { "speaker": "시스템", "text": "아무것도 남기지 않았습니다. 같은 장애가 반복될 위험이 높아집니다." }
+          }
+        }
+      ]
+    }
+  }
+}

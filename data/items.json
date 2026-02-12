@@ -1,0 +1,15 @@
+{
+  "items": [
+    { "id": "base_scroll", "name": "공지 스크롤", "jobId": "communicator", "icon": "📜" },
+    { "id": "base_tablet", "name": "복구 태블릿", "jobId": "techLead", "icon": "⚙️" },
+    { "id": "base_tool", "name": "번역 수정구", "jobId": "techComm", "icon": "🔍" },
+    { "id": "base_map", "name": "계약 지도", "jobId": "controlTower", "icon": "🧭" },
+    { "id": "base_clock", "name": "황금 시계", "jobId": "reporter", "icon": "🕰️" },
+    { "id": "base_stamp", "name": "결정 인장", "jobId": "bizLead", "icon": "💼" },
+    { "id": "faq_card", "name": "FAQ 카드", "icon": "🔮" },
+    { "id": "timeline", "name": "타임라인", "icon": "⏳" },
+    { "id": "map", "name": "제휴사 맵", "icon": "🗺️" },
+    { "id": "tablet", "name": "복구 현황판", "icon": "📟" },
+    { "id": "stamp", "name": "보상안 인장", "icon": "💼" }
+  ]
+}

@@ -1,11 +1,9 @@
+# 119 리포 "루트 = 게임" 일 때 사용. .github/workflows/deploy.yml 로 복사
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'Desktop/해커톤/my pet/**'
+    branches: [main, master, gh-pages]
   workflow_dispatch:
 
 permissions:
@@ -13,34 +11,26 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+concurrency: group = "pages"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./Desktop/해커톤/my pet
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
+      - name: Install and Build
         env:
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
-          VITE_OPENAI_API_KEY: ${{ secrets.VITE_OPENAI_API_KEY }}
-          VITE_ANTHROPIC_API_KEY: ${{ secrets.VITE_ANTHROPIC_API_KEY }}
+          NODE_ENV: production
+        run: |
+          npm ci --no-audit --no-fund 2>/dev/null || npm install
+          npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -48,7 +38,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './Desktop/해커톤/my pet/dist'
+          path: dist
 
   deploy:
     environment:

@@ -1,0 +1,79 @@
+{
+  "maps": {
+    "S1": {
+      "id": "S1",
+      "background": "/image/bg_control.png",
+      "width": 1280,
+      "height": 720,
+      "playerStart": { "x": 640, "y": 580 },
+      "npcs": [
+        { "id": "hero_0", "name": "영웅1", "position": { "x": 460, "y": 460 }, "dialogueId": "S1_hero0", "interactionRadius": 100 },
+        { "id": "hero_1", "name": "영웅2", "position": { "x": 560, "y": 420 }, "dialogueId": "S1_hero1", "interactionRadius": 100 },
+        { "id": "hero_2", "name": "영웅3", "position": { "x": 720, "y": 420 }, "dialogueId": "S1_hero2", "interactionRadius": 100 },
+        { "id": "hero_3", "name": "영웅4", "position": { "x": 820, "y": 460 }, "dialogueId": "S1_hero3", "interactionRadius": 100 },
+        { "id": "guardian", "name": "CCO", "position": { "x": 200, "y": 380 }, "isGuardian": true, "dialogueId": "S1_GUARDIAN", "interactionRadius": 100, "guardianColor": "#E67E22" }
+      ],
+      "objects": []
+    },
+    "S2": {
+      "id": "S2",
+      "background": "/image/bg_control.png",
+      "width": 1280,
+      "height": 720,
+      "playerStart": { "x": 640, "y": 580 },
+      "npcs": [
+        { "id": "hero_0", "name": "영웅1", "position": { "x": 460, "y": 460 }, "dialogueId": "S2_hero0", "interactionRadius": 100 },
+        { "id": "hero_1", "name": "영웅2", "position": { "x": 560, "y": 420 }, "dialogueId": "S2_hero1", "interactionRadius": 100 },
+        { "id": "hero_2", "name": "영웅3", "position": { "x": 720, "y": 420 }, "dialogueId": "S2_hero2", "interactionRadius": 100 },
+        { "id": "hero_3", "name": "영웅4", "position": { "x": 820, "y": 460 }, "dialogueId": "S2_hero3", "interactionRadius": 100 },
+        { "id": "guardian", "name": "대외협력", "position": { "x": 200, "y": 380 }, "isGuardian": true, "dialogueId": "S2_GUARDIAN", "interactionRadius": 100, "guardianColor": "#3498DB" }
+      ],
+      "objects": []
+    },
+    "S3": {
+      "id": "S3",
+      "background": "/image/bg_control.png",
+      "width": 1280,
+      "height": 720,
+      "playerStart": { "x": 640, "y": 580 },
+      "npcs": [
+        { "id": "hero_0", "name": "영웅1", "position": { "x": 460, "y": 460 }, "dialogueId": "S3_hero0", "interactionRadius": 100 },
+        { "id": "hero_1", "name": "영웅2", "position": { "x": 560, "y": 420 }, "dialogueId": "S3_hero1", "interactionRadius": 100 },
+        { "id": "hero_2", "name": "영웅3", "position": { "x": 720, "y": 420 }, "dialogueId": "S3_hero2", "interactionRadius": 100 },
+        { "id": "hero_3", "name": "영웅4", "position": { "x": 820, "y": 460 }, "dialogueId": "S3_hero3", "interactionRadius": 100 },
+        { "id": "guardian", "name": "PR", "position": { "x": 200, "y": 380 }, "isGuardian": true, "dialogueId": "S3_GUARDIAN", "interactionRadius": 100, "guardianColor": "#9B59B6" }
+      ],
+      "objects": []
+    },
+    "S4": {
+      "id": "S4",
+      "background": "/image/bg_control.png",
+      "width": 1280,
+      "height": 720,
+      "playerStart": { "x": 640, "y": 580 },
+      "npcs": [
+        { "id": "hero_0", "name": "영웅1", "position": { "x": 460, "y": 460 }, "dialogueId": "S4_hero0", "interactionRadius": 100 },
+        { "id": "hero_1", "name": "영웅2", "position": { "x": 560, "y": 420 }, "dialogueId": "S4_hero1", "interactionRadius": 100 },
+        { "id": "hero_2", "name": "영웅3", "position": { "x": 720, "y": 420 }, "dialogueId": "S4_hero2", "interactionRadius": 100 },
+        { "id": "hero_3", "name": "영웅4", "position": { "x": 820, "y": 460 }, "dialogueId": "S4_hero3", "interactionRadius": 100 },
+        { "id": "guardian", "name": "CTO", "position": { "x": 200, "y": 380 }, "isGuardian": true, "dialogueId": "S4_GUARDIAN", "interactionRadius": 100, "guardianColor": "#E74C3C" }
+      ],
+      "objects": []
+    },
+    "S5": {
+      "id": "S5",
+      "background": "/assets/maps/guild/stage_1_green_alt.png",
+      "width": 1280,
+      "height": 720,
+      "playerStart": { "x": 640, "y": 580 },
+      "npcs": [
+        { "id": "hero_0", "name": "영웅1", "position": { "x": 460, "y": 460 }, "dialogueId": "S5_hero0", "interactionRadius": 100 },
+        { "id": "hero_1", "name": "영웅2", "position": { "x": 560, "y": 420 }, "dialogueId": "S5_hero1", "interactionRadius": 100 },
+        { "id": "hero_2", "name": "영웅3", "position": { "x": 720, "y": 420 }, "dialogueId": "S5_hero2", "interactionRadius": 100 },
+        { "id": "hero_3", "name": "영웅4", "position": { "x": 820, "y": 460 }, "dialogueId": "S5_hero3", "interactionRadius": 100 },
+        { "id": "guardian", "name": "법무", "position": { "x": 200, "y": 380 }, "isGuardian": true, "dialogueId": "S5_GUARDIAN", "interactionRadius": 100, "guardianColor": "#5B2C6F" }
+      ],
+      "objects": []
+    }
+  }
+}

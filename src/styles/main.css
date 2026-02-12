@@ -1,0 +1,1607 @@
+:root {
+  --primary: #FFE500;
+  --secondary: #2c1810;
+  --danger: #e74c3c;
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --dark: #1a1a2e;
+  --darker: #0f0f1a;
+  --light: #ecf0f1;
+  --jrpg-gold: #d4af37;
+  --jrpg-panel: linear-gradient(180deg, #2c2416 0%, #1a1510 100%);
+  --jrpg-border: rgba(212, 175, 55, 0.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--darker);
+  color: var(--light);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 1280px;
+  box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  border-radius: 12px;
+  overflow: visible; /* 좌측 선택캐릭터 패널이 화면 바깥으로 노출되도록 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 화면 바깥 최상단 — 조직혼란/대외위험 게이지 (게임 화면 이분할) */
+#game-risk-top-bar {
+  display: none; /* GameScene에서 flex로 전환 */
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 72px;
+  flex-direction: row;
+  background: linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(20,15,10,0.95) 100%);
+  border-bottom: 3px solid var(--jrpg-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 30;
+}
+
+#game-risk-top-bar .risk-half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-right: 2px solid rgba(255,255,255,0.08);
+}
+
+#game-risk-top-bar .risk-half:last-child {
+  border-right: none;
+}
+
+#game-risk-top-bar .risk-half .risk-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--jrpg-gold);
+  letter-spacing: 0.05em;
+}
+
+#game-risk-top-bar .risk-half .risk-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  transition: color 0.3s;
+}
+
+#game-risk-top-bar .risk-half .risk-bar-wrap {
+  width: 100%;
+  max-width: 280px;
+  height: 12px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+#game-risk-top-bar .risk-half .risk-bar {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s ease;
+}
+#game-risk-top-bar .risk-half .risk-bar.risk-bar-just-changed {
+  animation: risk-bar-pulse 0.6s ease-out;
+}
+@keyframes risk-bar-pulse {
+  0% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.5); }
+  50% { filter: brightness(1.4); box-shadow: 0 0 12px 4px rgba(231, 76, 60, 0.4); }
+  100% { filter: brightness(1); box-shadow: none; }
+}
+#game-risk-top-bar .risk-half .risk-bar.risk-bar-just-down {
+  animation: risk-bar-pulse-down 0.6s ease-out;
+}
+@keyframes risk-bar-pulse-down {
+  0% { filter: brightness(1); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.5); }
+  50% { filter: brightness(1.35); box-shadow: 0 0 12px 4px rgba(46, 204, 113, 0.4); }
+  100% { filter: brightness(1); box-shadow: none; }
+}
+
+#game-risk-top-bar .risk-half.chaos .risk-bar {
+  background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
+}
+
+#game-risk-top-bar .risk-half.external .risk-bar {
+  background: linear-gradient(90deg, #f1c40f, #e67e22, #e74c3c);
+}
+
+/* 리스크 변화량 +/- 눈에 띄게 표시 */
+#game-risk-top-bar .risk-delta {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 1.35rem;
+  font-weight: 900;
+  animation: risk-delta-pop 0.4s ease-out, risk-delta-blink 0.6s ease-in-out 4 0.3s;
+  text-shadow: 0 0 8px currentColor;
+}
+#game-risk-top-bar .risk-delta-up { color: #ff6b6b; }
+#game-risk-top-bar .risk-delta-down { color: #2ecc71; }
+
+#game-risk-top-bar .risk-delta-out {
+  animation: risk-delta-fade 1s ease-out forwards;
+}
+
+@keyframes risk-delta-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes risk-delta-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes risk-delta-fade {
+  to { opacity: 0; transform: scale(1.05); }
+}
+
+#game-canvas-wrap {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  margin: 0 auto;
+  overflow: visible; /* 좌측 패널이 화면 바깥으로 나가도록 */
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#dom-overlay {
+  pointer-events: none;
+}
+
+#dom-overlay > * {
+  pointer-events: auto;
+}
+
+/* Title scene DOM — 메인 타이틀은 public/assets/ui/title.png만 사용 */
+.title-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.title-screen-character-select {
+  justify-content: space-between;
+}
+.title-screen-character-select .character-grid {
+  flex-shrink: 0;
+}
+.title-screen-character-select .btn-start-village {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+
+.character-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--jrpg-border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+}
+
+.character-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255,229,0,0.15);
+}
+
+.character-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(255,229,0,0.3);
+}
+
+.character-card .character-portrait-wrap {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.character-card .character-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.character-card .icon,
+.character-card .fallback-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 8px;
+}
+.character-card .character-portrait-wrap .icon,
+.character-card .character-portrait-wrap .fallback-icon {
+  margin-bottom: 0;
+}
+
+.character-card .name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 0.95rem;
+  color: var(--jrpg-gold);
+}
+
+.character-card .desc {
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.btn-start {
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* 캐릭터 선택 후 시작하기: 아래쪽 배치, 더 크고 눈에 띄게 */
+.btn-start-village {
+  padding: 18px 56px;
+  font-size: 1.35rem;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #ffe500, #e6c200);
+  color: #1a1510;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(255, 229, 0, 0.5), 0 0 40px rgba(255, 229, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+.btn-start-village:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: 0 8px 32px rgba(255, 229, 0, 0.6), 0 0 56px rgba(255, 229, 0, 0.3);
+}
+.btn-start-intro {
+  padding: 18px 56px;
+  font-size: 1.35rem;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #ffe500, #e6c200);
+  color: #1a1510;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(255, 229, 0, 0.5);
+}
+
+.btn-start:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(212,175,55,0.4);
+}
+
+.btn-start:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 대화창 포트레이트 — CCO 등 PNG 검은 배경이 있으면 검정 대화창과 블렌드되어 덜 튀게 */
+#dom-overlay .dialogue-portrait {
+  mix-blend-mode: screen;
+  isolation: isolate;
+}
+
+/* Game left panel - 선택캐릭터 창, 좌측 화면 바깥, 조직혼란/대외위험 바로 아래 라인부터 */
+.game-left-panel {
+  position: absolute;
+  left: -260px;
+  top: 0;
+  width: 260px;
+  min-height: 280px;
+  padding: 16px 18px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 100%);
+  border-right: 2px solid var(--jrpg-border);
+  border-radius: 0 12px 0 0;
+  z-index: 25;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+.character-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.hero-portrait-wrap {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--jrpg-border);
+}
+.hero-portrait-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-fallback-icon {
+  font-size: 3rem;
+}
+.hero-name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1rem;
+  color: var(--jrpg-gold);
+  text-align: center;
+}
+.item-slots-label {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 4px;
+}
+.item-slots-hint {
+  font-size: 0.65rem;
+  color: #666;
+  display: block;
+  margin-top: 2px;
+}
+/* 획득 아이템 — 세로 배치, 아이템+이름 나란히 */
+.item-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 240px;
+  margin-top: 4px;
+}
+.item-slot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 1.2rem;
+}
+.item-slot.filled {
+  border-color: var(--jrpg-gold);
+  background: rgba(212,175,55,0.15);
+}
+.item-slot-icon-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+}
+.item-slot-name {
+  flex: 1;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+/* Game HUD */
+.game-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.stage-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.stage-bar .stage-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.3s;
+}
+
+.stage-bar .stage-dot.active {
+  background: var(--jrpg-gold);
+  box-shadow: 0 0 10px rgba(212,175,55,0.6);
+}
+
+.elapsed-time {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.stage-name {
+  font-size: 0.85rem;
+  color: var(--jrpg-gold);
+}
+
+/* 초기 공지 판단 · 심화 공지 판단 — 눈에 띄게 강조 */
+.stage-name[data-stage-num="2"],
+.stage-name[data-stage-num="3"] {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
+}
+
+.risk-hud {
+  display: flex;
+  gap: 20px;
+}
+
+.risk-hud .gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.risk-hud .gauge .label {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.risk-hud .gauge .value {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.risk-hud .gauge .bar-wrap {
+  width: 100px;
+  height: 8px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.risk-hud .gauge .bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.risk-hud .gauge.chaos .bar { background: linear-gradient(90deg, #2ecc71, #e74c3c); }
+.risk-hud .gauge.external .bar { background: linear-gradient(90deg, #f1c40f, #e74c3c); }
+
+/* 하단 문의/선택 패널 */
+.bottom-panel {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, rgba(20,18,15,0.95) 100%);
+  border-top: 2px solid var(--jrpg-border);
+}
+.bottom-situation {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.bottom-title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.1rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 8px;
+}
+.bottom-desc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--light);
+  margin-bottom: 8px;
+}
+.bottom-meta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 12px;
+}
+.bottom-panel .choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bottom-panel .choice-btn {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+/* 마을: 배경 위에서 캐릭터가 이동하는 영역 */
+.village-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+  background: transparent;
+  flex: 1;
+}
+.player-sprite {
+  position: absolute;
+  width: 64px;
+  height: 96px;
+  margin-left: -32px;
+  margin-top: -96px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 10;
+  transition: left 0.05s linear, top 0.05s linear;
+  pointer-events: none;
+}
+.player-sprite-img {
+  width: 64px;
+  height: 96px;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  transition: transform 0.08s ease-out;
+}
+.player-sprite-img.flip-x {
+  transform: scaleX(-1);
+}
+.player-sprite-shadow {
+  position: absolute;
+  bottom: -4px;
+  width: 40px;
+  height: 12px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.player-sprite .player-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+.player-sprite.moving .player-sprite-img {
+  animation: playerBob 0.18s ease-in-out infinite alternate;
+}
+@keyframes playerBob {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+.player-sprite.moving.flip-x .player-sprite-img {
+  animation: playerBobFlip 0.18s ease-in-out infinite alternate;
+}
+@keyframes playerBobFlip {
+  0% { transform: scaleX(-1) translateY(0); }
+  100% { transform: scaleX(-1) translateY(-4px); }
+}
+.ally-npc {
+  position: absolute;
+  width: 56px;
+  height: 80px;
+  margin-left: -28px;
+  margin-top: -80px;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 8;
+  transition: transform 0.3s, filter 0.3s;
+}
+.ally-npc::before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  width: 32px;
+  height: 10px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.ally-npc img {
+  width: 56px;
+  height: 80px;
+  object-fit: contain;
+  object-position: bottom;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+}
+.ally-npc .npc-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.4));
+}
+.ally-npc.unlocked {
+  filter: none;
+}
+.ally-npc.unlocked::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 2px solid var(--success);
+  border-radius: 12px;
+  animation: ally-glow 1.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes ally-glow {
+  from { box-shadow: 0 0 10px rgba(46,204,113,0.4); }
+  to { box-shadow: 0 0 20px rgba(46,204,113,0.7); }
+}
+.ally-npc.recruited {
+  opacity: 0.5;
+  filter: grayscale(0.7);
+}
+.ally-npc.recruited::after {
+  display: none;
+}
+.talk-hint {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid var(--success);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  color: var(--success);
+  margin-bottom: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 20;
+}
+.ally-npc.unlocked:not(.recruited) .talk-hint.near {
+  opacity: 1;
+}
+.speech-bubble {
+  position: absolute;
+  max-width: 220px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.9);
+  border: 2px solid var(--jrpg-gold);
+  border-radius: 12px;
+  z-index: 25;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  margin-left: -8px;
+  border: 8px solid transparent;
+  border-top-color: var(--jrpg-gold);
+}
+.speech-bubble-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--light);
+}
+
+/* 말풍선 v3 BEM */
+.speech-bubble__content {
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border: 3px solid #2d3748;
+  border-radius: 20px;
+  padding: 12px 18px;
+  max-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: #2d3748;
+}
+.speech-bubble__name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #667eea;
+  margin-bottom: 4px;
+}
+.speech-bubble__text {
+  font-size: 14px;
+  color: #2d3748;
+  line-height: 1.5;
+}
+.speech-bubble__tail {
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 14px solid #2d3748;
+}
+.speech-bubble__tail::after {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: -10px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 12px solid #ffffff;
+}
+.speech-bubble {
+  transform: translate(-50%, -100%);
+  margin-top: -20px;
+  pointer-events: none;
+}
+.speech-bubble--left { transform: translate(10px, -50%); }
+.speech-bubble--right { transform: translate(calc(-100% - 10px), -50%); }
+
+.village-keys-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+  z-index: 5;
+}
+
+/* 아이템 슬롯 이미지/아이콘 */
+.item-slot .item-slot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.item-slot .item-slot-icon {
+  font-size: 1.2rem;
+}
+
+/* Situation overlay (checkpoint 등) */
+.situation-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.situation-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--jrpg-border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 560px;
+  width: 100%;
+}
+
+.situation-card .title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+
+.situation-card .desc {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--light);
+  margin-bottom: 20px;
+}
+
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice-btn {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: var(--light);
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.choice-btn:hover {
+  background: rgba(255,229,0,0.1);
+  border-color: var(--jrpg-gold);
+}
+
+.checkpoint-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.checkpoint-box {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--warning);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+}
+
+.checkpoint-box .title {
+  font-size: 1.1rem;
+  color: var(--warning);
+  margin-bottom: 12px;
+}
+
+.checkpoint-box .risk-preview {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 20px;
+}
+
+.checkpoint-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.checkpoint-buttons button {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.checkpoint-buttons .btn-confirm {
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  color: var(--secondary);
+}
+
+.checkpoint-buttons .btn-edit {
+  background: rgba(255,255,255,0.15);
+  color: var(--light);
+}
+
+/* 동료 만남 오버레이 */
+.ally-meeting-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.ally-meeting-card {
+  background: var(--jrpg-panel);
+  border: 2px solid var(--success);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+.ally-portrait-wrap {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--success);
+}
+.ally-portrait-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ally-fallback-icon {
+  font-size: 2.5rem;
+}
+.ally-meeting-name {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 1.2rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+.ally-meeting-message {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--light);
+  margin-bottom: 16px;
+}
+.ally-item-get {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--success);
+  margin-bottom: 16px;
+}
+.ally-item-icon {
+  font-size: 1.5rem;
+}
+.ally-close-btn {
+  padding: 10px 24px;
+  font-size: 0.9rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Ending */
+.ending-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, var(--darker) 100%);
+  padding: 40px;
+}
+
+.ending-screen .grade {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 4rem;
+  color: var(--jrpg-gold);
+  margin-bottom: 12px;
+}
+
+.ending-screen .ending-title {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+}
+
+.ending-screen .ending-message {
+  font-size: 1rem;
+  line-height: 1.8;
+  max-width: 520px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.ending-screen .btn-restart {
+  padding: 14px 40px;
+  font-size: 1rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.ending-screen .btn-restart:hover {
+  opacity: 0.95;
+}
+
+/* 엔딩 하단 검정 영역 — 게임 대화창과 동일한 공간에 나레이션 표시, 가로로 넓게 */
+.ending-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  min-height: 160px;
+  max-width: 100%;
+  width: 100%;
+  background: linear-gradient(0deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.9) 100%);
+  color: #fff;
+  padding: 20px 40px 28px;
+  pointer-events: auto;
+  z-index: 30;
+  border-top: 2px solid rgba(212,175,55,0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ending-bar-text {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.7;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  transition: opacity 0.4s ease;
+  max-width: 95%;
+  width: 100%;
+}
+
+.ending-bar-text--peace .ending-peace-sparkle {
+  display: block;
+  color: #fff9c4;
+  font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(255,235,59,0.8), 0 2px 6px rgba(0,0,0,0.8);
+  animation: ending-peace-glow 2.5s ease-in-out infinite;
+}
+
+.ending-screen .grade {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95), 0 0 30px rgba(255,215,0,0.45);
+}
+
+.ending-screen .ending-title {
+  text-shadow: 0 2px 10px rgba(0,0,0,0.95);
+}
+
+/* 엔딩 나레이션 (레거시 클래스 유지) */
+.ending-screen .ending-narration.ending-narration--peace {
+  max-width: 640px;
+  padding: 20px 28px;
+  border-radius: 12px;
+}
+
+.ending-screen .ending-narration-main {
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.5;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  letter-spacing: 0.02em;
+}
+
+.ending-screen .ending-peace-sparkle {
+  display: block;
+  color: #fff9c4;
+  text-shadow: 0 0 24px rgba(255,235,59,0.9), 0 0 48px rgba(255,235,59,0.4);
+  animation: ending-peace-glow 2.5s ease-in-out infinite;
+}
+
+.ending-screen .ending-narration-final {
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+  line-height: 1.7;
+  margin: 0;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+@keyframes ending-peace-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
+/* Village scene: 캐릭터 스프라이트(idle/walk) + 그림자 + 이동 시 흔들림 */
+.village-player-sprite {
+  transition: transform 0.08s ease-out;
+}
+.village-player-moving .village-player-sprite {
+  animation: village-player-bob 0.18s ease-in-out infinite alternate;
+}
+.village-player-moving .village-player-sprite[style*="scaleX(-1)"] {
+  animation: village-player-bob-flip 0.18s ease-in-out infinite alternate;
+}
+@keyframes village-player-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+@keyframes village-player-bob-flip {
+  from { transform: scaleX(-1) translateY(0); }
+  to { transform: scaleX(-1) translateY(-4px); }
+}
+
+/* ========== 인트로 시네마틱 시퀀스 ========== */
+.intro-sequence {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.intro-fade-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+}
+.intro-fade-black.intro-fade-black-visible {
+  opacity: 1;
+}
+
+.intro-bg-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.intro-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #0a0a0f;
+}
+.intro-bg-wrap.intro-bg-fade-in .intro-bg {
+  animation: intro-bg-fade-in 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes intro-bg-fade-in {
+  0% { opacity: 0; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.intro-darken {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+  opacity: 0;
+  transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.intro-cloud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.intro-darken.intro-darken-visible {
+  opacity: 1;
+}
+
+.intro-shake-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 80px;
+  pointer-events: none;
+}
+.intro-shake-wrap.intro-shake {
+  animation: intro-screen-shake 0.08s ease-in-out 6;
+}
+@keyframes intro-screen-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px) translateY(1px); }
+  50% { transform: translateX(2px); }
+  75% { transform: translateX(-1px) translateY(-1px); }
+}
+
+@keyframes skill-magic-circle-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes all-items-glow-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 80px rgba(255,215,0,0.6), 0 0 120px rgba(255,165,0,0.3);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 0 100px rgba(255,215,0,0.8), 0 0 160px rgba(255,165,0,0.45);
+  }
+}
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-4px, 2px); }
+  30% { transform: translate(4px, -2px); }
+  45% { transform: translate(-3px, -1px); }
+  60% { transform: translate(3px, 1px); }
+  75% { transform: translate(-2px, 0); }
+  90% { transform: translate(2px, 0); }
+}
+
+.intro-portraits {
+  display: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 40px;
+  padding: 32px 48px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.85) 100%);
+  border-radius: 20px;
+  position: relative;
+}
+/* 다섯 영웅 카드 — 컨트롤타워 포함 모든 카드 동일 너비·세로 높이 유지 */
+.intro-hero-card {
+  flex: 0 0 200px !important;
+  width: 200px !important;
+  min-width: 200px !important;
+  max-width: 200px !important;
+  min-height: 320px !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  align-items: stretch !important;
+}
+
+.intro-portraits::before {
+  content: '다섯 영웅의 소집';
+  position: absolute;
+  top: -52px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px rgba(255, 215, 0, 0.8),
+    0 2px 4px rgba(0,0,0,1),
+    0 4px 12px rgba(0,0,0,0.9);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.intro-portrait-item {
+  width: 100px;
+  height: 140px;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: top center;
+  background-color: rgba(30, 25, 20, 0.9);
+  opacity: 0;
+  border: 3px solid var(--jrpg-gold);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), 0 8px 24px rgba(0,0,0,0.5);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.intro-portrait-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+.intro-portrait-item.intro-portrait-fade-in {
+  animation: intro-portrait-fade-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.intro-portrait-item:nth-child(1) { animation-delay: 0s; }
+.intro-portrait-item:nth-child(2) { animation-delay: 0.15s; }
+.intro-portrait-item:nth-child(3) { animation-delay: 0.3s; }
+.intro-portrait-item:nth-child(4) { animation-delay: 0.45s; }
+.intro-portrait-item:nth-child(5) { animation-delay: 0.6s; }
+@keyframes intro-portrait-fade-in {
+  0% { opacity: 0; transform: translateY(40px) scale(0.7); }
+  70% { opacity: 1; transform: translateY(-8px) scale(1.05); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.intro-text-wrap {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 720px;
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+.intro-text {
+  font-size: 24px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.8);
+  line-height: 1.6;
+  margin: 0;
+  min-height: 1.5em;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.intro-title-card {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  pointer-events: auto;
+}
+.intro-title-card .intro-title-heading {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: 2.5rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  margin: 0;
+}
+
+/* 다섯 영웅의 소집 — 마을이 멈춘 날 스타일 (크림베이지 + 굵은 테두리 + 3D 그림자) */
+.intro-title-only {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.intro-title-only-heading {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 900;
+  color: #f5e6c8;
+  margin: 0;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  /* 굵은 어두운 테두리 + 우하단 적갈색 3D 그림자 */
+  text-shadow:
+    2px 2px 0 #2a1810,
+    -2px -2px 0 #2a1810,
+    2px -2px 0 #2a1810,
+    -2px 2px 0 #2a1810,
+    1px 1px 0 #2a1810,
+    -1px -1px 0 #2a1810,
+    1px -1px 0 #2a1810,
+    -1px 1px 0 #2a1810,
+    3px 3px 0 #4a2520,
+    4px 4px 0 #3a1c18,
+    5px 5px 6px rgba(0,0,0,0.7);
+}
+.intro-btn-start {
+  padding: 14px 48px;
+  font-size: 1.25rem;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  color: var(--secondary);
+  background: linear-gradient(135deg, var(--jrpg-gold), #b8860b);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.intro-btn-start:hover {
+  opacity: 0.95;
+  transform: scale(1.02);
+}
+
+.intro-skip-btn {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 25;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-family: 'Noto Sans KR', sans-serif;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.intro-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* 인트로 추가 애니메이션 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bossPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 30px #FF0000) drop-shadow(0 0 60px rgba(255,0,0,0.5));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 50px #FF0000) drop-shadow(0 0 80px rgba(255,0,0,0.7));
+    transform: scale(1.05);
+  }
+}
+
+.intro-boss {
+  animation: bossPulse 2s infinite ease-in-out;
+}
+
+.intro-villager-lines {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* 캐릭터 선택 UI 스타일 */
+.intro-character-select {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+}
+
+/* 보스씬 파티클 애니메이션 */
+@keyframes particleFade {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100px) scale(0.5);
+  }
+}
+
+/* 엔딩 씬 추가 스타일 */
+.ending-screen .ending-villagers {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.ending-screen .villager-card {
+  text-align: center;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.ending-screen .villager-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.ending-screen .villager-text {
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+}
+
+/* 엔딩 주민 말풍선 — 작은 크기, 진한 말풍선, 세로 배치 */
+.ending-villager-bubble.villager-line::after,
+.ending-villager-bubble.villager-line::before {
+  display: none;
+}
+
+.ending-villager-bubble {
+  max-width: 220px;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+}
+
+/* ========== 보스씬 강화 스타일 ========== */
+.boss-scene {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.boss-hero-entry {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.boss-hero-entry:hover {
+  transform: translateY(-4px);
+}
+
+/* 보스 몬스터 미니 인카운터 */
+.boss-monsters > div {
+  transition: transform 0.2s ease;
+}
+.boss-monsters > div:hover {
+  transform: scale(1.1);
+}
+
+/* 보스 이미지 깜빡임 (보스 등장 시) */
+@keyframes bossFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 보스 격파 시 흔들림 */
+@keyframes bossDefeat {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(0.9) rotate(-3deg); }
+  50% { transform: scale(0.7) rotate(3deg); }
+  75% { transform: scale(0.5) rotate(-2deg); }
+  100% { transform: scale(0.3) rotate(0deg); opacity: 0; }
+}
+
+/* 파티클 떠오르기 (향상된 버전) */
+@keyframes particleFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(0.3);
+  }
+}
+
+/* NPC 느낌표 마크 CSS fallback (DOM 모드용) */
+.npc-exclamation {
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 24px;
+  background: #FFD700;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  color: #1a1a2e;
+  animation: npcExclamationBounce 0.8s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255,215,0,0.6);
+}
+
+@keyframes npcExclamationBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+/* 아이템 슬롯 획득 시 반짝임 */
+@keyframes itemSlotAcquire {
+  0% { box-shadow: 0 0 0 rgba(212,175,55,0); }
+  50% { box-shadow: 0 0 20px rgba(212,175,55,0.8); }
+  100% { box-shadow: 0 0 8px rgba(212,175,55,0.3); }
+}
+
+.item-slot.filled.just-acquired {
+  animation: itemSlotAcquire 0.6s ease-out;
+}
+
+/* 리스크 게이지 위험 시 깜빡임 */
+@keyframes riskPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.risk-hud .gauge .bar[style*="width: 7"],
+.risk-hud .gauge .bar[style*="width: 8"],
+.risk-hud .gauge .bar[style*="width: 9"],
+.risk-hud .gauge .bar[style*="width:7"],
+.risk-hud .gauge .bar[style*="width:8"],
+.risk-hud .gauge .bar[style*="width:9"] {
+  animation: riskPulse 1s ease-in-out infinite;
+}

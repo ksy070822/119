@@ -1,9 +1,0 @@
-{
-  "allies": [
-    { "id": "tech_comm", "stageId": "S1", "trigger": { "afterChoiceIds": ["S1_C4", "S1_C6"], "riskGate": { "internalChaosAtLeast": "경미" } }, "name": "테크커뮤니케이터", "message": "기술적인 질문은 제가 정리해서 받을게요. 지금은 원인 규명에만 집중하셔도 됩니다.", "effect": { "internalChaos": -15 }, "itemReward": "faq_card" },
-    { "id": "reporter", "stageId": "S2", "trigger": { "riskGate": { "internalChaosAtLeast": "경미" } }, "name": "리포터", "message": "현재는 법적 의무 공지 시간 이전입니다. 아직 선택의 여지는 남아 있습니다.", "effect": { "internalChaos": -10 }, "itemReward": "timeline" },
-    { "id": "control_tower", "stageId": "S2", "trigger": { "riskGate": { "externalRiskAtLeast": "주의" } }, "name": "컨트롤타워", "message": "이 장애는 계약상 즉시 전파 대상은 아닙니다. 특정 제휴사만 별도 관리하겠습니다.", "effect": { "externalRisk": -10 }, "itemReward": "map" },
-    { "id": "tech_lead", "stageId": "S4", "trigger": {} }, "name": "테크리더", "message": "내부 시스템은 정상화되었습니다. 현재 이슈는 외부 연동 구간입니다.", "effect": { "internalChaos": -15 }, "itemReward": "tablet" },
-    { "id": "biz_lead", "stageId": "S5", "trigger": {} }, "name": "비즈니스리더", "message": "VOC 취합과 보상안 검토 방향 정리해두었습니다.", "effect": { "internalChaos": -10 }, "itemReward": "stamp" }
-  ]
-}

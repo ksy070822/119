@@ -1,0 +1,67 @@
+# 119 리포 GitHub Pages 배포
+# 사용법: 이 파일을 119 리포 "루트"에 복사하세요.
+#   경로: .github/workflows/deploy.yml
+# (119 리포 = git clone 한 폴더, 그 안에 Desktop/.../payment-crisis-rpg 가 있는 경우)
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency: group = "pages"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Find and Build
+        env:
+          NODE_ENV: production
+        run: |
+          ROOT=$(pwd)
+          DIR="Desktop/AI 자동화 구축 모음/장애대응/payment-crisis-rpg"
+          if [ ! -d "$DIR" ]; then
+            DIR="payment-crisis-rpg"
+          fi
+          if [ ! -d "$DIR" ]; then
+            echo "::error::payment-crisis-rpg folder not found"
+            exit 1
+          fi
+          cd "$DIR"
+          npm ci --no-audit --no-fund 2>/dev/null || npm install
+          npm run build
+          cp -r dist "$ROOT/dist-pages"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-pages
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

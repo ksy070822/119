@@ -1,0 +1,9 @@
+{
+  "stages": [
+    { "id": "S1", "name": "장애 인지", "timeRange": { "start": 0, "end": 10 }, "background": "bg_control.png", "narration": "결제 시스템 이상 징후가 감지되었습니다. 원인 불명, CS 인입 급증입니다." },
+    { "id": "S2", "name": "초기 공지 판단", "timeRange": { "start": 10, "end": 40 }, "background": "bg_control.png", "narration": "30분 내 복구 가능하면 공지 지양 검토, 마을 주민센터 전화문의 대기 증가 중입니다." },
+    { "id": "S3", "name": "심화 공지 판단", "timeRange": { "start": 40, "end": 130 }, "background": "bg_control.png", "narration": "110분 트리거, 법적 고지 의무 시점이 임박했습니다." },
+    { "id": "S4", "name": "복구 판단", "timeRange": { "start": 130, "end": 200 }, "background": "bg_control.png", "narration": "내부 복구 완료, 외부 지연 중입니다." },
+    { "id": "S5", "name": "후속 조치", "timeRange": { "start": 200, "end": 999 }, "background": "bg_control.png", "narration": "장애가 종료되었습니다. 후속 조치를 진행합니다." }
+  ]
+}
