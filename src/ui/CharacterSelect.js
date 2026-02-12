@@ -53,6 +53,12 @@ export class CharacterSelect {
       padding: 20px 0;
     `;
 
+    // #region agent log
+    const orderLen = INTRO_ORDER?.length ?? 0;
+    const charKeys = Object.keys(CHARACTERS || {});
+    const firstPortrait = CHARACTERS[INTRO_ORDER[0]]?.sprites?.portrait ?? '';
+    fetch('http://127.0.0.1:7243/ingest/3def15e8-4d22-4fa5-97c7-7eb6176139cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CharacterSelect.js:render',message:'character select render',data:{introOrderLength:orderLen,characterKeysLength:charKeys.length,firstPortraitUrl:firstPortrait},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     INTRO_ORDER.forEach((charId) => {
       const char = CHARACTERS[charId];
       if (!char) return;
@@ -136,6 +142,9 @@ export class CharacterSelect {
     if (char.sprites?.portrait) {
       const portrait = document.createElement('img');
       portrait.src = char.sprites.portrait;
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/3def15e8-4d22-4fa5-97c7-7eb6176139cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CharacterSelect.js:_createCharacterCard',message:'portrait img src set',data:{charId:char.id,portraitSrc:portrait.src},timestamp:Date.now(),hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       portrait.alt = char.name;
       portrait.style.cssText = `
         width: 80px;
