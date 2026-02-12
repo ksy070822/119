@@ -3,10 +3,20 @@
  * Character IDs: communicator, techLeader, techCommunicator, controlTower, reporter.
  * Folder names: communicator, tech_leader, tech_communicator, control_tower, reporter.
  * 기본 이미지: idle.png (서 있는 모습)
+ * 배포(base path) 시 BASE가 비면 런타임에 location에서 보정 (GitHub Pages /119/ 등)
  */
-const BASE = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL
-  ? import.meta.env.BASE_URL.replace(/\/$/, '')
-  : '';
+function getBase() {
+  let base = '';
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL) {
+    base = (import.meta.env.BASE_URL || '').replace(/\/$/, '');
+  }
+  if (!base && typeof window !== 'undefined' && window.location) {
+    const path = window.location.pathname || '';
+    if (path.startsWith('/119')) base = '/119';
+  }
+  return base;
+}
+const BASE = getBase();
 const A = `${BASE}/assets`;
 const IMG = `${BASE}/image`;
 
