@@ -232,3 +232,8 @@ export function getMapsJsonUrl() {
 export function getDialoguesJsonUrl() {
   return `${getBase()}/data/dialogues.json`;
 }
+
+/** 다섯 영웅의 소집 배경 — public/assets/maps/guild/heroes_召集.png */
+export function getHeroesSummonImage() {
+  return `${getA()}/maps/guild/heroes_召集.png`;
+}

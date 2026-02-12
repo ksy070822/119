@@ -2,7 +2,7 @@
  * 인트로 시네마틱 시퀀스 설정 — 장면별 배경, 텍스트, 효과, 지속 시간
  * GAME_SCRIPT.md 기반 6개 장면 구현
  */
-import { getVillageBg, getGuildBg, getTitleImage } from '../data/assetPaths.js';
+import { getVillageBg, getGuildBg, getTitleImage, getHeroesSummonImage } from '../data/assetPaths.js';
 import { CHARACTERS } from '../data/characters.js';
 
 const INTRO_PORTRAIT_ORDER = ['communicator', 'techLeader', 'techCommunicator', 'controlTower', 'reporter'];
@@ -83,11 +83,11 @@ export const INTRO_SCENES = [
     villagerLines: VILLAGER_LINES.scene3,
     showBoss: true,
   },
-  // 장면 4: 다섯 영웅의 소집 (타이틀만 표시 후 캐릭터 선택)
+  // 장면 4: 다섯 영웅의 소집 (새 배경 이미지 + 타이틀)
   {
     id: 3,
     duration: 3500,
-    background: getGuildBg(1),
+    background: getHeroesSummonImage(),
     text: '다섯 영웅의 소집',
     effect: 'titleOnly',
   },
