@@ -26,10 +26,12 @@ jobs:
           cache: 'npm'
 
       - name: Install and Build
+        shell: bash
         env:
           NODE_ENV: production
         run: |
-          npm ci --no-audit --no-fund 2>/dev/null || npm install
+          node -v && npm -v
+          npm install --no-audit --no-fund
           npm run build
 
       - name: Setup Pages
